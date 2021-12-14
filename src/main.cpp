@@ -1,47 +1,12 @@
-#include <iostream>
-
+#include "json/typename.hpp"
 #include "json/json.hpp"
+
+#include <iostream>
+#include <sstream>
 
 // ============================================================================
 // == Support
 // ============================================================================
-
-template <typename T>
-struct TypeName {
-    static std::string Get();
-};
-
-template <>
-struct TypeName<bool> {
-    static std::string Get()
-    {
-        return "bool";
-    }
-};
-
-template <>
-struct TypeName<int> {
-    static std::string Get()
-    {
-        return "int";
-    }
-};
-
-template <>
-struct TypeName<double> {
-    static std::string Get()
-    {
-        return "double";
-    }
-};
-
-template <>
-struct TypeName<unsigned> {
-    static std::string Get()
-    {
-        return "unsigned";
-    }
-};
 
 // ============================================================================
 // == CLASSES
@@ -75,7 +40,7 @@ public:
 
     static inline std::string get_typename()
     {
-        return "Variable<" + TypeName<T>::Get() + ">";
+        return "Variable<" + TypeName<T>::get() + ">";
     }
 };
 
@@ -172,23 +137,34 @@ public:
 template <typename Base, typename Derived>
 static inline bool __try_to_read(const json::jnode_t &lhs, Base *&rhs)
 {
+    // Prepare the pointer with the type of the derived class.
     Derived *ptr = nullptr;
-    (lhs >> ptr);
+    // Try to stream with the given pointer.
+    lhs >> ptr;
+    // If the stream is successful, we should receive a valid pointer.
     if (ptr) {
+        // Save the pointer to the rhs.
         rhs = ptr;
+        // Notify that we succesfully loaded from stream.
         return true;
     }
+    // Notify that we failed to load from stream.
     return false;
 }
 
 template <typename Base, typename Derived>
 static inline bool __try_to_write(json::jnode_t &lhs, Base *const &rhs)
 {
+    // Try to dynamically cast the pointer to the derived class type.
     auto ptr = dynamic_cast<Derived *>(rhs);
+    // Check if the pointer is valid.
     if (ptr) {
-        (lhs << ptr);
+        // Stream with the given pointer.
+        lhs << ptr;
+        // Notify that we succesfully written to the stream.
         return true;
     }
+    // Notify that we failed to write to the stream.
     return false;
 }
 
@@ -254,11 +230,27 @@ json::jnode_t &json::operator<<<Entity *>(json::jnode_t &lhs, Entity *const &rhs
         return lhs;
     if (__try_to_write<Entity, Variable<bool>>(lhs, rhs))
         return lhs;
+    if (__try_to_write<Entity, Variable<char>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<unsigned char>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<short>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<unsigned short>>(lhs, rhs))
+        return lhs;
     if (__try_to_write<Entity, Variable<int>>(lhs, rhs))
         return lhs;
-    if (__try_to_write<Entity, Variable<unsigned>>(lhs, rhs))
+    if (__try_to_write<Entity, Variable<unsigned int>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<long>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<unsigned long>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<float>>(lhs, rhs))
         return lhs;
     if (__try_to_write<Entity, Variable<double>>(lhs, rhs))
+        return lhs;
+    if (__try_to_write<Entity, Variable<long double>>(lhs, rhs))
         return lhs;
     return lhs;
 }
@@ -321,11 +313,27 @@ const json::jnode_t &json::operator>><Entity *>(const json::jnode_t &lhs, Entity
         return lhs;
     if (__try_to_read<Entity, Variable<bool>>(lhs, rhs))
         return lhs;
+    if (__try_to_read<Entity, Variable<char>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<unsigned char>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<short>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<unsigned short>>(lhs, rhs))
+        return lhs;
     if (__try_to_read<Entity, Variable<int>>(lhs, rhs))
         return lhs;
-    if (__try_to_read<Entity, Variable<unsigned>>(lhs, rhs))
+    if (__try_to_read<Entity, Variable<unsigned int>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<long>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<unsigned long>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<float>>(lhs, rhs))
         return lhs;
     if (__try_to_read<Entity, Variable<double>>(lhs, rhs))
+        return lhs;
+    if (__try_to_read<Entity, Variable<long double>>(lhs, rhs))
         return lhs;
     return lhs;
 }
@@ -345,7 +353,17 @@ int main(int argc, char *argv[])
                 new Component(
                     "res0",
                     {
+                        new Variable<bool>("B", 1),
+                        new Variable<char>("B", 1),
+                        new Variable<unsigned char>("B", 1),
+                        new Variable<short>("B", 1),
+                        new Variable<unsigned short>("B", 1),
                         new Variable<int>("B", 1),
+                        new Variable<unsigned int>("B", 1),
+                        new Variable<long>("B", 1),
+                        new Variable<unsigned long>("B", 1),
+                        new Variable<double>("B", 1),
+                        new Variable<long double>("B", 1),
                     },
                     {
                         new Node("n1"),

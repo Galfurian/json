@@ -756,6 +756,7 @@ JSON_DEFINE_OP(json::JNUMBER, long long, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, float, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, double, json::value_to_string, as_double)
+JSON_DEFINE_OP(json::JNUMBER, long double, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JSTRING, std::string, , as_string)
 
 } // namespace json
