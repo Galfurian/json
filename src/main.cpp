@@ -1,5 +1,5 @@
-#include "json/typename.hpp"
 #include "json/json.hpp"
+#include "json/typename.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -37,11 +37,6 @@ public:
     }
 
     ~Variable() override = default;
-
-    static inline std::string get_typename()
-    {
-        return "Variable<" + TypeName<T>::get() + ">";
-    }
 };
 
 class Node : public Entity {
@@ -61,11 +56,6 @@ public:
     }
 
     ~Node() override = default;
-
-    static inline std::string get_typename()
-    {
-        return "Node";
-    }
 };
 
 class Component : public Entity {
@@ -97,11 +87,6 @@ public:
         for (size_t i = 0; i < nodes.size(); ++i)
             delete nodes[i];
     }
-
-    static inline std::string get_typename()
-    {
-        return "Component";
-    }
 };
 
 class Subckt : public Entity {
@@ -123,8 +108,38 @@ public:
         for (size_t i = 0; i < entities.size(); ++i)
             delete entities[i];
     }
+};
 
-    static inline std::string get_typename()
+// ============================================================================
+// == JSON Type Naming
+// ============================================================================
+template <typename T>
+struct json::TypeName<Variable<T>> {
+    static std::string get()
+    {
+        return "Variable<" + json::TypeName<T>::get() + ">";
+    }
+};
+
+template <>
+struct json::TypeName<Node> {
+    static std::string get()
+    {
+        return "Node";
+    }
+};
+
+template <>
+struct json::TypeName<Component> {
+    static std::string get()
+    {
+        return "Component";
+    }
+};
+
+template <>
+struct json::TypeName<Subckt> {
+    static std::string get()
     {
         return "Subckt";
     }
@@ -174,7 +189,7 @@ json::jnode_t &json::operator<<<Subckt *>(json::jnode_t &lhs, Subckt *const &rhs
     // Set the type to object.
     lhs.set_type(json::JOBJECT);
     // Write the type.
-    lhs["type"] << Subckt::get_typename();
+    lhs["type"] << json::TypeName<Subckt>::get();
     // Write the fields.
     lhs["entities"] << rhs->entities;
     return lhs;
@@ -186,7 +201,7 @@ json::jnode_t &json::operator<<<Component *>(json::jnode_t &lhs, Component *cons
     // Set the type to object.
     lhs.set_type(json::JOBJECT);
     // Write the type.
-    lhs["type"] << Component::get_typename();
+    lhs["type"] << json::TypeName<Component>::get();
     // Write the fields.
     lhs["name"] << rhs->name;
     lhs["variables"] << rhs->variables;
@@ -200,7 +215,7 @@ json::jnode_t &json::operator<<<Node *>(json::jnode_t &lhs, Node *const &rhs)
     // Set the type to object.
     lhs.set_type(json::JOBJECT);
     // Write the type.
-    lhs["type"] << Node::get_typename();
+    lhs["type"] << json::TypeName<Node>::get();
     // Write the fields.
     lhs["name"] << rhs->name;
     return lhs;
@@ -212,7 +227,7 @@ json::jnode_t &json::operator<<(json::jnode_t &lhs, Variable<T> *const &rhs)
     // Set the type to object.
     lhs.set_type(json::JOBJECT);
     // Write the type.
-    lhs["type"] << Variable<T>::get_typename();
+    lhs["type"] << json::TypeName<Variable<T>>::get();
     // Write the fields.
     lhs["name"] << rhs->name;
     lhs["value"] << rhs->value;
@@ -258,7 +273,7 @@ json::jnode_t &json::operator<<<Entity *>(json::jnode_t &lhs, Entity *const &rhs
 template <>
 const json::jnode_t &json::operator>><Subckt *>(const json::jnode_t &lhs, Subckt *&rhs)
 {
-    if (lhs["type"].get_value() == Subckt::get_typename()) {
+    if (lhs["type"].get_value() == json::TypeName<Subckt>::get()) {
         if (rhs == nullptr)
             rhs = new Subckt();
         lhs["entities"] >> rhs->entities;
@@ -269,7 +284,7 @@ const json::jnode_t &json::operator>><Subckt *>(const json::jnode_t &lhs, Subckt
 template <>
 const json::jnode_t &json::operator>><Component *>(const json::jnode_t &lhs, Component *&rhs)
 {
-    if (lhs["type"].get_value() == Component::get_typename()) {
+    if (lhs["type"].get_value() == json::TypeName<Component>::get()) {
         if (rhs == nullptr)
             rhs = new Component();
         lhs["name"] >> rhs->name;
@@ -282,7 +297,7 @@ const json::jnode_t &json::operator>><Component *>(const json::jnode_t &lhs, Com
 template <>
 const json::jnode_t &json::operator>><Node *>(const json::jnode_t &lhs, Node *&rhs)
 {
-    if (lhs["type"].get_value() == Node::get_typename()) {
+    if (lhs["type"].get_value() == json::TypeName<Node>::get()) {
         if (rhs == nullptr)
             rhs = new Node();
         lhs["name"] >> rhs->name;
@@ -293,7 +308,7 @@ const json::jnode_t &json::operator>><Node *>(const json::jnode_t &lhs, Node *&r
 template <typename T>
 const json::jnode_t &json::operator>>(const json::jnode_t &lhs, Variable<T> *&rhs)
 {
-    if (lhs["type"].get_value() == Variable<T>::get_typename()) {
+    if (lhs["type"].get_value() == json::TypeName<Variable<T>>::get()) {
         if (rhs == nullptr)
             rhs = new Variable<T>();
         lhs["name"] >> rhs->name;

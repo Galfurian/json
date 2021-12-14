@@ -11,6 +11,9 @@
 
 #include <string>
 
+namespace json
+{
+
 template <typename T>
 struct TypeName {
     static std::string get();
@@ -111,3 +114,5 @@ struct TypeName<long double> {
         return "long double";
     }
 };
+
+} // namespace json
