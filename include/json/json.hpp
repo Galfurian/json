@@ -247,23 +247,23 @@ private:
 
 namespace parser
 {
-    /// @brief Parse the json formatted string.
-    /// @param json_string The json formatted string.
-    /// @return the root of the generated json tree.
-    jnode_t parse(const std::string &json_string);
+/// @brief Parse the json formatted string.
+/// @param json_string The json formatted string.
+/// @return the root of the generated json tree.
+jnode_t parse(const std::string &json_string);
 
-    /// @brief Parse the json file.
-    /// @param filename Path to the json file.
-    /// @return the root of the generated json tree.
-    jnode_t parse_file(const std::string &filename);
+/// @brief Parse the json file.
+/// @param filename Path to the json file.
+/// @return the root of the generated json tree.
+jnode_t parse_file(const std::string &filename);
 
-    /// @brief Write the json node on file.
-    /// @param filename Path to the json file.
-    /// @param node     The json tree to write.
-    /// @param pretty   Enable/Disable pretty print of json.
-    /// @param tabsize	The dimension of tabulation (if pretto == true).
-    /// @return if the operation is a success.
-    bool write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4);
+/// @brief Write the json node on file.
+/// @param filename Path to the json file.
+/// @param node     The json tree to write.
+/// @param pretty   Enable/Disable pretty print of json.
+/// @param tabsize	The dimension of tabulation (if pretto == true).
+/// @return if the operation is a success.
+bool write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4);
 
 } // namespace parser
 
@@ -418,3 +418,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     }
 
 } // namespace json
+
+std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs);
+
+std::ofstream &operator<<(std::ofstream &lhs, const json::jnode_t &rhs);

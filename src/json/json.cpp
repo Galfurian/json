@@ -416,315 +416,315 @@ std::string jnode_t::to_string_d(int depth, bool pretty, unsigned tabsize) const
 
 namespace parser
 {
-    typedef enum token_type {
-        UNKNOWN,
-        STRING,
-        NUMBER,
-        CURLY_OPEN,
-        CURLY_CLOSE,
-        BRACKET_OPEN,
-        BRACKET_CLOSE,
-        COMMA,
-        COLON,
-        BOOLEAN,
-        NUL
-    } token_type;
+typedef enum token_type {
+    UNKNOWN,
+    STRING,
+    NUMBER,
+    CURLY_OPEN,
+    CURLY_CLOSE,
+    BRACKET_OPEN,
+    BRACKET_CLOSE,
+    COMMA,
+    COLON,
+    BOOLEAN,
+    NUL
+} token_type;
 
-    typedef struct token_t {
-        /// The value.
-        std::string value;
-        /// The type.
-        token_type type;
-        /// The line number.
-        size_t line_number;
+typedef struct token_t {
+    /// The value.
+    std::string value;
+    /// The type.
+    token_type type;
+    /// The line number.
+    size_t line_number;
 
-        /// @brief Constructor.
-        /// @param value
-        /// @param type
-        explicit token_t(const std::string &_value = "",
-                         token_type _type          = UNKNOWN,
-                         size_t _line_number       = 0)
-            : value(_value),
-              type(_type),
-              line_number(_line_number)
-        {
-            // Nothing to do.
-        }
-    } token_t;
-
-    static inline bool is_whitespace(char c)
+    /// @brief Constructor.
+    /// @param value
+    /// @param type
+    explicit token_t(const std::string &_value = "",
+                     token_type _type          = UNKNOWN,
+                     size_t _line_number       = 0)
+        : value(_value),
+          type(_type),
+          line_number(_line_number)
     {
-        return isspace(c);
+        // Nothing to do.
     }
+} token_t;
 
-    static inline bool is_number(char c)
-    {
-        return (c >= '0') && (c <= '9');
-    }
+static inline bool is_whitespace(char c)
+{
+    return isspace(c);
+}
 
-    static inline bool is_newline(char c)
-    {
-        return (c == '\n') || (c == '\r');
-    }
+static inline bool is_number(char c)
+{
+    return (c >= '0') && (c <= '9');
+}
 
-    static inline int next_whitespace(const std::string &source, int i)
-    {
-        int slength = static_cast<int>(source.length());
-        while (i < slength) {
-            if (source[i] == '"') {
-                ++i;
-                while ((i < slength) && (source[i] != '"' || source[i - 1] == '\\')) {
-                    ++i;
-                }
-            }
-            if (source[i] == '\'') {
-                ++i;
-                while ((i < slength) && (source[i] != '\'' || source[i - 1] == '\\')) {
-                    ++i;
-                }
-            }
-            if (is_whitespace(source[i])) {
-                return i;
-            }
+static inline bool is_newline(char c)
+{
+    return (c == '\n') || (c == '\r');
+}
+
+static inline int next_whitespace(const std::string &source, int i)
+{
+    int slength = static_cast<int>(source.length());
+    while (i < slength) {
+        if (source[i] == '"') {
             ++i;
-        }
-        return slength;
-    }
-
-    static inline int skip_whitespaces(const std::string &source, int i, int &line_number)
-    {
-        while (i < static_cast<int>(source.length())) {
-            if (!is_whitespace(source[i])) {
-                return i;
+            while ((i < slength) && (source[i] != '"' || source[i - 1] == '\\')) {
+                ++i;
             }
-            line_number += is_newline(source[i]);
-            ++i;
         }
-        return -1;
+        if (source[i] == '\'') {
+            ++i;
+            while ((i < slength) && (source[i] != '\'' || source[i - 1] == '\\')) {
+                ++i;
+            }
+        }
+        if (is_whitespace(source[i])) {
+            return i;
+        }
+        ++i;
     }
+    return slength;
+}
 
-    static std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens)
-    {
-        int line_number = 0;
-        int index       = skip_whitespaces(source, 0, line_number);
-        while (index >= 0) {
-            int next        = next_whitespace(source, index);
-            std::string str = source.substr(index, next - index);
-            size_t k        = 0;
-            while (k < str.length()) {
-                if (str[k] == '"') {
-                    size_t tmp_k = k + 1;
-                    while (tmp_k < str.length() && (str[tmp_k] != '"' || str[tmp_k - 1] == '\\')) {
-                        ++tmp_k;
-                    }
-                    tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
-                    k = tmp_k + 1;
-                    continue;
+static inline int skip_whitespaces(const std::string &source, int i, int &line_number)
+{
+    while (i < static_cast<int>(source.length())) {
+        if (!is_whitespace(source[i])) {
+            return i;
+        }
+        line_number += is_newline(source[i]);
+        ++i;
+    }
+    return -1;
+}
+
+static std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens)
+{
+    int line_number = 0;
+    int index       = skip_whitespaces(source, 0, line_number);
+    while (index >= 0) {
+        int next        = next_whitespace(source, index);
+        std::string str = source.substr(index, next - index);
+        size_t k        = 0;
+        while (k < str.length()) {
+            if (str[k] == '"') {
+                size_t tmp_k = k + 1;
+                while (tmp_k < str.length() && (str[tmp_k] != '"' || str[tmp_k - 1] == '\\')) {
+                    ++tmp_k;
                 }
-                if (str[k] == '\'') {
-                    size_t tmp_k = k + 1;
-                    while (tmp_k < str.length() && (str[tmp_k] != '\'' || str[tmp_k - 1] == '\\')) {
-                        ++tmp_k;
-                    }
-                    tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
-                    k = tmp_k + 1;
-                    continue;
+                tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
+                k = tmp_k + 1;
+                continue;
+            }
+            if (str[k] == '\'') {
+                size_t tmp_k = k + 1;
+                while (tmp_k < str.length() && (str[tmp_k] != '\'' || str[tmp_k - 1] == '\\')) {
+                    ++tmp_k;
                 }
-                if (str[k] == ',') {
-                    tokens.push_back(token_t(",", COMMA, line_number));
-                    ++k;
-                    continue;
+                tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
+                k = tmp_k + 1;
+                continue;
+            }
+            if (str[k] == ',') {
+                tokens.push_back(token_t(",", COMMA, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
+                tokens.push_back(token_t("true", BOOLEAN, line_number));
+                k += 4;
+                continue;
+            }
+            if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
+                tokens.push_back(token_t("false", BOOLEAN, line_number));
+                k += 5;
+                continue;
+            }
+            if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
+                tokens.push_back(token_t("null", NUL, line_number));
+                k += 4;
+                continue;
+            }
+            if (str[k] == '}') {
+                tokens.push_back(token_t("}", CURLY_CLOSE, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == '{') {
+                tokens.push_back(token_t("{", CURLY_OPEN, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == ']') {
+                tokens.push_back(token_t("]", BRACKET_CLOSE, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == '[') {
+                tokens.push_back(token_t("[", BRACKET_OPEN, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == ':') {
+                tokens.push_back(token_t(":", COLON, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == '-' || is_number(str[k])) {
+                size_t k2 = k;
+                if (str[k2] == '-') {
+                    ++k2;
                 }
-                if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
-                    tokens.push_back(token_t("true", BOOLEAN, line_number));
-                    k += 4;
-                    continue;
-                }
-                if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
-                    tokens.push_back(token_t("false", BOOLEAN, line_number));
-                    k += 5;
-                    continue;
-                }
-                if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
-                    tokens.push_back(token_t("null", NUL, line_number));
-                    k += 4;
-                    continue;
-                }
-                if (str[k] == '}') {
-                    tokens.push_back(token_t("}", CURLY_CLOSE, line_number));
-                    ++k;
-                    continue;
-                }
-                if (str[k] == '{') {
-                    tokens.push_back(token_t("{", CURLY_OPEN, line_number));
-                    ++k;
-                    continue;
-                }
-                if (str[k] == ']') {
-                    tokens.push_back(token_t("]", BRACKET_CLOSE, line_number));
-                    ++k;
-                    continue;
-                }
-                if (str[k] == '[') {
-                    tokens.push_back(token_t("[", BRACKET_OPEN, line_number));
-                    ++k;
-                    continue;
-                }
-                if (str[k] == ':') {
-                    tokens.push_back(token_t(":", COLON, line_number));
-                    ++k;
-                    continue;
-                }
-                if (str[k] == '-' || is_number(str[k])) {
-                    size_t k2 = k;
-                    if (str[k2] == '-') {
-                        ++k2;
-                    }
-                    while (k2 < str.size()) {
-                        if ((str[k2] != '.') && !is_number(str[k2])) {
-                            if ((str[k2] != 'e') && (str[k2] != 'E')) {
-                                break;
-                            }
-                            if ((k2 + 1) >= str.size()) {
-                                break;
-                            }
-                            if ((str[k2 + 1] != '+') && (str[k2 + 1] != '-')) {
-                                if (is_number(str[k2 + 1])) {
-                                    k2 += 2;
-                                } else {
-                                    break;
-                                }
+                while (k2 < str.size()) {
+                    if ((str[k2] != '.') && !is_number(str[k2])) {
+                        if ((str[k2] != 'e') && (str[k2] != 'E')) {
+                            break;
+                        }
+                        if ((k2 + 1) >= str.size()) {
+                            break;
+                        }
+                        if ((str[k2 + 1] != '+') && (str[k2 + 1] != '-')) {
+                            if (is_number(str[k2 + 1])) {
+                                k2 += 2;
                             } else {
-                                if ((k2 + 3) >= str.size()) {
-                                    break;
-                                }
-                                if (is_number(str[k2 + 3])) {
-                                    k2 += 3;
-                                } else {
-                                    break;
-                                }
+                                break;
+                            }
+                        } else {
+                            if ((k2 + 3) >= str.size()) {
+                                break;
+                            }
+                            if (is_number(str[k2 + 3])) {
+                                k2 += 3;
+                            } else {
+                                break;
                             }
                         }
-                        ++k2;
                     }
-                    tokens.push_back(token_t(str.substr(k, k2 - k), NUMBER, line_number));
-                    k = k2;
-                    continue;
+                    ++k2;
                 }
-                if (str[k] == '#' && (k + 1 < str.length()) && str.substr(k, 2) == "##") {
-                    tokens.push_back(token_t(str.substr(k, 2), UNKNOWN, line_number));
-                    k += 2;
-                    continue;
-                }
-                tokens.push_back(token_t(str.substr(k), UNKNOWN, line_number));
-                k = str.length();
+                tokens.push_back(token_t(str.substr(k, k2 - k), NUMBER, line_number));
+                k = k2;
+                continue;
             }
-            index = skip_whitespaces(source, next, line_number);
-        }
-        return tokens;
-    }
-
-    static jnode_t json_parse(std::vector<token_t> &v, int i, int &r)
-    {
-        jnode_t current;
-        // Set line number.
-        current.set_line_number(v[i].line_number + 1);
-        // Parse the element.
-        if (v[i].type == CURLY_OPEN) {
-            // Set type.
-            current.set_type(JOBJECT);
-            // Set the value.
-            ++i;
-            while (v[i].type != CURLY_CLOSE) {
-                std::string key = v[i].value;
-                i += 2; // k+1 should be ':'
-                int j        = i;
-                current[key] = json_parse(v, i, j);
-                i            = j;
-                if (v[i].type == COMMA) {
-                    ++i;
-                }
+            if (str[k] == '#' && (k + 1 < str.length()) && str.substr(k, 2) == "##") {
+                tokens.push_back(token_t(str.substr(k, 2), UNKNOWN, line_number));
+                k += 2;
+                continue;
             }
-        } else if (v[i].type == BRACKET_OPEN) {
-            // Set type.
-            current.set_type(JARRAY);
-            // Set the value.
-            ++i;
-            while (v[i].type != BRACKET_CLOSE) {
-                int j = i;
-                current.add_element(json_parse(v, i, j));
-                i = j;
-                if (v[i].type == COMMA) {
-                    ++i;
-                }
+            tokens.push_back(token_t(str.substr(k), UNKNOWN, line_number));
+            k = str.length();
+        }
+        index = skip_whitespaces(source, next, line_number);
+    }
+    return tokens;
+}
+
+static jnode_t json_parse(std::vector<token_t> &v, int i, int &r)
+{
+    jnode_t current;
+    // Set line number.
+    current.set_line_number(v[i].line_number + 1);
+    // Parse the element.
+    if (v[i].type == CURLY_OPEN) {
+        // Set type.
+        current.set_type(JOBJECT);
+        // Set the value.
+        ++i;
+        while (v[i].type != CURLY_CLOSE) {
+            std::string key = v[i].value;
+            i += 2; // k+1 should be ':'
+            int j        = i;
+            current[key] = json_parse(v, i, j);
+            i            = j;
+            if (v[i].type == COMMA) {
+                ++i;
             }
-        } else if (v[i].type == NUMBER) {
-            // Set type.
-            current.set_type(JNUMBER);
-            // Set the value.
-            current.set_value(v[i].value);
-        } else if (v[i].type == STRING) {
-            // Set type.
-            current.set_type(JSTRING);
-            // Replace protected special characters, with the actual ones.
-            replace_all(v[i].value, "\\n", "\n");
-            replace_all(v[i].value, "\\\"", "\"");
-            // Set the value.
-            current.set_value(v[i].value);
-        } else if (v[i].type == BOOLEAN) {
-            // Set type.
-            current.set_type(JBOOLEAN);
-            // Set the value.
-            current.set_value(v[i].value);
-        } else if (v[i].type == NUL) {
-            // Set type.
-            current.set_type(JNULL);
-            // Set the value.
-            current.set_value("null");
-        } else {
-            // Set type.
-            current.set_type(JUNKNOWN);
-            // Set the value.
-            current.set_value("##");
         }
-        // Move to the next token.
-        r = i + 1;
-        return current;
-    }
-
-    jnode_t parse(const std::string &str)
-    {
-        int k = 0;
-        std::vector<token_t> tokens;
-        return json_parse(tokenize(str, tokens), 0, k);
-    }
-
-    jnode_t parse_file(const std::string &filename)
-    {
-        std::ifstream in(filename.c_str());
-        if (!in.is_open()) {
-            static jnode_t null_value(JNULL);
-            return null_value;
+    } else if (v[i].type == BRACKET_OPEN) {
+        // Set type.
+        current.set_type(JARRAY);
+        // Set the value.
+        ++i;
+        while (v[i].type != BRACKET_CLOSE) {
+            int j = i;
+            current.add_element(json_parse(v, i, j));
+            i = j;
+            if (v[i].type == COMMA) {
+                ++i;
+            }
         }
-        std::stringstream ss;
-        ss << in.rdbuf() << " ";
-        in.close();
-        return parse(ss.str());
+    } else if (v[i].type == NUMBER) {
+        // Set type.
+        current.set_type(JNUMBER);
+        // Set the value.
+        current.set_value(v[i].value);
+    } else if (v[i].type == STRING) {
+        // Set type.
+        current.set_type(JSTRING);
+        // Replace protected special characters, with the actual ones.
+        replace_all(v[i].value, "\\n", "\n");
+        replace_all(v[i].value, "\\\"", "\"");
+        // Set the value.
+        current.set_value(v[i].value);
+    } else if (v[i].type == BOOLEAN) {
+        // Set type.
+        current.set_type(JBOOLEAN);
+        // Set the value.
+        current.set_value(v[i].value);
+    } else if (v[i].type == NUL) {
+        // Set type.
+        current.set_type(JNULL);
+        // Set the value.
+        current.set_value("null");
+    } else {
+        // Set type.
+        current.set_type(JUNKNOWN);
+        // Set the value.
+        current.set_value("##");
     }
+    // Move to the next token.
+    r = i + 1;
+    return current;
+}
 
-    bool write_file(const std::string &filename,
-                    const jnode_t &node,
-                    bool pretty,
-                    unsigned tabsize)
-    {
-        std::ofstream out(filename.c_str());
-        if (out.is_open()) {
-            out << node.to_string(pretty, tabsize);
-            out.close();
-            return true;
-        }
-        return false;
+jnode_t parse(const std::string &str)
+{
+    int k = 0;
+    std::vector<token_t> tokens;
+    return json_parse(tokenize(str, tokens), 0, k);
+}
+
+jnode_t parse_file(const std::string &filename)
+{
+    std::ifstream in(filename.c_str());
+    if (!in.is_open()) {
+        static jnode_t null_value(JNULL);
+        return null_value;
     }
+    std::stringstream ss;
+    ss << in.rdbuf() << " ";
+    in.close();
+    return parse(ss.str());
+}
+
+bool write_file(const std::string &filename,
+                const jnode_t &node,
+                bool pretty,
+                unsigned tabsize)
+{
+    std::ofstream out(filename.c_str());
+    if (out.is_open()) {
+        out << node.to_string(pretty, tabsize);
+        out.close();
+        return true;
+    }
+    return false;
+}
 
 } // namespace parser
 
@@ -760,3 +760,15 @@ JSON_DEFINE_OP(json::JNUMBER, long double, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JSTRING, std::string, , as_string)
 
 } // namespace json
+
+std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs)
+{
+    lhs << rhs.to_string();
+    return lhs;
+}
+
+std::ofstream &operator<<(std::ofstream &lhs, const json::jnode_t &rhs)
+{
+    lhs << rhs.to_string();
+    return lhs;
+}
