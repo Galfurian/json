@@ -51,4 +51,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 # Testing programs.
 # -----------------------------------------------------------------------------
 enable_testing()
-add_subdirectory(test)
+add_subdirectory(test EXCLUDE_FROM_ALL)
