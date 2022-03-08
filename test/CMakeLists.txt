@@ -18,9 +18,8 @@ target_include_directories(test_pointers PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(test_pointers json)
 add_test(NAME run_test_pointers COMMAND test_pointers)
 
-
 add_custom_target(
-    check COMMAND ${CMAKE_CTEST_COMMAND}
+    check_json COMMAND ${CMAKE_CTEST_COMMAND}
     DEPENDS
     test_data_types
     test_pointers
