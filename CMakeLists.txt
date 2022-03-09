@@ -39,6 +39,12 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
+# Enable standards-conformance mode for MSVC compilers that support this flag
+# (Visual C++ 2017 and later).
+if(MSVC)
+    add_compile_options(/permissive-)
+endif()
+
 # -----------------------------------------------------------------------------
 # C++ Library with Python wrapping.
 # -----------------------------------------------------------------------------
