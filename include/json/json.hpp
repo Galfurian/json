@@ -10,6 +10,10 @@
 #include <set>
 #include <map>
 
+#ifdef __cpp_lib_span
+#include <span>
+#endif
+
 namespace json
 {
 /// @brief JSON types.
@@ -297,6 +301,20 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
     return lhs;
 }
 
+#ifdef __cpp_lib_span
+template <typename T>
+json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
+{
+    lhs.clear();
+    lhs.set_type(json::JARRAY);
+    lhs.resize(rhs.size());
+    for (size_t i = 0; i < rhs.size(); ++i) {
+        lhs[i] << rhs[i];
+    }
+    return lhs;
+}
+#endif
+
 template <typename T>
 json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
 {
@@ -356,6 +374,21 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
     }
     return lhs;
 }
+
+#ifdef __cpp_lib_span
+template <typename T>
+const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
+{
+    if (lhs.get_type() == json::JARRAY) {
+        assert(rhs.size() == lhs.size());
+        // Load its elements.
+        for (size_t i = 0; i < lhs.size(); ++i) {
+            lhs[i] >> rhs[i];
+        }
+    }
+    return lhs;
+}
+#endif
 
 template <typename T>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
