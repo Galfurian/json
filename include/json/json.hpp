@@ -13,6 +13,7 @@
 #ifdef __cpp_lib_span
 #include <span>
 #endif
+#include <cassert>
 
 namespace json
 {
@@ -376,13 +377,15 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
 }
 
 #ifdef __cpp_lib_span
+// NOTE: span must have sufficient size to fit all elements of json array
 template <typename T>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
 {
     if (lhs.get_type() == json::JARRAY) {
-        assert(rhs.size() == lhs.size());
-        // Load its elements.
-        for (size_t i = 0; i < lhs.size(); ++i) {
+        assert(lhs.size() <= rhs.size());
+        // NOTE: This should not be necessary (see assert above) but for safety reasons, ensure there is no out of bounds acces
+        const std::size_t elem_count = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
+        for (size_t i = 0; i < elem_count; ++i) {
             lhs[i] >> rhs[i];
         }
     }
