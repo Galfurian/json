@@ -8,42 +8,55 @@
 # -----------------------------------------------------------------------------
 # Set the minimum CMake version.
 # -----------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.1...3.18)
+cmake_minimum_required(VERSION 3.1...3.22)
 
 # Set the project name.
 project(json CXX)
 
-# Set the default build type to Debug.
-if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to 'Debug' as none was specified.")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
-endif()
 
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
-# Set C++ Standard.
-set(CMAKE_CXX_STANDARD 20)
 
-# Set the other flags.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic-errors")
+# Only meddle with non-required compilation flags,
+# if we are the top level project to ensure consistency
+# with parent project otherwise
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(NOT hasParent)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # Set the default build type to Debug.
+    if(NOT CMAKE_BUILD_TYPE)
+        message(STATUS "Setting build type to 'Debug' as none was specified.")
+        set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+    endif()
 
-# Enable standards-conformance mode for MSVC compilers that support this flag
-# (Visual C++ 2017 and later).
-if(MSVC)
-    add_compile_options(/permissive-)
-endif()
+    # Set C++ Standard.
+    set(CMAKE_CXX_STANDARD 20)
+
+    # Set flags that affect compilation
+    if(MSVC)
+        # Enable standards-conformance mode for MSVC compilers that support this flag
+        # (Visual C++ 2017 and later).
+        add_compile_options(/permissive-)
+    else()
+        add_compile_options(
+            $<$<CONFIG:Debug>:-g3>
+            $<$<CONFIG:Debug>:-ggdb>
+            $<$<CONFIG:Debug>:-O0>
+        )
+    endif()
+
+    # Set Warning flags
+    if(MSVC)
+        add_compile_options(/W4)
+    else()
+        add_compile_options(-Wall)
+        add_compile_options(-Werror)
+        add_compile_options(-pedantic)
+        add_compile_options(-pedantic-errors)
+    endif()
+
+endif() # hasParent
 
 # -----------------------------------------------------------------------------
 # C++ Library with Python wrapping.
