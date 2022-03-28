@@ -7,6 +7,7 @@
 #include <cstring>
 #include <cassert>
 #include <algorithm>
+#include <stdexcept>
 
 #include "json/json.hpp"
 
@@ -106,7 +107,7 @@ static std::string deserialize(const std::string &ref)
             } else if (ref[i + 1] == 't') {
                 out.push_back('\t');
             } else if (ref[i + 1] == 'u' && i + 5 < ref.length()) {
-                unsigned long long v = 0;
+                unsigned long v = 0;
                 for (int j = 0; j < 4; j++) {
                     v *= 16;
                     if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0')
@@ -301,10 +302,18 @@ void jnode_t::sort(json_sort_function sort_function)
 const jnode_t &jnode_t::operator[](size_t i) const
 {
     if (type == JARRAY) {
-        assert(i < arr.size());
+        if (i >= arr.size()) {
+            std::stringstream ss;
+            ss << "Trying to access item at " << i << " of " << arr.size() << "\n";
+            throw std::out_of_range(ss.str().c_str());
+        }
         return arr[i];
     } else if (type == JOBJECT) {
-        assert(i < properties.size());
+        if (i >= properties.size()) {
+            std::stringstream ss;
+            ss << "Trying to access property at " << i << " of " << arr.size() << "\n";
+            throw std::out_of_range(ss.str().c_str());
+        }
         return get_iterator_at(properties, i)->second;
     }
     static jnode_t null_value(JNULL);
@@ -314,10 +323,18 @@ const jnode_t &jnode_t::operator[](size_t i) const
 jnode_t &jnode_t::operator[](size_t i)
 {
     if (type == JARRAY) {
-        assert(i < arr.size());
+        if (i >= arr.size()) {
+            std::stringstream ss;
+            ss << "Trying to access item at " << i << " of " << arr.size() << "\n";
+            throw std::out_of_range(ss.str().c_str());
+        }
         return arr[i];
     } else if (type == JOBJECT) {
-        assert(i < properties.size());
+        if (i >= properties.size()) {
+            std::stringstream ss;
+            ss << "Trying to access property at " << i << " of " << arr.size() << "\n";
+            throw std::out_of_range(ss.str().c_str());
+        }
         return get_iterator_at(properties, i)->second;
     }
     static jnode_t null_value(JNULL);
@@ -752,12 +769,10 @@ JSON_DEFINE_OP(json::JNUMBER, int, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, long, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::value_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, long long, json::value_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::value_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, float, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, double, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, long double, json::value_to_string, as_double)
-JSON_DEFINE_OP(json::JSTRING, std::string, , as_string)
+JSON_DEFINE_OP(json::JSTRING, std::string, json::value_to_string, as_string)
 
 } // namespace json
 

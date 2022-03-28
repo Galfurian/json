@@ -13,11 +13,9 @@ cmake_minimum_required(VERSION 3.1...3.22)
 # Set the project name.
 project(json CXX)
 
-
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
-
 # Only meddle with non-required compilation flags,
 # if we are the top level project to ensure consistency
 # with parent project otherwise
@@ -29,9 +27,6 @@ if(NOT hasParent)
         message(STATUS "Setting build type to 'Debug' as none was specified.")
         set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
     endif()
-
-    # Set C++ Standard.
-    set(CMAKE_CXX_STANDARD 20)
 
     # Set flags that affect compilation
     if(MSVC)
@@ -70,4 +65,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 # Testing programs.
 # -----------------------------------------------------------------------------
 enable_testing()
-add_subdirectory(test EXCLUDE_FROM_ALL)
+add_subdirectory(test)
