@@ -13,6 +13,8 @@ int main(int argc, char *argv[])
     double out_v4      = 1e-06;
     std::string out_v5 = "Hello world!";
     char out_v6        = 'a';
+    long out_v7        = 5;
+    long long out_v8   = 7;
     // Prepare the recipients.
     int in_v0;
     bool in_v1;
@@ -21,6 +23,8 @@ int main(int argc, char *argv[])
     double in_v4;
     std::string in_v5;
     char in_v6;
+    long in_v7;
+    long long in_v8;
     // Prepare the output json tree.
     json::jnode_t out_root(json::JOBJECT);
     // Write the values.
@@ -31,6 +35,8 @@ int main(int argc, char *argv[])
     out_root["v4"] << out_v4;
     out_root["v5"] << out_v5;
     out_root["v6"] << out_v6;
+    out_root["v7"] << out_v7;
+    out_root["v8"] << out_v8;
     // Create the json string.
     std::string json = out_root.to_string(false, 0);
     // Parse the json string.
@@ -43,6 +49,8 @@ int main(int argc, char *argv[])
     in_root["v4"] >> in_v4;
     in_root["v5"] >> in_v5;
     in_root["v6"] >> in_v6;
+    in_root["v7"] >> in_v7;
+    in_root["v8"] >> in_v8;
     // Check equivalence.
     if (in_v0 != out_v0) {
         std::cerr << "v0 : " << in_v0 << " != " << out_v0 << "\n";
@@ -70,6 +78,14 @@ int main(int argc, char *argv[])
     }
     if (in_v6 != out_v6) {
         std::cerr << "v6 : " << in_v6 << " != " << out_v6 << "\n";
+        return 1;
+    }
+    if (in_v7 != out_v7) {
+        std::cerr << "v7 : " << in_v7 << " != " << out_v7 << "\n";
+        return 1;
+    }
+    if (in_v8 != out_v8) {
+        std::cerr << "v8 : " << in_v8 << " != " << out_v8 << "\n";
         return 1;
     }
 
