@@ -26,26 +26,34 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
 
 } // namespace json
 
-int main(int argc, char *argv[])
+int main(int, char *[])
 {
     // Define the values.
-    Person out_p("Json", 47);
+    std::vector<Person> out_ps;
+    out_ps.push_back(Person("Json", 47));
+    out_ps.push_back(Person("Terry", 23));
     // Prepare the recipients.
-    Person in_p;
+    std::vector<Person> in_ps;
     // Prepare the output json tree.
     json::jnode_t out_root(json::JOBJECT);
     // Write the values.
-    out_root["person"] << out_p;
+    out_root["persons"] << out_ps;
     // Create the json string.
     std::string json = out_root.to_string(false, 0);
     // Parse the json string.
     json::jnode_t in_root = json::parser::parse(json);
     // Extract the values.
-    in_root["person"] >> in_p;
+    in_root["persons"] >> in_ps;
     // Check equivalence.
-    if (in_p != out_p) {
-        std::cerr << "p : " << in_p << " != " << out_p << "\n";
+    if (in_ps.size() != out_ps.size()) {
+        std::cerr << "size : " << in_ps.size() << " != " << out_ps.size() << "\n";
         return 1;
+    }
+    for (unsigned i = 0; i < in_ps.size(); ++i) {
+        if (in_ps[i] != out_ps[i]) {
+            std::cerr << "p[" << i << "] : " << in_ps[i] << " != " << out_ps[i] << "\n";
+            return 1;
+        }
     }
     return 0;
 }

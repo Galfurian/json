@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-int main(int argc, char *argv[])
+int main(int, char *[])
 {
     // Define the values.
     int out_v0         = 1;
