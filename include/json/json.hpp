@@ -222,21 +222,29 @@ public:
     /// @param tabsize	The dimension of tabulation (if pretto == true).
     std::string to_string(bool pretty = true, unsigned tabsize = 4) const;
 
+    /// @brief Returns a constant iterator pointing to the **beginning** of the property map.
+    /// @return the iterator.
     property_map_t::const_iterator begin() const
     {
         return properties.begin();
     }
 
+    /// @brief Returns an iterator pointing to the **beginning** of the property map.
+    /// @return the iterator.
     property_map_t::iterator begin()
     {
         return properties.begin();
     }
 
+    /// @brief Returns a constant iterator pointing to the **end** of the property map.
+    /// @return the iterator.
     property_map_t::const_iterator end() const
     {
         return properties.end();
     }
 
+    /// @brief Returns an iterator pointing to the **end** of the property map.
+    /// @return the iterator.
     property_map_t::iterator end()
     {
         return properties.end();
