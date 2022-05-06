@@ -76,7 +76,7 @@ if(DOXYGEN_FOUND)
         GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
         GIT_TAG 4cd62308d825fe0396d2f66ffbab45d0e247724c # 2.0.3
     )
-    FetchContent_GetProperties(bitvector)
+    FetchContent_GetProperties(doxygenawesome)
     if(NOT doxygenawesome_POPULATED)
         FetchContent_MakeAvailable(doxygenawesome)
     endif()

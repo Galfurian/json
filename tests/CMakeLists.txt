@@ -5,9 +5,6 @@
 # @update : 03/01/2022
 # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Tests
-# -----------------------------------------------------------------------------
 add_executable(${PROJECT_NAME}_test_data_types ${CMAKE_CURRENT_SOURCE_DIR}/src/test_data_types.cpp)
 target_include_directories(${PROJECT_NAME}_test_data_types PRIVATE ${PROJECT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(${PROJECT_NAME}_test_data_types json)
