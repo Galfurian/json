@@ -25,7 +25,7 @@ jobs:
       - name: Generate documentation
         run: |
           cmake -B build -D DOXYGEN_WARN_AS_ERROR=NO
-          cmake --build build --target malg_documentation
+          cmake --build build --target json_documentation
   test:
     name: Build
     strategy:
