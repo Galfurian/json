@@ -13,8 +13,8 @@ cmake_minimum_required(VERSION 2.8...3.22)
 # Set the project name.
 project(json CXX)
 
-# Set C++ Standard.
-set(CMAKE_CXX_STANDARD 17)
+# We need this in order to import external projects.
+include(FetchContent)
 
 # -----------------------------------------------------------------------------
 # Add options.
@@ -27,23 +27,23 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 # LIBRARY
 # -----------------------------------------------------------------------------
 # Add the C++ library.
-add_library(${PROJECT_NAME} src/json/json.cpp)
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(json src/json/json.cpp)
+add_library(json::json ALIAS json)
 # Inlcude header directories.
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(${PROJECT_NAME} INTERFACE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(json INTERFACE _CRT_SECURE_NO_WARNINGS)
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} INTERFACE /WX)
+        target_compile_options(json INTERFACE /WX)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} INTERFACE -Werror)
+        target_compile_options(json INTERFACE -Werror)
     endif()
 endif()
 
@@ -51,14 +51,14 @@ if(STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(${PROJECT_NAME} INTERFACE /experimental:external)
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:anglebrackets)
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:W0)
+        target_compile_options(json INTERFACE /experimental:external)
+        target_compile_options(json INTERFACE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(json INTERFACE /external:anglebrackets)
+        target_compile_options(json INTERFACE /external:W0)
 
-        target_compile_options(${PROJECT_NAME} INTERFACE /W4)
+        target_compile_options(json INTERFACE /W4)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wconversion -pedantic)
+        target_compile_options(json INTERFACE -Wall -Wextra -Wconversion -pedantic)
     endif()
 endif()
 
@@ -67,9 +67,6 @@ endif()
 # -----------------------------------------------------------------------------
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    # Doxygen theme
-    include(FetchContent)
-    
     message(STATUS "Retrieving `doxygen-awesome-css`...")
     FetchContent_Declare(
         doxygenawesome
@@ -91,7 +88,7 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
     
-    doxygen_add_docs(${PROJECT_NAME}_documentation
+    doxygen_add_docs(json_documentation
         ./include/json/json.hpp
         LICENSE.md
         README.md
