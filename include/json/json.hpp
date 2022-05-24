@@ -280,6 +280,8 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 
 } // namespace parser
 
+} // namespace json
+
 // == From C++ to JSON ========================================================
 template <typename T>
 json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
@@ -460,8 +462,6 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
         rhs = static_cast<type>(lhs.as_int());                           \
         return lhs;                                                      \
     }
-
-} // namespace json
 
 std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs);
 
