@@ -286,6 +286,12 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 template <typename T>
 json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
 
+template <typename T>
+json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
+{
+    return lhs << (*rhs);
+}
+
 inline json::jnode_t &operator<<(json::jnode_t &lhs, char const *rhs)
 {
     lhs.set_type(json::JSTRING);
@@ -369,6 +375,12 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs)
 // == From JSON to C++ ========================================================
 template <typename T>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
+
+template <typename T>
+const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
+{
+    return lhs >> (*rhs);
+}
 
 template <typename T>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
