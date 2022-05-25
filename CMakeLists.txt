@@ -19,6 +19,7 @@ include(FetchContent)
 # -----------------------------------------------------------------------------
 # Add options.
 # -----------------------------------------------------------------------------
+option(STRICT_TYPE_CHECK "Enable strict json type checking at runtime" OFF)
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
@@ -27,10 +28,10 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 # LIBRARY
 # -----------------------------------------------------------------------------
 # Add the C++ library.
-add_library(json src/json/json.cpp)
+add_library(json INTERFACE)
 add_library(json::json ALIAS json)
 # Inlcude header directories.
-target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
@@ -45,6 +46,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Cl
     if(WARNINGS_AS_ERRORS)
         target_compile_options(json INTERFACE -Werror)
     endif()
+endif()
+
+if(STRICT_TYPE_CHECK)
+    # Pass the define to the code.
+    target_compile_definitions(json INTERFACE STRICT_TYPE_CHECK)
 endif()
 
 if(STRICT_WARNINGS)
