@@ -4,6 +4,9 @@
 #include <iostream>
 #include <sstream>
 
+namespace json
+{
+    
 template <>
 json::jnode_t &operator<<(json::jnode_t &lhs, const Person &rhs)
 {
@@ -20,6 +23,8 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
     lhs["age"] >> rhs.age;
     return lhs;
 }
+
+} // namespace json
 
 int main(int, char *[])
 {

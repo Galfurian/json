@@ -1,3 +1,7 @@
+/// @file json.hpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief 
+
 #pragma once
 
 #include <iostream>
@@ -13,10 +17,12 @@
 #ifdef __cpp_lib_span
 #include <span>
 #endif
+
 #include <cassert>
 
 namespace json
 {
+    
 /// @brief JSON types.
 enum jtype_t {
     JSTRING,
@@ -280,8 +286,6 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 
 } // namespace parser
 
-} // namespace json
-
 // == From C++ to JSON ========================================================
 template <typename T>
 json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
@@ -460,6 +464,8 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     }
     return lhs;
 }
+
+} // namespace json
 
 /// @brief Define the pair of operators required to handle C++ enums.
 #define JSON_DEFINE_OP_ENUM(type)                                        \

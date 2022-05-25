@@ -49,6 +49,7 @@ static inline std::string &replace_all(std::string &s, const std::string &what, 
     }
     return s;
 }
+
 static inline std::string &replace_all(std::string &s, char what, const std::string &with)
 {
     size_t i = 0;
@@ -745,8 +746,6 @@ bool write_file(const std::string &filename,
 
 } // namespace parser
 
-} // namespace json
-
 #define JSON_DEFINE_OP(json_type, type, write_function, read_function)   \
     template <>                                                          \
     json::jnode_t &operator<<(json::jnode_t &lhs, const type &rhs)       \
@@ -778,6 +777,7 @@ JSON_DEFINE_OP(json::JNUMBER, double, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, long double, json::value_to_string, as_double)
 JSON_DEFINE_OP(json::JSTRING, std::string, json::value_to_string, as_string)
 
+} // namespace json
 
 std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs)
 {
