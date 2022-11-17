@@ -77,8 +77,6 @@ if(DOXYGEN_FOUND)
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW NO)
-    set(DOXYGEN_HTML_HEADER ${PROJECT_SOURCE_DIR}/docs/header.html)
-    set(DOXYGEN_HTML_FOOTER ${PROJECT_SOURCE_DIR}/docs/footer.html)
     set(DOXYGEN_HTML_STYLESHEET ${PROJECT_SOURCE_DIR}/docs/doxygen.css)
     doxygen_add_docs(
         ${PROJECT_NAME}_documentation
