@@ -27,6 +27,7 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 # Add the C++ library.
 add_library(json INTERFACE)
 add_library(json::json ALIAS json)
+
 # Inlcude header directories.
 target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 
@@ -36,6 +37,7 @@ target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
     target_compile_definitions(json INTERFACE _CRT_SECURE_NO_WARNINGS)
+
     if(WARNINGS_AS_ERRORS)
         target_compile_options(json INTERFACE /WX)
     endif()
@@ -71,36 +73,16 @@ endif()
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
-    set(DOXYGEN_OUTPUT_DIR ${PROJECT_BINARY_DIR})
-    set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
-
-    # Replace variables inside @@ with the current values.
-    set(DOXYFILE_IN ${PROJECT_SOURCE_DIR}/docs/doxyfile.in)
-    set(DOXYFILE_OUT ${PROJECT_BINARY_DIR}/doxyfile.out)
-    configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
-
-    # Copy the files needd by the documentation.
-    set(DOXYFILE_CSS ${PROJECT_SOURCE_DIR}/docs/doxygen.css)
-    set(DOXYFILE_HEADER ${PROJECT_SOURCE_DIR}/docs/header.html)
-    set(DOXYFILE_FOOTER ${PROJECT_SOURCE_DIR}/docs/footer.html)
-
-    # Doxygen won't create this for us.
-    file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
-
-    add_custom_command(
-        OUTPUT ${DOXYGEN_INDEX_FILE}
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-        MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-        COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-    add_custom_target(
+    set(DOXYGEN_PROJECT_NAME "JSON Library")
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
+    set(DOXYGEN_SHOW_INCLUDE_FILES NO)
+    set(DOXYGEN_GENERATE_TREEVIEW NO)
+    set(DOXYGEN_HTML_HEADER ${PROJECT_SOURCE_DIR}/docs/header.html)
+    set(DOXYGEN_HTML_FOOTER ${PROJECT_SOURCE_DIR}/docs/footer.html)
+    set(DOXYGEN_HTML_STYLESHEET ${PROJECT_SOURCE_DIR}/docs/doxygen.css)
+    doxygen_add_docs(
         ${PROJECT_NAME}_documentation
-        DEPENDS
-        ${DOXYGEN_INDEX_FILE}
-        ${DOXYFILE_IN}
-        ${DOXYFILE_CSS}
-        ${DOXYFILE_HEADER}
-        ${DOXYFILE_FOOTER}
+        ${PROJECT_SOURCE_DIR}/include/json/json.hpp
     )
 endif()
 

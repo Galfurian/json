@@ -672,6 +672,7 @@ jnode_t json_parse(std::vector<token_t> &tokens, int i, int &r)
 
 } // namespace detail
 
+/// @brief Contains parsing functions.
 namespace parser
 {
 
