@@ -13,9 +13,6 @@ cmake_minimum_required(VERSION 2.8...3.22)
 # Set the project name.
 project(json CXX)
 
-# We need this in order to import external projects.
-include(FetchContent)
-
 # -----------------------------------------------------------------------------
 # Add options.
 # -----------------------------------------------------------------------------
@@ -72,32 +69,38 @@ endif()
 # DOCUMENTATION
 # -----------------------------------------------------------------------------
 find_package(Doxygen)
-if(DOXYGEN_FOUND)
-    message(STATUS "Retrieving `doxygen-awesome-css`...")
-    FetchContent_Declare(
-        doxygenawesome
-        GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
-        GIT_TAG 4cd62308d825fe0396d2f66ffbab45d0e247724c # 2.0.3
-    )
-    FetchContent_GetProperties(doxygenawesome)
-    if(NOT doxygenawesome_POPULATED)
-        FetchContent_MakeAvailable(doxygenawesome)
-    endif()
 
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
-    set(DOXYGEN_GENERATE_TREEVIEW YES)
-    set(DOXYGEN_HTML_HEADER ${doxygenawesome_SOURCE_DIR}/doxygen-custom/header.html)
-    set(DOXYGEN_HTML_EXTRA_STYLESHEET ${doxygenawesome_SOURCE_DIR}/doxygen-awesome.css)
-    set(DOXYGEN_HTML_EXTRA_FILES
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-fragment-copy-button.js
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-paragraph-link.js
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_OUTPUT_DIR ${PROJECT_BINARY_DIR})
+    set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
+
+    # Replace variables inside @@ with the current values.
+    set(DOXYFILE_IN ${PROJECT_SOURCE_DIR}/docs/doxyfile.in)
+    set(DOXYFILE_OUT ${PROJECT_BINARY_DIR}/doxyfile.out)
+    configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+
+    # Copy the files needd by the documentation.
+    set(DOXYFILE_CSS ${PROJECT_SOURCE_DIR}/docs/doxygen.css)
+    set(DOXYFILE_HEADER ${PROJECT_SOURCE_DIR}/docs/header.html)
+    set(DOXYFILE_FOOTER ${PROJECT_SOURCE_DIR}/docs/footer.html)
+
+    # Doxygen won't create this for us.
+    file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+
+    add_custom_command(
+        OUTPUT ${DOXYGEN_INDEX_FILE}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+        MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+        COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
-    
-    doxygen_add_docs(json_documentation
-        ./include/json/json.hpp
-        LICENSE.md
-        README.md
+    add_custom_target(
+        ${PROJECT_NAME}_documentation
+        DEPENDS
+        ${DOXYGEN_INDEX_FILE}
+        ${DOXYFILE_IN}
+        ${DOXYFILE_CSS}
+        ${DOXYFILE_HEADER}
+        ${DOXYFILE_FOOTER}
     )
 endif()
 
