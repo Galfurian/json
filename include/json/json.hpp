@@ -355,13 +355,25 @@ inline int next_whitespace(const std::string &source, int index)
     while (index < slength) {
         if (source[index] == '"') {
             ++index;
-            while ((index < slength) && (source[index] != '"' || source[index - 1] == '\\')) {
+            while (index < slength) {
+                if (source[index] == '"') {
+                    if (source[index - 1] != '\\')
+                        break;
+                    else if ((source[index - 2] == '\\') && (source[index - 3] != '\\'))
+                        break;
+                }
                 ++index;
             }
         }
         if (source[index] == '\'') {
             ++index;
-            while ((index < slength) && (source[index] != '\'' || source[index - 1] == '\\')) {
+            while (index < slength) {
+                if (source[index] == '\'') {
+                    if (source[index - 1] != '\\')
+                        break;
+                    else if (source[index - 2] == '\\')
+                        break;
+                }
                 ++index;
             }
         }
@@ -483,24 +495,36 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
     while (index >= 0) {
         int next        = detail::next_whitespace(source, index);
         std::string str = source.substr(index, next - index);
-        size_t k        = 0;
+        std::size_t k = 0;
         while (k < str.length()) {
             if (str[k] == '"') {
-                size_t tmp_k = k + 1;
-                while (tmp_k < str.length() && (str[tmp_k] != '"' || str[tmp_k - 1] == '\\')) {
-                    ++tmp_k;
+                std::size_t j = k + 1;
+                while (j < str.length()) {
+                    if (str[j] == '"') {
+                        if (str[j - 1] != '\\')
+                            break;
+                        else if ((str[j - 2] == '\\') && (str[j - 3] != '\\'))
+                            break;
+                    }
+                    ++j;
                 }
-                tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
-                k = tmp_k + 1;
+                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
+                k = j + 1;
                 continue;
             }
             if (str[k] == '\'') {
-                size_t tmp_k = k + 1;
-                while (tmp_k < str.length() && (str[tmp_k] != '\'' || str[tmp_k - 1] == '\\')) {
-                    ++tmp_k;
+                std::size_t j = k + 1;
+                while (j < str.length()) {
+                    if (str[j] == '\'') {
+                        if (str[j - 1] != '\\')
+                            break;
+                        else if (str[j - 2] == '\\')
+                            break;
+                    }
+                    ++j;
                 }
-                tokens.push_back(token_t(str.substr(k + 1, tmp_k - k - 1), STRING, line_number));
-                k = tmp_k + 1;
+                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
+                k = j + 1;
                 continue;
             }
             if (str[k] == ',') {
@@ -602,7 +626,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
 /// @param i the internal index we use to handle tokens.
 /// @param r the index we are currently dealing with.
 /// @return the generated json sub-tree.
-jnode_t json_parse(std::vector<token_t> &tokens, int i, int &r)
+jnode_t json_parse(std::vector<token_t> &tokens, std::size_t i, std::size_t &r)
 {
     jnode_t current;
     // Set line number.
@@ -616,11 +640,15 @@ jnode_t json_parse(std::vector<token_t> &tokens, int i, int &r)
         while (tokens[i].type != CURLY_CLOSE) {
             std::string key = tokens[i].value;
             i += 2; // k+1 should be ':'
-            int j        = i;
-            current[key] = json_parse(tokens, i, j);
-            i            = j;
+            std::size_t j = i;
+            current[key]  = json_parse(tokens, i, j);
+            i             = j;
             if (tokens[i].type == COMMA) {
                 ++i;
+            }
+            if (i >= tokens.size()) {
+                std::cerr << "We ran out of tokens at token `" << r << "`, at line `" << current.get_line_number() << "`\n";
+                std::exit(1);
             }
         }
     } else if (tokens[i].type == BRACKET_OPEN) {
@@ -629,7 +657,7 @@ jnode_t json_parse(std::vector<token_t> &tokens, int i, int &r)
         // Set the value.
         ++i;
         while (tokens[i].type != BRACKET_CLOSE) {
-            int j = i;
+            std::size_t j = i;
             current.add_element(json_parse(tokens, i, j));
             i = j;
             if (tokens[i].type == COMMA) {
@@ -645,8 +673,8 @@ jnode_t json_parse(std::vector<token_t> &tokens, int i, int &r)
         // Set type.
         current.set_type(JSTRING);
         // Replace protected special characters, with the actual ones.
-        detail::replace_all(tokens[i].value, "\\n", "\n");
-        detail::replace_all(tokens[i].value, "\\\"", "\"");
+        // detail::replace_all(tokens[i].value, "\\n", "\n");
+        // detail::replace_all(tokens[i].value, "\\\"", "\"");
         // Set the value.
         current.set_value(tokens[i].value);
     } else if (tokens[i].type == BOOLEAN) {
@@ -681,9 +709,12 @@ namespace parser
 /// @return the root of the generated json tree.
 jnode_t parse(const std::string &json_string)
 {
-    int k = 0;
+    std::size_t k = 0;
     std::vector<detail::token_t> tokens;
-    return detail::json_parse(detail::tokenize(json_string, tokens), 0, k);
+    // Extract the tokens.
+    detail::tokenize(json_string, tokens);
+    // Parse the tokens.
+    return detail::json_parse(tokens, 0UL, k);
 }
 
 /// @brief Parse the json file.
@@ -1038,12 +1069,12 @@ std::string jnode_t::to_string_d(int depth, bool pretty, unsigned tabsize) const
     if (type == JSTRING) {
         std::string str = value;
         // Replace special characters, with UTF-8 supported ones.
-        detail::replace_all(str, '\\', "\\\\");
-        detail::replace_all(str, '\"', "\\\"");
-        detail::replace_all(str, '\t', "\\t");
-        detail::replace_all(str, "\r\n", "\\r\\n");
-        detail::replace_all(str, '\r', "\\r");
-        detail::replace_all(str, '\n', "\\n");
+        // detail::replace_all(str, '\\', "\\\\");
+        // detail::replace_all(str, '\"', "\\\"");
+        // detail::replace_all(str, '\t', "\\t");
+        // detail::replace_all(str, "\r\n", "\\r\\n");
+        // detail::replace_all(str, '\r', "\\r");
+        // detail::replace_all(str, '\n', "\\n");
         return std::string("\"") + str + std::string("\"");
     }
     if (type == JNUMBER)
