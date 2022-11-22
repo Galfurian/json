@@ -13,16 +13,12 @@ cmake_minimum_required(VERSION 2.8...3.22)
 # Set the project name.
 project(json CXX)
 
-# We need this in order to import external projects.
-include(FetchContent)
-
 # -----------------------------------------------------------------------------
 # Add options.
 # -----------------------------------------------------------------------------
-option(STRICT_TYPE_CHECK "Enable strict json type checking at runtime" OFF)
-option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
-option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
+option(JSON_STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(JSON_WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
+option(JSON_BUILD_EXAMPLES "Build examples" OFF)
 
 # -----------------------------------------------------------------------------
 # LIBRARY
@@ -30,81 +26,65 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 # Add the C++ library.
 add_library(json INTERFACE)
 add_library(json::json ALIAS json)
+
 # Inlcude header directories.
 target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
+set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -std=c++11")
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(json INTERFACE _CRT_SECURE_NO_WARNINGS)
-    if(WARNINGS_AS_ERRORS)
-        target_compile_options(json INTERFACE /WX)
-    endif()
+    set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -D_CRT_SECURE_NO_WARNINGS")
+
+    if(JSON_WARNINGS_AS_ERRORS)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /WX")
+    endif(JSON_WARNINGS_AS_ERRORS)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(WARNINGS_AS_ERRORS)
-        target_compile_options(json INTERFACE -Werror)
-    endif()
+    if(JSON_WARNINGS_AS_ERRORS)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -Werror")
+    endif(JSON_WARNINGS_AS_ERRORS)
 endif()
 
-if(STRICT_TYPE_CHECK)
-    # Pass the define to the code.
-    target_compile_definitions(json INTERFACE STRICT_TYPE_CHECK)
-endif()
-
-if(STRICT_WARNINGS)
+if(JSON_STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(json INTERFACE /experimental:external)
-        target_compile_options(json INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json INTERFACE /external:anglebrackets)
-        target_compile_options(json INTERFACE /external:W0)
-
-        target_compile_options(json INTERFACE /W4)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /experimental:external")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:I ${CMAKE_BINARY_DIR}")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:anglebrackets")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:W0")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /W4")
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(json INTERFACE -Wall -Wextra -Wconversion -pedantic)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -Wall -Wextra -Wconversion -pedantic")
     endif()
-endif()
+endif(JSON_STRICT_WARNINGS)
+
+string(REPLACE " " ";" JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS})
 
 # -----------------------------------------------------------------------------
 # DOCUMENTATION
 # -----------------------------------------------------------------------------
 find_package(Doxygen)
-if(DOXYGEN_FOUND)
-    message(STATUS "Retrieving `doxygen-awesome-css`...")
-    FetchContent_Declare(
-        doxygenawesome
-        GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
-        GIT_TAG 4cd62308d825fe0396d2f66ffbab45d0e247724c # 2.0.3
-    )
-    FetchContent_GetProperties(doxygenawesome)
-    if(NOT doxygenawesome_POPULATED)
-        FetchContent_MakeAvailable(doxygenawesome)
-    endif()
 
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
-    set(DOXYGEN_GENERATE_TREEVIEW YES)
-    set(DOXYGEN_HTML_HEADER ${doxygenawesome_SOURCE_DIR}/doxygen-custom/header.html)
-    set(DOXYGEN_HTML_EXTRA_STYLESHEET ${doxygenawesome_SOURCE_DIR}/doxygen-awesome.css)
-    set(DOXYGEN_HTML_EXTRA_FILES
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-fragment-copy-button.js
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-paragraph-link.js
-        ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
-    )
-    
-    doxygen_add_docs(json_documentation
-        ./include/json/json.hpp
-        LICENSE.md
-        README.md
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_PROJECT_NAME "JSON Library")
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
+    set(DOXYGEN_SHOW_INCLUDE_FILES NO)
+    set(DOXYGEN_GENERATE_TREEVIEW NO)
+    set(DOXYGEN_HTML_STYLESHEET ${PROJECT_SOURCE_DIR}/docs/doxygen.css)
+    doxygen_add_docs(
+        ${PROJECT_NAME}_documentation
+        ${PROJECT_SOURCE_DIR}/include/json/json.hpp
     )
 endif()
 
 # -----------------------------------------------------------------------------
 # Examples
 # -----------------------------------------------------------------------------
-if(BUILD_EXAMPLES)
+if(JSON_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
