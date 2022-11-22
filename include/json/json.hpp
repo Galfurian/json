@@ -21,6 +21,8 @@
 #include <span>
 #endif
 
+#include "ordered_map/ordered_map.hpp"
+
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json
 {
@@ -41,7 +43,7 @@ enum jtype_t {
 class jnode_t {
 public:
     /// Map that allows to easily access a child node based on the name.
-    typedef std::map<std::string, jnode_t> property_map_t;
+    typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
     /// Sorting function.
     typedef bool (*sort_function_t)(const jnode_t &, const jnode_t &);
 
@@ -495,7 +497,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
     while (index >= 0) {
         int next        = detail::next_whitespace(source, index);
         std::string str = source.substr(index, next - index);
-        std::size_t k = 0;
+        std::size_t k   = 0;
         while (k < str.length()) {
             if (str[k] == '"') {
                 std::size_t j = k + 1;
@@ -931,7 +933,8 @@ inline jnode_t &jnode_t::set_line_number(int _line_number)
 
 inline jnode_t &jnode_t::add_property(const std::string &key)
 {
-    return (properties[key] = jnode_t());
+    properties.push(key, jnode_t());
+    return std::prev(std::end(properties))->second;
 }
 
 inline void jnode_t::remove_property(const std::string &key)
@@ -944,7 +947,8 @@ inline void jnode_t::remove_property(const std::string &key)
 
 inline jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 {
-    return (properties[key] = node);
+    properties.push(key, node);
+    return std::prev(std::end(properties))->second;
 }
 
 inline jnode_t &jnode_t::add_element(const jnode_t &node)
@@ -986,7 +990,7 @@ inline const jnode_t &jnode_t::operator[](size_t i) const
     } else if (type == JOBJECT) {
         if (i >= properties.size())
             throw RangeError(i, properties.size());
-        property_map_t::const_iterator it = detail::get_iterator_at(properties, i);
+        property_map_t::const_iterator it = properties.at(i);
         if (it == properties.end())
             throw std::out_of_range("Reached end of properties.");
         return it->second;
@@ -1004,7 +1008,7 @@ inline jnode_t &jnode_t::operator[](size_t i)
     } else if (type == JOBJECT) {
         if (i >= properties.size())
             throw RangeError(i, properties.size());
-        property_map_t::iterator it = detail::get_iterator_at(properties, i);
+        property_map_t::iterator it = properties.at(i);
         if (it == properties.end())
             throw std::out_of_range("Reached end of properties.");
         return it->second;

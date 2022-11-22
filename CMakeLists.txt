@@ -16,10 +16,9 @@ project(json CXX)
 # -----------------------------------------------------------------------------
 # Add options.
 # -----------------------------------------------------------------------------
-option(STRICT_TYPE_CHECK "Enable strict json type checking at runtime" OFF)
-option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
-option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
+option(JSON_STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(JSON_WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
+option(JSON_BUILD_EXAMPLES "Build examples" OFF)
 
 # -----------------------------------------------------------------------------
 # LIBRARY
@@ -34,38 +33,36 @@ target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
+set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -std=c++11")
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(json INTERFACE _CRT_SECURE_NO_WARNINGS)
+    set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -D_CRT_SECURE_NO_WARNINGS")
 
-    if(WARNINGS_AS_ERRORS)
-        target_compile_options(json INTERFACE /WX)
-    endif()
+    if(JSON_WARNINGS_AS_ERRORS)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /WX")
+    endif(JSON_WARNINGS_AS_ERRORS)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(WARNINGS_AS_ERRORS)
-        target_compile_options(json INTERFACE -Werror)
-    endif()
+    if(JSON_WARNINGS_AS_ERRORS)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -Werror")
+    endif(JSON_WARNINGS_AS_ERRORS)
 endif()
 
-if(STRICT_TYPE_CHECK)
-    # Pass the define to the code.
-    target_compile_definitions(json INTERFACE STRICT_TYPE_CHECK)
-endif()
-
-if(STRICT_WARNINGS)
+if(JSON_STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(json INTERFACE /experimental:external)
-        target_compile_options(json INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json INTERFACE /external:anglebrackets)
-        target_compile_options(json INTERFACE /external:W0)
-
-        target_compile_options(json INTERFACE /W4)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /experimental:external")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:I ${CMAKE_BINARY_DIR}")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:anglebrackets")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /external:W0")
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} /W4")
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(json INTERFACE -Wall -Wextra -Wconversion -pedantic)
+        set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -Wall -Wextra -Wconversion -pedantic")
     endif()
-endif()
+endif(JSON_STRICT_WARNINGS)
+
+string(REPLACE " " ";" JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS})
 
 # -----------------------------------------------------------------------------
 # DOCUMENTATION
@@ -87,7 +84,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Examples
 # -----------------------------------------------------------------------------
-if(BUILD_EXAMPLES)
+if(JSON_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
