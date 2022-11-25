@@ -44,6 +44,8 @@ class jnode_t {
 public:
     /// Map that allows to easily access a child node based on the name.
     typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
+    typedef property_map_t::const_iterator const_iterator;
+    typedef property_map_t::iterator iterator;
     /// Sorting function.
     typedef bool (*sort_function_t)(const jnode_t &, const jnode_t &);
 
@@ -126,15 +128,15 @@ public:
     /// @return A reference to the newly created property.
     jnode_t &add_property(const std::string &key);
 
-    /// @brief Remove the property with the given key.
-    /// @param key The key of the property.
-    void remove_property(const std::string &key);
-
     /// @brief Ads a given property with the given key.
     /// @param key  The key of the property.
     /// @param node The property to set.
     /// @return A reference to the newly created property.
     jnode_t &add_property(const std::string &key, const jnode_t &node);
+
+    /// @brief Remove the property with the given key.
+    /// @param key The key of the property.
+    void remove_property(const std::string &key);
 
     /// @brief Adds the element to the array.
     /// @param node The node to add.
@@ -198,7 +200,7 @@ public:
     /// @return the iterator.
     property_map_t::iterator end();
 
-private:
+    // private:
     /// @brief Turns the json object to a formatted string.
     /// @param depth    The current depth, used for indentation (if pretty == true).
     /// @param pretty   Enable/Disable pretty print of json.
@@ -643,8 +645,8 @@ jnode_t json_parse(std::vector<token_t> &tokens, std::size_t i, std::size_t &r)
             std::string key = tokens[i].value;
             i += 2; // k+1 should be ':'
             std::size_t j = i;
-            current[key]  = json_parse(tokens, i, j);
-            i             = j;
+            current.add_property(key, json_parse(tokens, i, j));
+            i = j;
             if (tokens[i].type == COMMA) {
                 ++i;
             }
@@ -933,22 +935,17 @@ inline jnode_t &jnode_t::set_line_number(int _line_number)
 
 inline jnode_t &jnode_t::add_property(const std::string &key)
 {
-    properties.push(key, jnode_t());
-    return std::prev(std::end(properties))->second;
-}
-
-inline void jnode_t::remove_property(const std::string &key)
-{
-    property_map_t::iterator it = properties.find(key);
-    if (it != properties.end()) {
-        properties.erase(it);
-    }
+    return properties.set(key, jnode_t())->second;
 }
 
 inline jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 {
-    properties.push(key, node);
-    return std::prev(std::end(properties))->second;
+    return properties.set(key, node)->second;
+}
+
+inline void jnode_t::remove_property(const std::string &key)
+{
+    properties.erase(key);
 }
 
 inline jnode_t &jnode_t::add_element(const jnode_t &node)
@@ -1393,12 +1390,14 @@ JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::detail::number_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, long, json::detail::number_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_int)
 JSON_DEFINE_OP(json::JNUMBER, float, json::detail::number_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, double, json::detail::number_to_string, as_double)
 JSON_DEFINE_OP(json::JNUMBER, long double, json::detail::number_to_string, as_double)
 JSON_DEFINE_OP(json::JSTRING, std::string, json::detail::number_to_string, as_string)
+#if __cplusplus >= 201103L
+JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_int)
+JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_int)
+#endif
 
 #undef JSON_DEFINE_OP
 

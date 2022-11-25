@@ -5,26 +5,18 @@
 
 int main(int, char *[])
 {
-    // Define the values.
-    int out_v0         = 1;
-    bool out_v1        = false;
-    float out_v2       = 1.5f;
-    double out_v3      = 1e06;
-    double out_v4      = 1e-06;
-    std::string out_v5 = "Hello world!";
-    char out_v6        = 'a';
-    long out_v7        = 5;
-    long long out_v8   = 7;
-    // Prepare the recipients.
-    int in_v0;
-    bool in_v1;
-    float in_v2;
-    double in_v3;
-    double in_v4;
-    std::string in_v5;
-    char in_v6;
-    long in_v7;
-    long long in_v8;
+    // Define the values and their recipients.
+    int in_v0, out_v0         = 1;
+    bool in_v1, out_v1        = false;
+    float in_v2, out_v2       = 1.5f;
+    double in_v3, out_v3      = 1e06;
+    double in_v4, out_v4      = 1e-06;
+    std::string in_v5, out_v5 = "Hello world!";
+    char in_v6, out_v6        = 'a';
+    long in_v7, out_v7        = 5;
+#if __cplusplus >= 201103L
+    long long in_v8, out_v8   = 7;
+#endif
     // Prepare the output json tree.
     json::jnode_t out_root(json::JOBJECT);
     // Write the values.
@@ -36,7 +28,9 @@ int main(int, char *[])
     out_root["v5"] << out_v5;
     out_root["v6"] << out_v6;
     out_root["v7"] << out_v7;
+#if __cplusplus >= 201103L
     out_root["v8"] << out_v8;
+#endif
     // Create the json string.
     std::string json = out_root.to_string(false, 0);
     // Parse the json string.
@@ -50,7 +44,9 @@ int main(int, char *[])
     in_root["v5"] >> in_v5;
     in_root["v6"] >> in_v6;
     in_root["v7"] >> in_v7;
+#if __cplusplus >= 201103L
     in_root["v8"] >> in_v8;
+#endif
     // Check equivalence.
     if (in_v0 != out_v0) {
         std::cerr << "v0 : " << in_v0 << " != " << out_v0 << "\n";
@@ -84,10 +80,11 @@ int main(int, char *[])
         std::cerr << "v7 : " << in_v7 << " != " << out_v7 << "\n";
         return 1;
     }
+#if __cplusplus >= 201103L
     if (in_v8 != out_v8) {
         std::cerr << "v8 : " << in_v8 << " != " << out_v8 << "\n";
         return 1;
     }
-
+#endif
     return 0;
 }

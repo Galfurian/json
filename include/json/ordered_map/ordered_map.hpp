@@ -14,10 +14,27 @@ namespace ordered_map
 template <typename Key, typename Value>
 class ordered_map_t {
 public:
-    typedef std::pair<Key, Value> table_node_t;
-    typedef typename std::list<table_node_t>::iterator iterator;
-    typedef typename std::list<table_node_t>::const_iterator const_iterator;
-    typedef std::pair<Value, iterator> table_ref_t;
+    typedef std::list<std::pair<Key, Value> > list_t;
+    typedef typename list_t::iterator iterator;
+    typedef typename list_t::const_iterator const_iterator;
+    typedef std::map<Key, iterator> table_t;
+
+    ordered_map_t()
+        : list(),
+          data()
+    {
+        // Nothing to do.
+    }
+
+    ordered_map_t(const ordered_map_t &other)
+        : list(),
+          data()
+    {
+        for (const_iterator it = other.list.begin(); it != other.list.end(); ++it) {
+            list.push_back(std::make_pair(it->first, it->second));
+            data.insert(std::make_pair(it->first, --(list.end())));
+        }
+    }
 
     void clear()
     {
@@ -30,51 +47,58 @@ public:
         return list.size();
     }
 
-    ordered_map_t &push(const Key &key, const Value &value)
+    iterator set(const Key &key, const Value &value)
     {
-        list.emplace_back(key, value);
-        data.emplace(key, table_ref_t{ value, std::prev(std::end(list)) });
-        return *this;
+        typename table_t::iterator it_table = data.find(key);
+        typename list_t::iterator it_list;
+        if (it_table == data.end()) {
+            list.push_back(std::make_pair(key, value));
+            it_list = --(list.end());
+            data.insert(std::make_pair(key, it_list));
+        } else {
+            it_list         = it_table->second;
+            it_list->second = value;
+        }
+        return it_list;
     }
 
     iterator begin()
     {
-        return std::begin(list);
+        return list.begin();
     }
 
     const_iterator begin() const
     {
-        return std::begin(list);
+        return list.begin();
     }
 
     iterator end()
     {
-        return std::end(list);
+        return list.end();
     }
 
     const_iterator end() const
     {
-        return std::end(list);
+        return list.end();
     }
 
     ordered_map_t &erase(const Key &key)
     {
-        list.erase(data[key].second);
-        data.erase(key);
+        typename table_t::iterator it_table = data.find(key);
+        if (it_table != data.end()) {
+            list.erase(it_table->second);
+            data.erase(it_table);
+        }
         return *this;
     }
 
     ordered_map_t &erase(const iterator &it)
     {
-        list.erase(it);
-        data.erase(it->first);
-        return *this;
-    }
-
-    ordered_map_t &erase(const const_iterator &it)
-    {
-        list.erase(it);
-        data.erase(it->first);
+        typename table_t::iterator it_table = data.find(it->first);
+        if (it_table != data.end()) {
+            list.erase(it);
+            data.erase(it->first);
+        }
         return *this;
     }
 
@@ -96,23 +120,33 @@ public:
 
     iterator find(const Key &key)
     {
-        typename std::map<Key, table_ref_t>::iterator it = data.find(key);
+        typename table_t::iterator it = data.find(key);
         if (it != data.end())
-            return it->second.second;
+            return it->second;
         return list.end();
     }
 
     const_iterator find(const Key &key) const
     {
-        typename std::map<Key, table_ref_t>::const_iterator it = data.find(key);
+        typename table_t::const_iterator it = data.find(key);
         if (it != data.end())
-            return it->second.second;
+            return it->second;
         return list.end();
     }
 
+    ordered_map_t &operator=(const ordered_map_t &other)
+    {
+        this->clear();
+        for (const_iterator it = other.list.begin(); it != other.list.end(); ++it) {
+            list.push_back(std::make_pair(it->first, it->second));
+            data.insert(std::make_pair(it->first, --(list.end())));
+        }
+        return *this;
+    }
+
 private:
-    std::list<table_node_t> list;
-    std::map<Key, table_ref_t> data;
+    list_t list;
+    table_t data;
 };
 
 } // namespace ordered_map

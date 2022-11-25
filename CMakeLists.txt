@@ -33,7 +33,7 @@ target_include_directories(json INTERFACE ${PROJECT_SOURCE_DIR}/include)
 # -----------------------------------------------------------------------------
 # Set the compilation flags.
 # -----------------------------------------------------------------------------
-set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -std=c++11")
+set(JSON_COMPILE_OPTIONS "${JSON_COMPILE_OPTIONS} -std=c++98")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
