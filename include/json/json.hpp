@@ -43,9 +43,9 @@ enum jtype_t {
 class jnode_t {
 public:
     /// Map that allows to easily access a child node based on the name.
-    typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
-    typedef property_map_t::const_iterator const_iterator;
-    typedef property_map_t::iterator iterator;
+    typedef typename ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
+    /// Map that allows to easily access a child node based on the name.
+    typedef typename std::vector<jnode_t> array_data_t;
     /// Sorting function.
     typedef bool (*sort_function_t)(const jnode_t &, const jnode_t &);
 
@@ -94,12 +94,22 @@ public:
     /// @brief Turns the value to INT.
     /// @param check_type If true, check the correspondence of types.
     /// @return The extracted value
-    int as_int() const;
-
-    /// @brief Turns the value to DOUBLE.
-    /// @param check_type If true, check the correspondence of types.
-    /// @return The extracted value
-    double as_double() const;
+    template <typename T>
+    T as_number() const
+    {
+        if (type == JNUMBER) {
+            std::stringstream ss;
+            ss << value;
+            T output;
+            ss >> output;
+            return output;
+        }
+#ifdef STRICT_TYPE_CHECK
+        throw TypeError(line_number, JNUMBER, type);
+#else
+        return static_cast<T>(0);
+#endif
+    }
 
     /// @brief Turns the value to BOOL.
     /// @param check_type If true, check the correspondence of types.
@@ -207,6 +217,7 @@ public:
     /// @param tabsize	The dimension of tabulation (if pretty == true).
     std::string to_string_d(int depth, bool pretty = true, unsigned tabsize = 4) const;
 
+private:
     /// The type of the node.
     jtype_t type;
     /// The value contained inside the node.
@@ -216,7 +227,7 @@ public:
     /// The properties of the node.
     property_map_t properties;
     /// The array content.
-    std::vector<jnode_t> arr;
+    array_data_t arr;
 };
 
 /// @brief This namespace contains all sort of support function.
@@ -859,60 +870,26 @@ inline bool jnode_t::has_property(const std::string &key) const
     return false;
 }
 
-inline int jnode_t::as_int() const
-{
-    if (type != JNUMBER) {
-#ifdef STRICT_TYPE_CHECK
-        throw TypeError(line_number, JNUMBER, type);
-#else
-        return 0;
-#endif
-    }
-    std::stringstream ss;
-    ss << value;
-    int k;
-    ss >> k;
-    return k;
-}
-
-inline double jnode_t::as_double() const
-{
-    if (type != JNUMBER) {
-#ifdef STRICT_TYPE_CHECK
-        throw TypeError(line_number, JNUMBER, type);
-#else
-        return .0;
-#endif
-    }
-    std::stringstream ss;
-    ss << value;
-    double k;
-    ss >> k;
-    return k;
-}
-
 inline bool jnode_t::as_bool() const
 {
-    if (type != JBOOLEAN) {
+    if (type == JBOOLEAN)
+        return value == "true";
 #ifdef STRICT_TYPE_CHECK
-        throw TypeError(line_number, JBOOLEAN, type);
+    throw TypeError(line_number, JBOOLEAN, type);
 #else
-        return false;
+    return false;
 #endif
-    }
-    return value == "true";
 }
 
 inline std::string jnode_t::as_string() const
 {
-    if (type != JSTRING) {
+    if (type == JSTRING)
+        return detail::deserialize(value);
 #ifdef STRICT_TYPE_CHECK
-        throw TypeError(line_number, JSTRING, type);
+    throw TypeError(line_number, JSTRING, type);
 #else
-        return std::string();
+    return std::string();
 #endif
-    }
-    return detail::deserialize(value);
 }
 
 inline jnode_t &jnode_t::set_type(jtype_t _type)
@@ -1382,21 +1359,21 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     }
 
 JSON_DEFINE_OP(json::JBOOLEAN, bool, json::detail::bool_to_string, as_bool)
-JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, short, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned short, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, long, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, float, json::detail::number_to_string, as_double)
-JSON_DEFINE_OP(json::JNUMBER, double, json::detail::number_to_string, as_double)
-JSON_DEFINE_OP(json::JNUMBER, long double, json::detail::number_to_string, as_double)
+JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string, as_number<int>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string, as_number<unsigned int>)
+JSON_DEFINE_OP(json::JNUMBER, short, json::detail::number_to_string, as_number<short>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned short, json::detail::number_to_string, as_number<unsigned short>)
+JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_number<int>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::detail::number_to_string, as_number<unsigned int>)
+JSON_DEFINE_OP(json::JNUMBER, long, json::detail::number_to_string, as_number<long>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::detail::number_to_string, as_number<unsigned long>)
+JSON_DEFINE_OP(json::JNUMBER, float, json::detail::number_to_string, as_number<float>)
+JSON_DEFINE_OP(json::JNUMBER, double, json::detail::number_to_string, as_number<double>)
+JSON_DEFINE_OP(json::JNUMBER, long double, json::detail::number_to_string, as_number<long double>)
 JSON_DEFINE_OP(json::JSTRING, std::string, json::detail::number_to_string, as_string)
 #if __cplusplus >= 201103L
-JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_int)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_int)
+JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_number<long long>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_number<unsigned long long>)
 #endif
 
 #undef JSON_DEFINE_OP
