@@ -51,7 +51,6 @@ public:
     /// Sorting function for JARRAY.
     typedef bool (*sort_function_array_t)(const jnode_t &, const jnode_t &);
     /// Sorting function for JOBJECT.
-    /// @brief The type of a compatible sort function.
     typedef bool (*sort_function_object_t)(const property_t &, const property_t &);
 
     /// @brief Constructor.
