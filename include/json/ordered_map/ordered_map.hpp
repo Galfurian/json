@@ -17,15 +17,18 @@ namespace ordered_map
 template <typename Key, typename Value>
 class ordered_map_t {
 public:
+    /// @brief The  storage.
+    typedef std::pair<Key, Value> list_entry_t;
     /// @brief The value storage.
-    typedef std::list<std::pair<Key, Value> > list_t;
+    typedef std::list<list_entry_t> list_t;
     /// @brief Iteartor for the list.
     typedef typename list_t::iterator iterator;
     /// @brief Constant iteartor for the list.
     typedef typename list_t::const_iterator const_iterator;
-    /// @brief Type of the map.
-    typedef std::map<Key, iterator> table_t;
+    /// @brief The type of a compatible sort function.
+    typedef bool (*sort_function_t)(const list_entry_t &, const list_entry_t &);
 
+    /// @brief Construct a new ordered map.
     ordered_map_t()
         : list(),
           table()
@@ -69,7 +72,7 @@ public:
     iterator set(const Key &key, const Value &value)
     {
         // First, we search for the element inside the table.
-        typename table_t::iterator it_table = table.find(key);
+        table_iterator it_table = table.find(key);
         // Create the return iterator.
         iterator it_list;
         // Now, if the element is not in the table, we need to add it.
@@ -120,10 +123,10 @@ public:
     /// @return an iterator to the same position in the list.
     iterator erase(const Key &key)
     {
-        typename table_t::iterator it_table = table.find(key);
+        table_iterator it_table = table.find(key);
         if (it_table == table.end())
             return list.end();
-        typename list_t::iterator it_list = it_table->second;
+        iterator it_list = it_table->second;
         ++it_list;
         list.erase(it_table->second);
         table.erase(it_table);
@@ -136,7 +139,7 @@ public:
     /// @return an iterator to the same position in the list.
     iterator erase(iterator it_list)
     {
-        typename table_t::iterator it_table = table.find(it_list->first);
+        table_iterator it_table = table.find(it_list->first);
         if (it_table == table.end())
             return list.end();
         ++it_list;
@@ -151,8 +154,7 @@ public:
     iterator at(std::size_t position)
     {
         iterator it = list.begin();
-        for (std::size_t i = 0; (i < position) && (it != list.end()); ++i, ++it) {
-        }
+        for (std::size_t i = 0; (i < position) && (it != list.end()); ++i, ++it) {}
         return it;
     }
 
@@ -162,8 +164,7 @@ public:
     const_iterator at(std::size_t position) const
     {
         const_iterator it = list.begin();
-        for (std::size_t i = 0; (i < position) && (it != list.end()); ++i, ++it) {
-        }
+        for (std::size_t i = 0; (i < position) && (it != list.end()); ++i, ++it) {}
         return it;
     }
 
@@ -172,7 +173,7 @@ public:
     /// @return an iterator to the element, or the end of the list if not found.
     iterator find(const Key &key)
     {
-        typename table_t::iterator it = table.find(key);
+        table_iterator it = table.find(key);
         if (it == table.end())
             return list.end();
         return it->second;
@@ -183,10 +184,17 @@ public:
     /// @return an iterator to the element, or the end of the list if not found.
     const_iterator find(const Key &key) const
     {
-        typename table_t::const_iterator it = table.find(key);
+        table_const_iterator it = table.find(key);
         if (it == table.end())
             return list.end();
         return it->second;
+    }
+
+    /// @brief Sorts the internal list.
+    /// @param fun the sorting function.
+    inline void sort(const sort_function_t &fun)
+    {
+        list.sort(fun);
     }
 
     /// @brief Copy constructor.
@@ -206,6 +214,10 @@ public:
     }
 
 private:
+    /// @brief Type of the map.
+    typedef std::map<Key, iterator> table_t;
+    typedef typename table_t::iterator table_iterator;
+    typedef typename table_t::const_iterator table_const_iterator;
     /// @brief The list containing the actual data.
     list_t list;
     /// @brief A table for easy access to the data by using a key.

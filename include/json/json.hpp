@@ -42,12 +42,17 @@ enum jtype_t {
 /// @brief Represent a json node.
 class jnode_t {
 public:
-    /// Map that allows to easily access a child node based on the name.
+    /// The internal map of properties for JOBJECT nodes.
     typedef typename ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
-    /// Map that allows to easily access a child node based on the name.
+    /// How properties are stored inside the internal map.
+    typedef typename ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t property_t;
+    /// The internal array of objects for JARRAY nodes.
     typedef typename std::vector<jnode_t> array_data_t;
-    /// Sorting function.
-    typedef bool (*sort_function_t)(const jnode_t &, const jnode_t &);
+    /// Sorting function for JARRAY.
+    typedef bool (*sort_function_array_t)(const jnode_t &, const jnode_t &);
+    /// Sorting function for JOBJECT.
+    /// @brief The type of a compatible sort function.
+    typedef bool (*sort_function_object_t)(const property_t &, const property_t &);
 
     /// @brief Constructor.
     jnode_t();
@@ -57,38 +62,48 @@ public:
     explicit jnode_t(jtype_t _type);
 
     /// @brief Returns the value of the json node.
+    /// @return the unprocessed string contained in the node.
     std::string get_value() const;
 
     /// @brief Returns the type of the json node.
+    /// @return the jtype_t of this node.
     jtype_t get_type() const;
 
     /// @brief Checks wheter the node is a JSTRING.
+    /// @return true if the internal value is a string, false otherwise.
     inline bool is_string() const;
 
     /// @brief Checks wheter the node is a JBOOLEAN.
+    /// @return true if the internal value is a bool, false otherwise.
     inline bool is_bool() const;
 
     /// @brief Checks wheter the node is a JARRAY.
+    /// @return true if the node is an array of elements, false otherwise.
     inline bool is_array() const;
 
     /// @brief Checks wheter the node is a JOBJECT.
+    /// @return true if the node is an object, false otherwise.
     inline bool is_object() const;
 
     /// @brief Checks wheter the node is a JNUMBER.
+    /// @return true if the internal value is a number, false otherwise.
     inline bool is_number() const;
 
     /// @brief Checks wheter the node is a JNULL.
+    /// @return true if the node contains is invalid, false otherwise.
     inline bool is_null() const;
 
-    /// @brief Returns the original line number.
+    /// @brief Returns the line number where the object resides in the original code.
+    /// @return the line number if the object was created by parsing a file, -1 otherwise.
     int get_line_number() const;
 
-    /// @brief Returns the size of the internal array.
+    /// @brief Returns the size of the internal array or the number of properties of the object.
+    /// @return the size of the internal array or the number of properties of the object.
     size_t size() const;
 
     /// @brief Checks if the current object has the given property.
     /// @param key The key of the property.
-    /// @return If the object has the property.
+    /// @return true if the object has the property, false otherwise.
     bool has_property(const std::string &key) const;
 
     /// @brief Turns the value to INT.
@@ -123,14 +138,17 @@ public:
 
     /// @brief Sets the type.
     /// @param _type The type to set.
+    /// @return a reference to this object.
     jnode_t &set_type(jtype_t _type);
 
     /// @brief Sets the internal value.
     /// @param _value The value to set.
+    /// @return a reference to this object.
     jnode_t &set_value(const std::string &_value);
 
     /// @brief Sets the line number.
     /// @param _line_number The line number to set.
+    /// @return a reference to this object.
     jnode_t &set_line_number(int _line_number);
 
     /// @brief Adds a new property with the given key.
@@ -150,20 +168,37 @@ public:
 
     /// @brief Adds the element to the array.
     /// @param node The node to add.
-    jnode_t &add_element(const jnode_t &node);
+    /// @return a reference to the added object.
+    jnode_t &add_element(const jnode_t &node = jnode_t());
+
+    /// @brief Removes an element from the array.
+    /// @param i position of the element.
+    void remove_element(std::size_t i);
 
     /// @brief Reserves the given space for the array.
+    /// @param size the number of elements.
     void reserve(size_t size);
 
-    /// @brief Resize the given space for the array.
+    /// @brief Resize the array to the given value and fills it with empty objects.
+    /// @param size the number of elements.
     void resize(size_t size);
 
     /// @brief Clears all the internal data structures.
     void clear();
 
     /// @brief Allows to sort the entry inside the node, which be a JARRAY.
-    /// @param sort_function The function used to sort.
-    void sort(sort_function_t sort_function);
+    /// @param fun The function used to sort.
+    template <typename SortFunction>
+    void sort(const SortFunction &fun)
+    {
+        if (type == JARRAY) {
+            std::sort(arr.begin(), arr.end(), fun);
+        } else if (type == JOBJECT) {
+            properties.sort(fun);
+        } else {
+            throw std::runtime_error("You are trying to sort neither a JARRAY nor a JOBJECT");
+        }
+    }
 
     /// @brief Provides access to an internal node.
     /// @param i The index of the node.
@@ -192,32 +227,49 @@ public:
     /// @brief Turns the json object to a formatted string.
     /// @param pretty   Enable/Disable pretty print of json.
     /// @param tabsize	The dimension of tabulation (if pretto == true).
+    /// @return the string representation of the node.
     std::string to_string(bool pretty = true, unsigned tabsize = 4) const;
 
-    /// @brief Returns a constant iterator pointing to the **beginning** of the property map.
+    /// @brief Returns a constant iterator pointing to the **beginning** of the **property map**.
     /// @return the iterator.
-    property_map_t::const_iterator begin() const;
+    property_map_t::const_iterator pbegin() const;
 
-    /// @brief Returns an iterator pointing to the **beginning** of the property map.
+    /// @brief Returns an iterator pointing to the **beginning** of the **property map**.
     /// @return the iterator.
-    property_map_t::iterator begin();
+    property_map_t::iterator pbegin();
 
-    /// @brief Returns a constant iterator pointing to the **end** of the property map.
+    /// @brief Returns a constant iterator pointing to the **end** of the **property map**.
     /// @return the iterator.
-    property_map_t::const_iterator end() const;
+    property_map_t::const_iterator pend() const;
 
-    /// @brief Returns an iterator pointing to the **end** of the property map.
+    /// @brief Returns an iterator pointing to the **end** of the **property map**.
     /// @return the iterator.
-    property_map_t::iterator end();
+    property_map_t::iterator pend();
 
-    // private:
+    /// @brief Returns a constant iterator pointing to the **beginning** of the **array**.
+    /// @return the iterator.
+    array_data_t::const_iterator abegin() const;
+
+    /// @brief Returns an iterator pointing to the **beginning** of the **array**.
+    /// @return the iterator.
+    array_data_t::iterator abegin();
+
+    /// @brief Returns a constant iterator pointing to the **end** of the **array**.
+    /// @return the iterator.
+    array_data_t::const_iterator aend() const;
+
+    /// @brief Returns an iterator pointing to the **end** of the **array**.
+    /// @return the iterator.
+    array_data_t::iterator aend();
+
+private:
     /// @brief Turns the json object to a formatted string.
     /// @param depth    The current depth, used for indentation (if pretty == true).
     /// @param pretty   Enable/Disable pretty print of json.
     /// @param tabsize	The dimension of tabulation (if pretty == true).
+    /// @return the generated string.
     std::string to_string_d(int depth, bool pretty = true, unsigned tabsize = 4) const;
 
-private:
     /// The type of the node.
     jtype_t type;
     /// The value contained inside the node.
@@ -771,6 +823,8 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 class RangeError : public std::out_of_range {
 public:
     /// @brief Construct a new range error.
+    /// @param index the index we tried to access.
+    /// @param size the size of the container.
     RangeError(size_t index, size_t size)
         : std::out_of_range("Trying to access item at " + detail::number_to_string(index) + " of " + detail::number_to_string(size) + ".")
     {
@@ -782,6 +836,9 @@ public:
 class TypeError : public std::runtime_error {
 public:
     /// @brief Construct a new type error.
+    /// @param line the line where the error was found.
+    /// @param expected the expected type.
+    /// @param found the type we actually found.
     TypeError(size_t line, jtype_t expected, jtype_t found)
         : std::runtime_error("line " + detail::number_to_string(line) + " : Expecting " + detail::jtype_to_string(expected) + " but found " + detail::jtype_to_string(found) + ".")
     {
@@ -931,6 +988,13 @@ inline jnode_t &jnode_t::add_element(const jnode_t &node)
     return arr.back();
 }
 
+inline void jnode_t::remove_element(std::size_t i)
+{
+    if (i >= arr.size())
+        throw RangeError(i, arr.size());
+    arr.erase(arr.begin() + i);
+}
+
 inline void jnode_t::reserve(size_t size)
 {
     arr.reserve(size);
@@ -947,12 +1011,6 @@ inline void jnode_t::clear()
     type = JUNKNOWN;
     properties.clear();
     arr.clear();
-}
-
-inline void jnode_t::sort(sort_function_t sort_function)
-{
-    if (type == JARRAY)
-        std::sort(arr.begin(), arr.end(), sort_function);
 }
 
 inline const jnode_t &jnode_t::operator[](size_t i) const
@@ -1021,24 +1079,44 @@ inline std::string jnode_t::to_string(bool pretty, unsigned tabsize) const
     return this->to_string_d(1, pretty, tabsize);
 }
 
-inline jnode_t::property_map_t::const_iterator jnode_t::begin() const
+inline jnode_t::property_map_t::const_iterator jnode_t::pbegin() const
 {
     return properties.begin();
 }
 
-inline jnode_t::property_map_t::iterator jnode_t::begin()
+inline jnode_t::property_map_t::iterator jnode_t::pbegin()
 {
     return properties.begin();
 }
 
-inline jnode_t::property_map_t::const_iterator jnode_t::end() const
+inline jnode_t::property_map_t::const_iterator jnode_t::pend() const
 {
     return properties.end();
 }
 
-inline jnode_t::property_map_t::iterator jnode_t::end()
+inline jnode_t::property_map_t::iterator jnode_t::pend()
 {
     return properties.end();
+}
+
+inline jnode_t::array_data_t::const_iterator jnode_t::abegin() const
+{
+    return arr.begin();
+}
+
+inline jnode_t::array_data_t::iterator jnode_t::abegin()
+{
+    return arr.begin();
+}
+
+inline jnode_t::array_data_t::const_iterator jnode_t::aend() const
+{
+    return arr.end();
+}
+
+inline jnode_t::array_data_t::iterator jnode_t::aend()
+{
+    return arr.end();
 }
 
 std::string jnode_t::to_string_d(int depth, bool pretty, unsigned tabsize) const
@@ -1331,7 +1409,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     if (lhs.get_type() == json::JOBJECT) {
         rhs.clear();
         json::jnode_t::property_map_t::const_iterator it;
-        for (it = lhs.begin(); it != lhs.end(); ++it) {
+        for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
             std::stringstream ss;
             ss << it->first;
             T1 key;
