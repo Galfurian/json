@@ -1,5 +1,6 @@
 #include "json/json.hpp"
-#include "stopwatch.hpp"
+
+#include "stopwatch/stopwatch.hpp"
 
 #include <iostream>
 #include <sstream>

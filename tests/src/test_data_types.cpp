@@ -13,6 +13,15 @@ int check_equivalence(const std::string &name, const T &v1, const T &v2)
     return 0;
 }
 
+enum direction_t {
+    north,
+    south,
+    east,
+    west
+};
+
+JSON_DEFINE_OP_ENUM(direction_t)
+
 int main(int, char *[])
 {
     // ========================================================================
@@ -34,6 +43,7 @@ int main(int, char *[])
     double in_double_1, out_double_1  = 1e+06;
     double in_double_2, out_double_2  = 1e-06;
     std::string in_string, out_string = "Hello world!";
+    direction_t in_enum, out_enum     = east;
 
     // ========================================================================
     // Prepare the output json tree.
@@ -58,6 +68,7 @@ int main(int, char *[])
     out_root["double_1"] << out_double_1;
     out_root["double_2"] << out_double_2;
     out_root["string"] << out_string;
+    out_root["enum"] << out_enum;
 
     // ========================================================================
     // Create the json string.
@@ -86,6 +97,7 @@ int main(int, char *[])
     in_root["double_1"] >> in_double_1;
     in_root["double_2"] >> in_double_2;
     in_root["string"] >> in_string;
+    in_root["enum"] >> in_enum;
 
     // ========================================================================
     // Check equivalence.
@@ -106,5 +118,6 @@ int main(int, char *[])
            check_equivalence("float", in_float, out_float) ||
            check_equivalence("double_1", in_double_1, out_double_1) ||
            check_equivalence("double_2", in_double_2, out_double_2) ||
-           check_equivalence("string", in_string, out_string);
+           check_equivalence("string", in_string, out_string) ||
+           check_equivalence("enum", in_enum, out_enum);
 }
