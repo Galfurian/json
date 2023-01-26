@@ -43,11 +43,11 @@ enum jtype_t {
 class jnode_t {
 public:
     /// The internal map of properties for JOBJECT nodes.
-    typedef typename ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
+    typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
     /// How properties are stored inside the internal map.
-    typedef typename ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t property_t;
+    typedef ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t property_t;
     /// The internal array of objects for JARRAY nodes.
-    typedef typename std::vector<jnode_t> array_data_t;
+    typedef std::vector<jnode_t> array_data_t;
     /// Sorting function for JARRAY.
     typedef bool (*sort_function_array_t)(const jnode_t &, const jnode_t &);
     /// Sorting function for JOBJECT.
@@ -497,7 +497,7 @@ inline std::string deserialize(const std::string &ref)
             } else if (ref[i + 1] == 't') {
                 out.push_back('\t');
             } else if (ref[i + 1] == 'u' && i + 5 < ref.length()) {
-                char value = 0;
+                int value = 0;
                 for (j = 0; j < 4; j++) {
                     value *= 16;
                     if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0')
@@ -505,7 +505,7 @@ inline std::string deserialize(const std::string &ref)
                     if (ref[i + 2 + j] <= 'f' && ref[i + 2 + j] >= 'a')
                         value += ref[i + 2 + j] - 'a' + 10;
                 }
-                out.push_back(value);
+                out.push_back(static_cast<char>(value));
                 offset = 6;
             }
             i += offset - 1;
