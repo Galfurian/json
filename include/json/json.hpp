@@ -94,7 +94,7 @@ public:
 
     /// @brief Returns the line number where the object resides in the original code.
     /// @return the line number if the object was created by parsing a file, -1 otherwise.
-    int get_line_number() const;
+    std::size_t get_line_number() const;
 
     /// @brief Returns the size of the internal array or the number of properties of the object.
     /// @return the size of the internal array or the number of properties of the object.
@@ -148,7 +148,7 @@ public:
     /// @brief Sets the line number.
     /// @param _line_number The line number to set.
     /// @return a reference to this object.
-    jnode_t &set_line_number(int _line_number);
+    jnode_t &set_line_number(std::size_t _line_number);
 
     /// @brief Adds a new property with the given key.
     /// @param key The key of the property.
@@ -171,8 +171,8 @@ public:
     jnode_t &add_element(const jnode_t &node = jnode_t());
 
     /// @brief Removes an element from the array.
-    /// @param i position of the element.
-    void remove_element(std::size_t i);
+    /// @param index position of the element.
+    void remove_element(std::size_t index);
 
     /// @brief Reserves the given space for the array.
     /// @param size the number of elements.
@@ -267,14 +267,14 @@ private:
     /// @param pretty   Enable/Disable pretty print of json.
     /// @param tabsize	The dimension of tabulation (if pretty == true).
     /// @return the generated string.
-    std::string to_string_d(int depth, bool pretty = true, unsigned tabsize = 4) const;
+    std::string to_string_d(unsigned depth, bool pretty = true, unsigned tabsize = 4) const;
 
     /// The type of the node.
     jtype_t type;
     /// The value contained inside the node.
     std::string value;
     /// The original line number.
-    int line_number;
+    std::size_t line_number;
     /// The properties of the node.
     property_map_t properties;
     /// The array content.
@@ -376,7 +376,8 @@ inline std::string bool_to_string(bool value)
 /// @brief Transforms the ASCII integer representing the character into a string.
 /// @param value the input character.
 /// @return the output string.
-inline std::string char_to_string(char value)
+template <typename T>
+inline std::string char_to_string(T value)
 {
     std::stringstream ss;
     ss << static_cast<int>(value);
@@ -415,9 +416,9 @@ inline bool isnewline(char c)
 /// @param source the source string.
 /// @param index the index.
 /// @return the index of the next whitespace.
-inline int next_whitespace(const std::string &source, int index)
+inline std::size_t next_whitespace(const std::string &source, std::size_t index)
 {
-    int slength = static_cast<int>(source.length());
+    std::size_t slength = source.length();
     while (index < slength) {
         if (source[index] == '"') {
             ++index;
@@ -456,16 +457,17 @@ inline int next_whitespace(const std::string &source, int index)
 /// @param index the index we start skipping from.
 /// @param line_number the current line number.
 /// @return the index of the next non-whitespace character.
-inline int skip_whitespaces(const std::string &source, int index, int &line_number)
+inline std::size_t skip_whitespaces(const std::string &source, std::size_t index, std::size_t &line_number)
 {
-    while (index < static_cast<int>(source.length())) {
+    std::size_t slength = source.length();
+    while (index < slength) {
         if (!std::isspace(source[index])) {
             return index;
         }
         line_number += detail::isnewline(source[index]);
         ++index;
     }
-    return -1;
+    return slength;
 }
 
 /// @brief Deserializes the given string.
@@ -473,10 +475,11 @@ inline int skip_whitespaces(const std::string &source, int index, int &line_numb
 /// @return the deserialized input string.
 inline std::string deserialize(const std::string &ref)
 {
+    std::size_t i, j, offset;
     std::string out;
-    for (std::size_t i = 0; i < ref.length(); ++i) {
+    for (i = 0; i < ref.length(); ++i) {
         if ((ref[i] == '\\') && ((i + 1) < ref.length())) {
-            int plus = 2;
+            offset = 2;
             if (ref[i + 1] == '\"') {
                 out.push_back('"');
             } else if (ref[i + 1] == '\\') {
@@ -494,18 +497,18 @@ inline std::string deserialize(const std::string &ref)
             } else if (ref[i + 1] == 't') {
                 out.push_back('\t');
             } else if (ref[i + 1] == 'u' && i + 5 < ref.length()) {
-                unsigned long v = 0;
-                for (int j = 0; j < 4; j++) {
-                    v *= 16;
+                char value = 0;
+                for (j = 0; j < 4; j++) {
+                    value *= 16;
                     if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0')
-                        v += ref[i + 2 + j] - '0';
+                        value += ref[i + 2 + j] - '0';
                     if (ref[i + 2 + j] <= 'f' && ref[i + 2 + j] >= 'a')
-                        v += ref[i + 2 + j] - 'a' + 10;
+                        value += ref[i + 2 + j] - 'a' + 10;
                 }
-                out.push_back((char)v);
-                plus = 6;
+                out.push_back(value);
+                offset = 6;
             }
-            i += plus - 1;
+            i += offset - 1;
             continue;
         }
         out.push_back(ref[i]);
@@ -535,13 +538,13 @@ typedef struct token_t {
     /// The type.
     token_type_t type;
     /// The line number.
-    int line_number;
+    std::size_t line_number;
 
     /// @brief Creates a new token.
     /// @param _value the value contained in the token.
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
-    token_t(const std::string &_value = "", token_type_t _type = UNKNOWN, int _line_number = 0)
+    token_t(const std::string &_value = "", token_type_t _type = UNKNOWN, std::size_t _line_number = 0)
         : value(_value),
           type(_type),
           line_number(_line_number)
@@ -556,10 +559,13 @@ typedef struct token_t {
 /// @return a reference to the token vector.
 std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens)
 {
-    int line_number = 0;
-    int index       = detail::skip_whitespaces(source, 0, line_number);
-    while (index >= 0) {
-        int next        = detail::next_whitespace(source, index);
+    std::size_t line_number = 0;
+    std::size_t index = 0, next = 0;
+    index = detail::skip_whitespaces(source, 0, line_number);
+    while (index <= source.size()) {
+        next = detail::next_whitespace(source, index);
+        if (next == index)
+            break;
         std::string str = source.substr(index, next - index);
         std::size_t k   = 0;
         while (k < str.length()) {
@@ -905,7 +911,7 @@ inline bool jnode_t::is_null() const
     return type == JNULL;
 }
 
-inline int jnode_t::get_line_number() const
+inline std::size_t jnode_t::get_line_number() const
 {
     return line_number;
 }
@@ -960,7 +966,7 @@ inline jnode_t &jnode_t::set_value(const std::string &_value)
     return *this;
 }
 
-inline jnode_t &jnode_t::set_line_number(int _line_number)
+inline jnode_t &jnode_t::set_line_number(std::size_t _line_number)
 {
     line_number = _line_number;
     return *this;
@@ -987,11 +993,11 @@ inline jnode_t &jnode_t::add_element(const jnode_t &node)
     return arr.back();
 }
 
-inline void jnode_t::remove_element(std::size_t i)
+inline void jnode_t::remove_element(std::size_t index)
 {
-    if (i >= arr.size())
-        throw RangeError(i, arr.size());
-    arr.erase(arr.begin() + i);
+    if (index >= arr.size())
+        throw RangeError(index, arr.size());
+    arr.erase(arr.begin() + static_cast<std::ptrdiff_t>(index));
 }
 
 inline void jnode_t::reserve(std::size_t size)
@@ -1118,7 +1124,7 @@ inline jnode_t::array_data_t::iterator jnode_t::aend()
     return arr.end();
 }
 
-std::string jnode_t::to_string_d(int depth, bool pretty, unsigned tabsize) const
+std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) const
 {
     std::stringstream ss;
     if (type == JSTRING)
@@ -1427,8 +1433,8 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     }
 
 JSON_DEFINE_OP(json::JBOOLEAN, bool, json::detail::bool_to_string, as_bool)
-JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string, as_number<int>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string, as_number<unsigned int>)
+JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string<char>, as_number<int>)
+JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string<unsigned char>, as_number<unsigned int>)
 JSON_DEFINE_OP(json::JNUMBER, short, json::detail::number_to_string, as_number<short>)
 JSON_DEFINE_OP(json::JNUMBER, unsigned short, json::detail::number_to_string, as_number<unsigned short>)
 JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_number<int>)
