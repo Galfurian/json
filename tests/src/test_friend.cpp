@@ -1,4 +1,4 @@
-#include "json/json.hpp"
+#include <json/json.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -34,23 +34,19 @@ public:
         return lhs;
     }
 
-    friend json::jnode_t &operator<<(json::jnode_t &lhs, const Animal &rhs);
+    friend json::jnode_t &operator<<(json::jnode_t &lhs, const Animal &rhs)
+    {
+        lhs.set_type(json::JOBJECT);
+        lhs["name"] << rhs.name;
+        return lhs;
+    }
 
-    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, Animal &rhs);
+    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, Animal &rhs)
+    {
+        lhs["name"] >> rhs.name;
+        return lhs;
+    }
 };
-
-json::jnode_t &operator<<(json::jnode_t &lhs, const Animal &rhs)
-{
-    lhs.set_type(json::JOBJECT);
-    lhs["name"] << rhs.name;
-    return lhs;
-}
-
-const json::jnode_t &operator>>(const json::jnode_t &lhs, Animal &rhs)
-{
-    lhs["name"] >> rhs.name;
-    return lhs;
-}
 
 int main(int, char *[])
 {

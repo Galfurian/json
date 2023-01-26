@@ -1,4 +1,4 @@
-#include "json/json.hpp"
+#include <json/json.hpp>
 #include "person.hpp"
 
 #include <iostream>
