@@ -67,7 +67,6 @@ endif(JSON_STRICT_WARNINGS)
 include(FetchContent)
 
 # Retrieve the source.
-message(STATUS "Retrieving `ordered_map`...")
 FetchContent_Declare(ordered_map
     GIT_REPOSITORY "https://github.com/Galfurian/cpp_ordered_map.git"
     GIT_TAG main
@@ -75,8 +74,11 @@ FetchContent_Declare(ordered_map
     GIT_PROGRESS TRUE
 )
 
+# Retrieve the properties related to the content.
 FetchContent_GetProperties(ordered_map)
+# If not populated, make the content available.
 if(NOT ordered_map_POPULATED)
+    message(STATUS "Retrieving `ordered_map`...")
     # Ensures the named dependencies have been populated.
     FetchContent_MakeAvailable(ordered_map)
     # Hide fetchcontent variables, otherwise with ccmake it's a mess.
@@ -104,22 +106,18 @@ target_compile_options(${PROJECT_NAME} INTERFACE ${JSON_COMPILE_OPTIONS})
 
 if(JSON_BUILD_EXAMPLES)
 
-    # = FETCH =================================================================
-
-    # We need this in order to import external projects.
-    include(FetchContent)
-
     # Retrieve the stopwatch.
-    message(STATUS "Retrieving `stopwatch`...")
     FetchContent_Declare(stopwatch
         GIT_REPOSITORY "https://github.com/Galfurian/stopwatch.git"
         GIT_TAG main
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
     )
-
+    # Retrieve the properties related to the content.
     FetchContent_GetProperties(stopwatch)
+    # If not populated, make the content available.
     if(NOT stopwatch_POPULATED)
+        message(STATUS "Retrieving `stopwatch`...")
         # Ensures the named dependencies have been populated.
         FetchContent_MakeAvailable(stopwatch)
         # Hide fetchcontent variables, otherwise with ccmake it's a mess.
@@ -216,6 +214,20 @@ if(JSON_BUILD_TESTS)
     # Add the test.
     add_test(${PROJECT_NAME}_test_friend_run ${PROJECT_NAME}_test_friend)
 
+    # -------------------------------------
+    # TEST
+    # -------------------------------------
+    # Add the test.
+    add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/src/test_order.cpp)
+    # Set compilation flags.
+    target_compile_options(${PROJECT_NAME}_test_order PUBLIC ${JSON_COMPILE_OPTIONS})
+    # Inlcude header directories.
+    target_include_directories(${PROJECT_NAME}_test_order PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
+    # Liking for the test.
+    target_link_libraries(${PROJECT_NAME}_test_order ${PROJECT_NAME})
+    # Add the test.
+    add_test(${PROJECT_NAME}_test_order_run ${PROJECT_NAME}_test_order)
+
 endif()
 
 # -----------------------------------------------------------------------------
@@ -226,11 +238,6 @@ find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
     
-    message(STATUS "Retrieving `doxygen-awesome-css`...")
-
-    # = RETIVAL ===============================================================
-    # Include fetch content.
-    include(FetchContent)
     # Record the options that describe how to populate the specified content.
     FetchContent_Declare(
         doxygenawesome
@@ -241,6 +248,7 @@ if(DOXYGEN_FOUND)
     FetchContent_GetProperties(doxygenawesome)
     # If not populated, make the content available.
     if(NOT doxygenawesome_POPULATED)
+        message(STATUS "Retrieving `doxygen-awesome-css`...")
         # Ensures the named dependencies have been populated.
         FetchContent_MakeAvailable(doxygenawesome)
         # Hide fetchcontent variables, otherwise with ccmake it's a mess.

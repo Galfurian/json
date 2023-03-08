@@ -962,7 +962,10 @@ inline jnode_t &jnode_t::set_type(jtype_t _type)
 
 inline jnode_t &jnode_t::set_value(const std::string &_value)
 {
-    value = _value;
+    if ((type != JOBJECT) && (type != JARRAY))
+        value = _value;
+    else
+        throw std::runtime_error("Trying to set the value of a " + detail::jtype_to_string(type) + " node.");
     return *this;
 }
 
@@ -974,27 +977,37 @@ inline jnode_t &jnode_t::set_line_number(std::size_t _line_number)
 
 inline jnode_t &jnode_t::add_property(const std::string &key)
 {
+    if (type != JOBJECT)
+        throw std::runtime_error("Trying to add a property to a " + detail::jtype_to_string(type) + " node.");
     return properties.set(key, jnode_t())->second;
 }
 
 inline jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 {
+    if (type != JOBJECT)
+        throw std::runtime_error("Trying to add a property to a " + detail::jtype_to_string(type) + " node.");
     return properties.set(key, node)->second;
 }
 
 inline void jnode_t::remove_property(const std::string &key)
 {
+    if (type != JOBJECT)
+        throw std::runtime_error("Trying to remove a property from a " + detail::jtype_to_string(type) + " node.");
     properties.erase(key);
 }
 
 inline jnode_t &jnode_t::add_element(const jnode_t &node)
 {
+    if (type != JARRAY)
+        throw std::runtime_error("Trying to add an element to a " + detail::jtype_to_string(type) + " node.");
     arr.push_back(node);
     return arr.back();
 }
 
 inline void jnode_t::remove_element(std::size_t index)
 {
+    if (type != JARRAY)
+        throw std::runtime_error("Trying to add an element to a " + detail::jtype_to_string(type) + " node.");
     if (index >= arr.size())
         throw RangeError(index, arr.size());
     arr.erase(arr.begin() + static_cast<std::ptrdiff_t>(index));
@@ -1002,11 +1015,15 @@ inline void jnode_t::remove_element(std::size_t index)
 
 inline void jnode_t::reserve(std::size_t size)
 {
+    if (type != JARRAY)
+        throw std::runtime_error("Trying to reserve space in a " + detail::jtype_to_string(type) + " node.");
     arr.reserve(size);
 }
 
 inline void jnode_t::resize(std::size_t size)
 {
+    if (type != JARRAY)
+        throw std::runtime_error("Trying to reserve space in a " + detail::jtype_to_string(type) + " node.");
     arr.resize(size);
 }
 
@@ -1032,8 +1049,7 @@ inline const jnode_t &jnode_t::operator[](std::size_t i) const
             throw std::out_of_range("Reached end of properties.");
         return it->second;
     }
-    static jnode_t null_value(JNULL);
-    return null_value;
+    throw std::runtime_error("Trying to use index-base acces for a " + detail::jtype_to_string(type) + " node.");
 }
 
 inline jnode_t &jnode_t::operator[](std::size_t i)
@@ -1050,8 +1066,7 @@ inline jnode_t &jnode_t::operator[](std::size_t i)
             throw std::out_of_range("Reached end of properties.");
         return it->second;
     }
-    static jnode_t null_value(JNULL);
-    return null_value;
+    throw std::runtime_error("Trying to use index-base acces for a " + detail::jtype_to_string(type) + " node.");
 }
 
 inline const jnode_t &jnode_t::operator[](const std::string &key) const
@@ -1062,8 +1077,7 @@ inline const jnode_t &jnode_t::operator[](const std::string &key) const
             return it->second;
         }
     }
-    static jnode_t null_value(JNULL);
-    return null_value;
+    throw std::runtime_error("Trying to access the property `" + key + "` for a " + detail::jtype_to_string(type) + " node.");
 }
 
 inline jnode_t &jnode_t::operator[](const std::string &key)
@@ -1075,8 +1089,7 @@ inline jnode_t &jnode_t::operator[](const std::string &key)
         }
         return this->add_property(key);
     }
-    static jnode_t null_value(JNULL);
-    return null_value;
+    throw std::runtime_error("Trying to access the property `" + key + "` for a " + detail::jtype_to_string(type) + " node.");
 }
 
 inline std::string jnode_t::to_string(bool pretty, unsigned tabsize) const
