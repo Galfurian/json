@@ -137,6 +137,8 @@ if(JSON_BUILD_EXAMPLES)
     target_include_directories(${PROJECT_NAME}_example PUBLIC ${stopwatch_SOURCE_DIR}/include)
     # Set the linked libraries.
     target_link_libraries(${PROJECT_NAME}_example PUBLIC ${PROJECT_NAME})
+    # Set compiler flags.
+    target_compile_features(${PROJECT_NAME}_example PUBLIC cxx_std_98)
     
     # Add the example.
     add_executable(${PROJECT_NAME}_run_on_file examples/run_on_file.cpp)
@@ -146,6 +148,8 @@ if(JSON_BUILD_EXAMPLES)
     target_include_directories(${PROJECT_NAME}_run_on_file PUBLIC ${stopwatch_SOURCE_DIR}/include)
     # Set the linked libraries.
     target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC ${PROJECT_NAME})
+    # Set compiler flags.
+    target_compile_features(${PROJECT_NAME}_run_on_file PUBLIC cxx_std_98)
     
 endif()
 

@@ -48,7 +48,25 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
 
 int main(int, char *[])
 {
-    const char example[] = "{'p0': {'age': 24,'name': 'Alfred'},'p1': {'age': 45,'name': 'Juhan'},'v0': 1,'v1': false,'v2': 1.5,'v3': 1e+06,'v4': 1e-06,'v5': 'Hello world!','v6': 97,'v7': 5,'v8': 7}";
+    const char example[] =
+        "{"
+        "   'p0': {"
+        "       'age': 24,"
+        "       'name': 'Alfred'"
+        "   }, 'p1': {"
+        "       'age': 45,"
+        "       'name': 'Juhan'"
+        "   },"
+        "   'v0': 1,"
+        "   'v1': false,"
+        "   'v2': 1.5,"
+        "   'v3': 1e+06,"
+        "   'v4': 1e-06,"
+        "   'v5': 'Hello world!',"
+        "   'v6': 97,"
+        "   'v7': 5,"
+        "   'v8': 7"
+        "}";
     // Prepare the recipients.
     Person p0;
     Person p1;

@@ -792,17 +792,30 @@ jnode_t parse(const std::string &json_string)
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
-jnode_t parse_file(const std::string &filename)
+bool read_file(const std::string &filename, std::string &content)
 {
     std::ifstream in(filename.c_str());
     if (!in.is_open()) {
-        jnode_t null_value(JNULL);
-        return null_value;
+        return false;
     }
     std::stringstream ss;
     ss << in.rdbuf() << " ";
+    content.append(ss.str());
     in.close();
-    return parser::parse(ss.str());
+    return true;
+}
+
+/// @brief Parse the json file.
+/// @param filename Path to the json file.
+/// @return the root of the generated json tree.
+jnode_t parse_file(const std::string &filename)
+{
+    std::string content;
+    if (!json::parser::read_file(filename, content)) {
+        jnode_t null_value(JNULL);
+        return null_value;
+    }
+    return parser::parse(content);
 }
 
 /// @brief Write the json node on file.
