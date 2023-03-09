@@ -695,66 +695,87 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
 
 /// @brief Parse the list of tokens into a JSON tree.
 /// @param tokens the list of tokens.
-/// @param i the internal index we use to handle tokens.
-/// @param r the index we are currently dealing with.
+/// @param index the internal index we use to handle tokens.
+/// @param reading_index the index we are currently dealing with.
+/// @param current the current node we are building.
 /// @return the generated json sub-tree.
-jnode_t json_parse(std::vector<token_t> &tokens, std::size_t i, std::size_t &r)
+jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &reading_index, jnode_t &current)
 {
-    jnode_t current;
+    // Let us keep track a previous index.
+    std::size_t next_index;
+    // A pointer to the key.
+    const char *key;
+    //
     // Set line number.
-    current.set_line_number(tokens[i].line_number + 1);
+    current.set_line_number(tokens[index].line_number + 1);
     // Parse the element.
-    if (tokens[i].type == CURLY_OPEN) {
+    if (tokens[index].type == CURLY_OPEN) {
+        // Skip the braket.
+        ++index;
         // Set type.
         current.set_type(JOBJECT);
-        // Set the value.
-        ++i;
-        while (tokens[i].type != CURLY_CLOSE) {
-            std::string key = tokens[i].value;
-            i += 2; // k+1 should be ':'
-            std::size_t j = i;
-            current.add_property(key, json_parse(tokens, i, j));
-            i = j;
-            if (tokens[i].type == COMMA) {
-                ++i;
+        // Iterate until we find the end of the object, i.e., the closing braket.
+        while (tokens[index].type != CURLY_CLOSE) {
+            // Set the key.
+            key = tokens[index].value.c_str();
+            // We need to skip the key, and we should find a COLON ':'.
+            if (tokens[++index].type != COLON) {
+                std::cerr << "We did not find a COLON at index `" << index << "`, at line `" << current.get_line_number() << "`\n";
+                std::exit(1);
             }
-            if (i >= tokens.size()) {
-                std::cerr << "We ran out of tokens at token `" << r << "`, at line `" << current.get_line_number() << "`\n";
+            ++index;
+            // Set the next_index.
+            next_index = index;
+            // Add the property.
+            jnode_t &property = current.add_property(key);
+            // Build the property.
+            json_parse(tokens, index, next_index, property);
+            // Update the index.
+            index = next_index;
+            // If the next token is a comma, we need to parse another property,
+            // but we also need to skip that comma.
+            index += (tokens[index].type == COMMA);
+            // Now, if the index goes outside the number of tokens we need to stop.
+            if (index >= tokens.size()) {
+                std::cerr << "We ran out of tokens at index `" << reading_index << "`, at line `" << current.get_line_number() << "`\n";
                 std::exit(1);
             }
         }
-    } else if (tokens[i].type == BRACKET_OPEN) {
+    } else if (tokens[index].type == BRACKET_OPEN) {
+        // Skip the open braket.
+        ++index;
         // Set type.
         current.set_type(JARRAY);
-        // Set the value.
-        ++i;
-        while (tokens[i].type != BRACKET_CLOSE) {
-            std::size_t j = i;
-            current.add_element(json_parse(tokens, i, j));
-            i = j;
-            if (tokens[i].type == COMMA) {
-                ++i;
-            }
+        // Iterate until we find the end of the array, i.e., the closing braket.
+        while (tokens[index].type != BRACKET_CLOSE) {
+            // Set the next_index.
+            next_index = index;
+            // Add the element.
+            jnode_t &element = current.add_element();
+            // Build the element.
+            json_parse(tokens, index, next_index, element);
+            // Update the index.
+            index = next_index;
+            // If the next token is a comma, we need to parse another property,
+            // but we also need to skip that comma.
+            index += (tokens[index].type == COMMA);
         }
-    } else if (tokens[i].type == NUMBER) {
+    } else if (tokens[index].type == NUMBER) {
         // Set type.
         current.set_type(JNUMBER);
         // Set the value.
-        current.set_value(tokens[i].value);
-    } else if (tokens[i].type == STRING) {
+        current.set_value(tokens[index].value);
+    } else if (tokens[index].type == STRING) {
         // Set type.
         current.set_type(JSTRING);
-        // Replace protected special characters, with the actual ones.
-        // detail::replace_all(tokens[i].value, "\\n", "\n");
-        // detail::replace_all(tokens[i].value, "\\\"", "\"");
         // Set the value.
-        current.set_value(tokens[i].value);
-    } else if (tokens[i].type == BOOLEAN) {
+        current.set_value(tokens[index].value);
+    } else if (tokens[index].type == BOOLEAN) {
         // Set type.
         current.set_type(JBOOLEAN);
         // Set the value.
-        current.set_value(tokens[i].value);
-    } else if (tokens[i].type == NUL) {
+        current.set_value(tokens[index].value);
+    } else if (tokens[index].type == NUL) {
         // Set type.
         current.set_type(JNULL);
         // Set the value.
@@ -766,7 +787,7 @@ jnode_t json_parse(std::vector<token_t> &tokens, std::size_t i, std::size_t &r)
         current.set_value("##");
     }
     // Move to the next token.
-    r = i + 1;
+    reading_index = index + 1;
     return current;
 }
 
@@ -785,8 +806,10 @@ jnode_t parse(const std::string &json_string)
     std::vector<detail::token_t> tokens;
     // Extract the tokens.
     detail::tokenize(json_string, tokens);
+    // Prepare the root.
+    jnode_t root;
     // Parse the tokens.
-    return detail::json_parse(tokens, 0UL, k);
+    return detail::json_parse(tokens, 0UL, k, root);
 }
 
 /// @brief Parse the json file.
