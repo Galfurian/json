@@ -20,51 +20,77 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # -----------------------------------------------------------------------------
-# OPTIONS
-# -----------------------------------------------------------------------------
-
-option(JSON_BUILD_EXAMPLES "Build examples" OFF)
-option(JSON_BUILD_TESTS "Build tests" OFF)
-option(JSON_STRICT_WARNINGS "Enable strict compiler warnings" ON)
-option(JSON_WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
-
-# -----------------------------------------------------------------------------
-# COMPILATION FLAGS
-# -----------------------------------------------------------------------------
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Disable warnings that suggest using MSVC-specific safe functions
-    set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} -D_CRT_SECURE_NO_WARNINGS)
-
-    if(JSON_WARNINGS_AS_ERRORS)
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /WX)
-    endif(JSON_WARNINGS_AS_ERRORS)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(JSON_WARNINGS_AS_ERRORS)
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} -Werror)
-    endif(JSON_WARNINGS_AS_ERRORS)
-endif()
-
-if(JSON_STRICT_WARNINGS)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        # Mark system headers as external for MSVC explicitly
-        # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /experimental:external)
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /external:I ${CMAKE_BINARY_DIR})
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /external:anglebrackets)
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /external:W0)
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} /W4)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(JSON_COMPILE_OPTIONS ${JSON_COMPILE_OPTIONS} -Wall -Wextra -Wconversion -pedantic)
-    endif()
-endif(JSON_STRICT_WARNINGS)
-
-# -----------------------------------------------------------------------------
-# DIPENDENCIES
+# ENABLE FETCH CONTENT
 # -----------------------------------------------------------------------------
 
 # We need this in order to import external projects.
 include(FetchContent)
+# Hide fetchcontent variables.
+mark_as_advanced(FORCE
+    FETCHCONTENT_QUIET
+    FETCHCONTENT_BASE_DIR
+    FETCHCONTENT_FULLY_DISCONNECTED
+    FETCHCONTENT_UPDATES_DISCONNECTED
+)
+
+# -----------------------------------------------------------------------------
+# OPTIONS
+# -----------------------------------------------------------------------------
+
+option(${PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
+option(${PROJECT_NAME}_BUILD_TESTS "Build tests" OFF)
+option(${PROJECT_NAME}_STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(${PROJECT_NAME}_WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
+
+# -----------------------------------------------------------------------------
+# DEPENDENCY (SYSTEM LIBRARIES)
+# -----------------------------------------------------------------------------
+
+find_package(Doxygen)
+
+# -----------------------------------------------------------------------------
+# LIBRARY
+# -----------------------------------------------------------------------------
+
+# Add the C++ Library.
+add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+# Inlcude header directories and set the library.
+target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/include)
+
+# -----------------------------------------------------------------------------
+# COMPILATION FLAGS
+# -----------------------------------------------------------------------------
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # Disable warnings that suggest using MSVC-specific safe functions
+    target_compile_definitions(${PROJECT_NAME} INTERFACE _CRT_SECURE_NO_WARNINGS)
+    if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
+        target_compile_options(${PROJECT_NAME} INTERFACE /WX)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
+        target_compile_options(${PROJECT_NAME} INTERFACE -Werror)
+    endif()
+endif()
+
+if(${PROJECT_NAME}_STRICT_WARNINGS)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # Mark system headers as external for MSVC explicitly
+        # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
+        target_compile_options(${PROJECT_NAME} INTERFACE /experimental:external)
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:anglebrackets)
+        target_compile_options(${PROJECT_NAME} INTERFACE /external:W0)
+
+        target_compile_options(${PROJECT_NAME} INTERFACE /W4)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wconversion -pedantic)
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
+# DIPENDENCIES
+# -----------------------------------------------------------------------------
 
 # Retrieve the source.
 FetchContent_Declare(ordered_map
@@ -83,28 +109,18 @@ if(NOT ordered_map_POPULATED)
     FetchContent_MakeAvailable(ordered_map)
     # Hide fetchcontent variables, otherwise with ccmake it's a mess.
     mark_as_advanced(FORCE
-        FETCHCONTENT_QUIET FETCHCONTENT_BASE_DIR FETCHCONTENT_FULLY_DISCONNECTED FETCHCONTENT_UPDATES_DISCONNECTED
-        FETCHCONTENT_UPDATES_DISCONNECTED_ORDERED_MAP FETCHCONTENT_SOURCE_DIR_ORDERED_MAP
+        FETCHCONTENT_UPDATES_DISCONNECTED_ORDERED_MAP
+        FETCHCONTENT_SOURCE_DIR_ORDERED_MAP
     )
 endif(NOT ordered_map_POPULATED)
-
-# -----------------------------------------------------------------------------
-# LIBRARY
-# -----------------------------------------------------------------------------
-
-# Add the C++ Library.
-add_library(${PROJECT_NAME} INTERFACE)
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # Inlcude header directories and set the library.
-target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/include ${ordered_map_SOURCE_DIR}/include)
-# Set compilation flags.
-target_compile_options(${PROJECT_NAME} INTERFACE ${JSON_COMPILE_OPTIONS})
+target_include_directories(${PROJECT_NAME} INTERFACE ${ordered_map_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # EXAMPLES
 # -----------------------------------------------------------------------------
 
-if(JSON_BUILD_EXAMPLES)
+if(${PROJECT_NAME}_BUILD_EXAMPLES)
 
     # Retrieve the stopwatch.
     FetchContent_Declare(stopwatch
@@ -131,8 +147,6 @@ if(JSON_BUILD_EXAMPLES)
 
     # Add the example.
     add_executable(${PROJECT_NAME}_example examples/example.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_example PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_example PUBLIC ${stopwatch_SOURCE_DIR}/include)
     # Set the linked libraries.
@@ -142,8 +156,6 @@ if(JSON_BUILD_EXAMPLES)
     
     # Add the example.
     add_executable(${PROJECT_NAME}_run_on_file examples/run_on_file.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_run_on_file PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_run_on_file PUBLIC ${stopwatch_SOURCE_DIR}/include)
     # Set the linked libraries.
@@ -151,13 +163,13 @@ if(JSON_BUILD_EXAMPLES)
     # Set compiler flags.
     target_compile_features(${PROJECT_NAME}_run_on_file PUBLIC cxx_std_98)
     
-endif()
+endif(${PROJECT_NAME}_BUILD_EXAMPLES)
 
 # -----------------------------------------------------------------------------
 # TESTS
 # -----------------------------------------------------------------------------
 
-if(JSON_BUILD_TESTS)
+if(${PROJECT_NAME}_BUILD_TESTS)
 
     # CMake has support for adding tests to a project.
     enable_testing()
@@ -167,8 +179,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_data_types ${PROJECT_SOURCE_DIR}/tests/src/test_data_types.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_data_types PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_data_types PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -181,8 +191,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_struct ${PROJECT_SOURCE_DIR}/tests/src/test_struct.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_struct PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_struct PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -195,8 +203,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_container ${PROJECT_SOURCE_DIR}/tests/src/test_container.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_container PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_container PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -209,8 +215,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_friend ${PROJECT_SOURCE_DIR}/tests/src/test_friend.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_friend PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_friend PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -223,8 +227,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/src/test_order.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_order PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_order PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -237,8 +239,6 @@ if(JSON_BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_error ${PROJECT_SOURCE_DIR}/tests/src/test_error.cpp)
-    # Set compilation flags.
-    target_compile_options(${PROJECT_NAME}_test_error PUBLIC ${JSON_COMPILE_OPTIONS})
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_error PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -246,13 +246,11 @@ if(JSON_BUILD_TESTS)
     # Add the test.
     add_test(${PROJECT_NAME}_test_error_run ${PROJECT_NAME}_test_error)
 
-endif()
+endif(${PROJECT_NAME}_BUILD_TESTS)
 
 # -----------------------------------------------------------------------------
 # DOCUMENTATION
 # -----------------------------------------------------------------------------
-
-find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
     
@@ -271,14 +269,14 @@ if(DOXYGEN_FOUND)
         FetchContent_MakeAvailable(doxygenawesome)
         # Hide fetchcontent variables, otherwise with ccmake it's a mess.
         mark_as_advanced(FORCE
-            FETCHCONTENT_QUIET FETCHCONTENT_BASE_DIR FETCHCONTENT_FULLY_DISCONNECTED FETCHCONTENT_UPDATES_DISCONNECTED
-            FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
+            FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME
+            FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
         )
     endif()
 
     # = CUSTOMIZATION =========================================================
-    set(DOXYGEN_PROJECT_NAME "JSON Parser/Writer Library")
-    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW YES)
     set(DOXYGEN_HTML_HEADER ${doxygenawesome_SOURCE_DIR}/doxygen-custom/header.html)
