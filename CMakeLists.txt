@@ -275,6 +275,7 @@ if(DOXYGEN_FOUND)
     endif()
 
     # = CUSTOMIZATION =========================================================
+    set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
     set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
