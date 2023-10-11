@@ -92,12 +92,14 @@ namespace detail
 /// @param n the index of the element we want to retrieve.
 /// @return an interator to the element.
 template <class K, class T>
-typename std::map<K, T>::const_iterator get_iterator_at(const std::map<K, T> &map, std::size_t n)
+static inline typename std::map<K, T>::const_iterator get_iterator_at(const std::map<K, T> &map, std::size_t n)
 {
     typename std::map<K, T>::const_iterator it = map.begin();
-    for (std::size_t i = 0; i < n; ++i, ++it)
-        if (it == map.end())
+    for (std::size_t i = 0; i < n; ++i, ++it) {
+        if (it == map.end()) {
             break;
+        }
+    }
     return it;
 }
 
@@ -106,12 +108,14 @@ typename std::map<K, T>::const_iterator get_iterator_at(const std::map<K, T> &ma
 /// @param n the index of the element we want to retrieve.
 /// @return an interator to the element.
 template <class K, class T>
-typename std::map<K, T>::iterator get_iterator_at(std::map<K, T> &map, std::size_t n)
+static inline typename std::map<K, T>::iterator get_iterator_at(std::map<K, T> &map, std::size_t n)
 {
     typename std::map<K, T>::iterator it = map.begin();
-    for (std::size_t i = 0; i < n; ++i, ++it)
-        if (it == map.end())
+    for (std::size_t i = 0; i < n; ++i, ++it) {
+        if (it == map.end()) {
             break;
+        }
+    }
     return it;
 }
 
@@ -148,7 +152,7 @@ std::string &replace_all(std::string &input, char what, const std::string &with)
 /// @brief Transforms the boolean value to string.
 /// @param value the boolean value.
 /// @return the string representation of the boolean value.
-std::string bool_to_string(bool value)
+static inline std::string bool_to_string(bool value)
 {
     return value ? "true" : "false";
 }
@@ -157,7 +161,7 @@ std::string bool_to_string(bool value)
 /// @param value the input character.
 /// @return the output string.
 template <typename T>
-std::string char_to_string(T value)
+static inline std::string char_to_string(T value)
 {
     std::stringstream ss;
     ss << static_cast<int>(value);
@@ -168,7 +172,7 @@ std::string char_to_string(T value)
 /// @param value the input number.
 /// @return the output string.
 template <typename T>
-std::string number_to_string(T value)
+static inline std::string number_to_string(T value)
 {
     std::stringstream ss;
     ss << value;
@@ -179,7 +183,7 @@ std::string number_to_string(T value)
 /// @param depth depth of the indentation.
 /// @param tabsize the number of character for each depth unit.
 /// @return the output indentation as string.
-std::string make_indentation(unsigned depth, unsigned tabsize = 4)
+static inline std::string make_indentation(unsigned depth, unsigned tabsize = 4)
 {
     return std::string(depth * tabsize, ' ');
 }
@@ -204,10 +208,12 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
             ++index;
             while (index < slength) {
                 if (source[index] == '"') {
-                    if (source[index - 1] != '\\')
+                    if (source[index - 1] != '\\') {
                         break;
-                    else if ((source[index - 2] == '\\') && (source[index - 3] != '\\'))
+                    }
+                    if ((source[index - 2] == '\\') && (source[index - 3] != '\\')) {
                         break;
+                    }
                 }
                 ++index;
             }
@@ -216,10 +222,12 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
             ++index;
             while (index < slength) {
                 if (source[index] == '\'') {
-                    if (source[index - 1] != '\\')
+                    if (source[index - 1] != '\\') {
                         break;
-                    else if (source[index - 2] == '\\')
+                    }
+                    if (source[index - 2] == '\\') {
                         break;
+                    }
                 }
                 ++index;
             }
@@ -280,10 +288,12 @@ std::string deserialize(const std::string &ref)
                 int value = 0;
                 for (j = 0; j < 4; j++) {
                     value *= 16;
-                    if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0')
+                    if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0') {
                         value += ref[i + 2 + j] - '0';
-                    if (ref[i + 2 + j] <= 'f' && ref[i + 2 + j] >= 'a')
+                    }
+                    if (ref[i + 2 + j] <= 'f' && ref[i + 2 + j] >= 'a') {
                         value += ref[i + 2 + j] - 'a' + 10;
+                    }
                 }
                 out.push_back(static_cast<char>(value));
                 offset = 6;
@@ -303,8 +313,9 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
     index = detail::skip_whitespaces(source, 0, line_number);
     while (index <= source.size()) {
         next = detail::next_whitespace(source, index);
-        if (next == index)
+        if (next == index) {
             break;
+        }
         std::string str = source.substr(index, next - index);
         std::size_t k   = 0;
         while (k < str.length()) {
@@ -312,10 +323,12 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 std::size_t j = k + 1;
                 while (j < str.length()) {
                     if (str[j] == '"') {
-                        if (str[j - 1] != '\\')
+                        if (str[j - 1] != '\\') {
                             break;
-                        else if ((str[j - 2] == '\\') && (str[j - 3] != '\\'))
+                        }
+                        if ((str[j - 2] == '\\') && (str[j - 3] != '\\')) {
                             break;
+                        }
                     }
                     ++j;
                 }
@@ -327,10 +340,12 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 std::size_t j = k + 1;
                 while (j < str.length()) {
                     if (str[j] == '\'') {
-                        if (str[j - 1] != '\\')
+                        if (str[j - 1] != '\\') {
                             break;
-                        else if (str[j - 2] == '\\')
+                        }
+                        if (str[j - 2] == '\\') {
                             break;
+                        }
                     }
                     ++j;
                 }
@@ -665,24 +680,28 @@ std::size_t jnode_t::get_line_number() const
 
 std::size_t jnode_t::size() const
 {
-    if (type == JARRAY)
+    if (type == JARRAY) {
         return arr.size();
-    if (type == JOBJECT)
+    }
+    if (type == JOBJECT) {
         return properties.size();
+    }
     return 0;
 }
 
 bool jnode_t::has_property(const std::string &key) const
 {
-    if (type == JOBJECT)
+    if (type == JOBJECT) {
         return properties.find(key) != properties.end();
+    }
     return false;
 }
 
 bool jnode_t::as_bool() const
 {
-    if (type == JBOOLEAN)
+    if (type == JBOOLEAN) {
         return value == "true";
+    }
 #ifdef JSON_STRICT_TYPE_CHECK
     throw json::type_error(line_number, JBOOLEAN, type);
 #else
@@ -692,8 +711,9 @@ bool jnode_t::as_bool() const
 
 std::string jnode_t::as_string() const
 {
-    if (type == JSTRING)
+    if (type == JSTRING) {
         return detail::deserialize(value);
+    }
 #ifdef JSON_STRICT_TYPE_CHECK
     throw json::type_error(line_number, JSTRING, type);
 #else
@@ -709,10 +729,11 @@ jnode_t &jnode_t::set_type(jtype_t _type)
 
 jnode_t &jnode_t::set_value(const std::string &_value)
 {
-    if ((type != JOBJECT) && (type != JARRAY))
+    if ((type != JOBJECT) && (type != JARRAY)) {
         value = _value;
-    else
+    } else {
         throw json::parser_error(line_number, "Trying to set the value of a " + json::jtype_to_string(type) + " node.");
+    }
     return *this;
 }
 
@@ -724,53 +745,61 @@ jnode_t &jnode_t::set_line_number(std::size_t _line_number)
 
 jnode_t &jnode_t::add_property(const std::string &key)
 {
-    if (type != JOBJECT)
+    if (type != JOBJECT) {
         throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
+    }
     return properties.set(key, jnode_t())->second;
 }
 
 jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 {
-    if (type != JOBJECT)
+    if (type != JOBJECT) {
         throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
+    }
     return properties.set(key, node)->second;
 }
 
 void jnode_t::remove_property(const std::string &key)
 {
-    if (type != JOBJECT)
+    if (type != JOBJECT) {
         throw json::parser_error(line_number, "Trying to remove a property from a " + json::jtype_to_string(type) + " node.");
+    }
     properties.erase(key);
 }
 
 jnode_t &jnode_t::add_element(const jnode_t &node)
 {
-    if (type != JARRAY)
+    if (type != JARRAY) {
         throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
+    }
     arr.push_back(node);
     return arr.back();
 }
 
 void jnode_t::remove_element(std::size_t index)
 {
-    if (type != JARRAY)
+    if (type != JARRAY) {
         throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
-    if (index >= arr.size())
+    }
+    if (index >= arr.size()) {
         throw json::range_error(line_number, index, arr.size());
+    }
     arr.erase(arr.begin() + static_cast<std::ptrdiff_t>(index));
 }
 
 void jnode_t::reserve(std::size_t size)
 {
-    if (type != JARRAY)
+    if (type != JARRAY) {
         throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
+    }
     arr.reserve(size);
 }
 
 void jnode_t::resize(std::size_t size)
 {
-    if (type != JARRAY)
+    if (type != JARRAY) {
         throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
+    }
     arr.resize(size);
 }
 
@@ -787,15 +816,19 @@ void jnode_t::clear()
 const jnode_t &jnode_t::operator[](std::size_t i) const
 {
     if (type == JARRAY) {
-        if (i >= arr.size())
+        if (i >= arr.size()) {
             throw json::range_error(line_number, i, arr.size());
+        }
         return arr[i];
-    } else if (type == JOBJECT) {
-        if (i >= properties.size())
+    }
+    if (type == JOBJECT) {
+        if (i >= properties.size()) {
             throw json::range_error(line_number, i, properties.size());
+        }
         property_map_t::const_iterator it = properties.at(i);
-        if (it == properties.end())
+        if (it == properties.end()) {
             throw json::parser_error(line_number, "Reached end of properties.");
+        }
         return it->second;
     }
     throw json::parser_error(line_number, "Trying to use index-base acces for a " + json::jtype_to_string(type) + " node.");
@@ -804,15 +837,19 @@ const jnode_t &jnode_t::operator[](std::size_t i) const
 jnode_t &jnode_t::operator[](std::size_t i)
 {
     if (type == JARRAY) {
-        if (i >= arr.size())
+        if (i >= arr.size()) {
             throw json::range_error(line_number, i, arr.size());
+        }
         return arr[i];
-    } else if (type == JOBJECT) {
-        if (i >= properties.size())
+    }
+    if (type == JOBJECT) {
+        if (i >= properties.size()) {
             throw json::range_error(line_number, i, properties.size());
+        }
         property_map_t::iterator it = properties.at(i);
-        if (it == properties.end())
+        if (it == properties.end()) {
             throw json::parser_error(line_number, "We reached the end of the properties.");
+        }
         return it->second;
     }
     throw json::parser_error(line_number, "Trying to use index-base acces for a " + json::jtype_to_string(type) + " node.");
@@ -893,36 +930,44 @@ jnode_t::array_data_t::iterator jnode_t::aend()
 std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) const
 {
     std::stringstream ss;
-    if (type == JSTRING)
+    if (type == JSTRING) {
         return std::string("\"") + value + std::string("\"");
-    if (type == JNUMBER)
+    }
+    if (type == JNUMBER) {
         return value;
-    if (type == JBOOLEAN)
+    }
+    if (type == JBOOLEAN) {
         return value;
+    }
     if (type == JOBJECT) {
         ss << "{";
-        if (pretty)
+        if (pretty) {
             ss << "\n";
+        }
         property_map_t::const_iterator it = properties.begin();
         for (it = properties.begin(); it != properties.end(); ++it) {
-            if (pretty)
+            if (pretty) {
                 ss << detail::make_indentation(depth, tabsize);
+            }
             ss << "\"" << it->first << "\": "
                << it->second.to_string_d(depth + 1, pretty, tabsize)
                << ((std::distance(it, properties.end()) == 1) ? "" : ",");
-            if (pretty)
+            if (pretty) {
                 ss << "\n";
+            }
         }
-        if (pretty)
+        if (pretty) {
             ss << detail::make_indentation(depth - 1, tabsize);
+        }
         ss << "}";
         return ss.str();
     }
     if (type == JARRAY) {
         ss << "[";
         for (std::size_t i = 0; i < arr.size(); ++i) {
-            if (i)
+            if (i) {
                 ss << ", ";
+            }
             if (pretty && ((arr[i].type == JARRAY) || (arr[i].type == JOBJECT))) {
                 ss << "\n"
                    << detail::make_indentation(depth, tabsize);
