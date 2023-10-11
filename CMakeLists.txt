@@ -53,23 +53,23 @@ find_package(Doxygen)
 # -----------------------------------------------------------------------------
 
 # Add the C++ Library.
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/json/json.cpp)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # Inlcude header directories and set the library.
-target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # COMPILATION FLAGS
 # -----------------------------------------------------------------------------
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(${PROJECT_NAME} INTERFACE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
     if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} INTERFACE /WX)
+        target_compile_options(${PROJECT_NAME} PUBLIC /WX)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} INTERFACE -Werror)
+        target_compile_options(${PROJECT_NAME} PUBLIC -Werror)
     endif()
 endif()
 
@@ -77,14 +77,14 @@ if(${PROJECT_NAME}_STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(${PROJECT_NAME} INTERFACE /experimental:external)
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:anglebrackets)
-        target_compile_options(${PROJECT_NAME} INTERFACE /external:W0)
+        target_compile_options(${PROJECT_NAME} PUBLIC /experimental:external)
+        target_compile_options(${PROJECT_NAME} PUBLIC /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(${PROJECT_NAME} PUBLIC /external:anglebrackets)
+        target_compile_options(${PROJECT_NAME} PUBLIC /external:W0)
 
-        target_compile_options(${PROJECT_NAME} INTERFACE /W4)
+        target_compile_options(${PROJECT_NAME} PUBLIC /W4)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wconversion -pedantic)
+        target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wconversion -pedantic)
     endif()
 endif()
 
@@ -114,7 +114,7 @@ if(NOT ordered_map_POPULATED)
     )
 endif(NOT ordered_map_POPULATED)
 # Inlcude header directories and set the library.
-target_include_directories(${PROJECT_NAME} INTERFACE ${ordered_map_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${ordered_map_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # EXAMPLES

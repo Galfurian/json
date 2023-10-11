@@ -21,6 +21,7 @@ bool test_error_format()
         std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
+    std::cout << "We did not detect an error in the format.\n";
     return false;
 }
 
@@ -43,6 +44,7 @@ bool test_error_type()
         std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
+    std::cout << "We did not detect a type error.\n";
     return false;
 }
 
@@ -66,6 +68,7 @@ bool test_error_out_of_bound()
         std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
+    std::cout << "We did not detect an out-of-bound error.\n";
     return false;
 }
 
@@ -86,6 +89,7 @@ bool test_error_parser()
         std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
+    std::cout << "We did not detect a parsing error.\n";
     return false;
 }
 
@@ -105,6 +109,7 @@ bool test_error_no_entry()
         std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
+    std::cout << "We did not detect an error with a missing entry.\n";
     return false;
 }
 

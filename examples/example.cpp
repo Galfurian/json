@@ -29,21 +29,22 @@ struct Person {
 namespace json
 {
 template <>
-json::jnode_t &operator<<(json::jnode_t &lhs, const Person &rhs)
+jnode_t &operator<<(jnode_t &lhs, const Person &rhs)
 {
-    lhs.set_type(json::JOBJECT);
+    lhs.set_type(JOBJECT);
     lhs["name"] << rhs.name;
     lhs["age"] << rhs.age;
     return lhs;
 }
 
 template <>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
+const jnode_t &operator>>(const jnode_t &lhs, Person &rhs)
 {
     lhs["name"] >> rhs.name;
     lhs["age"] >> rhs.age;
     return lhs;
 }
+
 } // namespace json
 
 int main(int, char *[])
