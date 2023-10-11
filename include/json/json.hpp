@@ -1,30 +1,20 @@
 /// @file json.hpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief
-/// @details
-/// You can add one of the following defines in your code, before including this
-/// header, to change how strict will the parser behave.
-///
-/// JSON_STRICT_TYPE_CHECK :
-///     throws if the c++ variable you are using to read or write to a json node
-///     have different types.
-/// JSON_STRICT_EXISTENCE_CHECK :
-///     throws if you access a non-existing property.
 
 #pragma once
 
 #include <algorithm>
-
-#include <iostream>
 #include <cassert>
-#include <sstream>
-#include <fstream>
 #include <cstring>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <map>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <list>
-#include <set>
-#include <map>
 
 #ifdef __cpp_lib_span
 #include <span>
@@ -92,6 +82,21 @@ public:
 private:
     static std::string build_message(std::size_t _index, std::size_t _size);
 };
+
+struct globa_config_t {
+    /// @brief If true, the library will throw an error if the C++ variable you
+    /// are using to read or write to a json node have different types.
+    bool strict_type_check;
+    /// @brief If true, the library will throw an error if the field of an
+    /// object you are trying to access does not exist.
+    bool strict_existance_check;
+};
+
+static inline globa_config_t &get_global_config()
+{
+    static globa_config_t config{ false, false };
+    return config;
+}
 
 /// @brief Represent a json node.
 class jnode_t {
@@ -172,11 +177,10 @@ public:
             ss >> output;
             return output;
         }
-#ifdef JSON_STRICT_TYPE_CHECK
-        throw json::type_error(line_number, JNUMBER, type);
-#else
+        if (json::get_global_config().strict_type_check) {
+            throw json::type_error(line_number, JNUMBER, type);
+        }
         return static_cast<T>(0);
-#endif
     }
 
     /// @brief Turns the value to BOOL.

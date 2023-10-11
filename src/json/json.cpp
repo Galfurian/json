@@ -1,15 +1,6 @@
 /// @file json.hpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief
-/// @details
-/// You can add one of the following defines in your code, before including this
-/// header, to change how strict will the parser behave.
-///
-/// JSON_STRICT_TYPE_CHECK :
-///     throws if the c++ variable you are using to read or write to a json node
-///     have different types.
-/// JSON_STRICT_EXISTENCE_CHECK :
-///     throws if you access a non-existing property.
 
 #include "json/json.hpp"
 
@@ -702,11 +693,10 @@ bool jnode_t::as_bool() const
     if (type == JBOOLEAN) {
         return value == "true";
     }
-#ifdef JSON_STRICT_TYPE_CHECK
-    throw json::type_error(line_number, JBOOLEAN, type);
-#else
+    if (json::get_global_config().strict_type_check) {
+        throw json::type_error(line_number, JBOOLEAN, type);
+    }
     return false;
-#endif
 }
 
 std::string jnode_t::as_string() const
@@ -714,11 +704,10 @@ std::string jnode_t::as_string() const
     if (type == JSTRING) {
         return detail::deserialize(value);
     }
-#ifdef JSON_STRICT_TYPE_CHECK
-    throw json::type_error(line_number, JSTRING, type);
-#else
+    if (json::get_global_config().strict_type_check) {
+        throw json::type_error(line_number, JSTRING, type);
+    }
     return std::string();
-#endif
 }
 
 jnode_t &jnode_t::set_type(jtype_t _type)
@@ -863,7 +852,11 @@ const jnode_t &jnode_t::operator[](const std::string &key) const
             return it->second;
         }
     }
-    throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
+    if (json::get_global_config().strict_existance_check) {
+        throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
+    }
+    static jnode_t null_value(JNULL);
+    return null_value;
 }
 
 jnode_t &jnode_t::operator[](const std::string &key)
@@ -873,11 +866,10 @@ jnode_t &jnode_t::operator[](const std::string &key)
         if (it != properties.end()) {
             return it->second;
         }
-#ifdef JSON_STRICT_EXISTENCE_CHECK
-        throw json::parser_error(line_number, "Trying to access a non-existing property `" + key + "`.");
-#else
+        if (json::get_global_config().strict_existance_check) {
+            throw json::parser_error(line_number, "Trying to access a non-existing property `" + key + "`.");
+        }
         return this->add_property(key);
-#endif
     }
     throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
 }
