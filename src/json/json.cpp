@@ -940,19 +940,22 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
 }
 
 /// @brief Allows to easily implement stream operators.
-#define JSON_DEFINE_OP(json_type, type, write_function, read_function)          \
-    template <>                                                                 \
-    json::jnode_t &operator<<(json::jnode_t &lhs, const type &rhs)       \
-    {                                                                           \
-        lhs.set_type(json_type);                                                \
-        lhs.set_value(write_function(rhs));                                     \
-        return lhs;                                                             \
-    }                                                                           \
-    template <>                                                                 \
-    const json::jnode_t &operator>>(const json::jnode_t &lhs, type &rhs) \
-    {                                                                           \
-        rhs = static_cast<type>(lhs.read_function());                           \
-        return lhs;                                                             \
+#define JSON_DEFINE_OP(json_type, type, write_function, read_function)                \
+    template <>                                                                       \
+    jnode_t &operator<<(jnode_t &lhs, const type &rhs)                                \
+    {                                                                                 \
+        lhs.set_type(json_type);                                                      \
+        lhs.set_value(write_function(rhs));                                           \
+        return lhs;                                                                   \
+    }                                                                                 \
+    template <>                                                                       \
+    const jnode_t &operator>>(const jnode_t &lhs, type &rhs)                          \
+    {                                                                                 \
+        if ((json_type) != lhs.get_type()) {                                          \
+            throw json::type_error(lhs.get_line_number(), json_type, lhs.get_type()); \
+        }                                                                             \
+        rhs = static_cast<type>(lhs.read_function());                                 \
+        return lhs;                                                                   \
     }
 
 JSON_DEFINE_OP(json::JBOOLEAN, bool, json::detail::bool_to_string, as_bool)

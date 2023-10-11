@@ -28,20 +28,18 @@ bool test_error_format()
 bool test_error_type()
 {
     const char input[] =
-        "{\n"               // 1
-        "   'v0': 1,\n"     // 2
-        "   'v1': false,\n" // 3
-        "   'v2': 1.5,\n"   // 4
-        "}\n";              // 5
+        "{\n"              // 1
+        "   'v0': 1,\n"    // 2
+        "   'v1': true,\n" // 3
+        "   'v2': 1.5,\n"  // 4
+        "}\n";             // 5
     try {
         json::jnode_t root = json::parser::parse(input);
         float v1;
         root["v1"] >> v1;
+        std::cout << root["v1"].get_type();
     } catch (json::type_error &e) {
         std::cout << "L" << e.line << " : " << e.found << " vs " << e.expected << " : " << e.what() << "\n";
-        return true;
-    } catch (json::parser_error &e) {
-        std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
     std::cout << "We did not detect a type error.\n";
@@ -63,9 +61,6 @@ bool test_error_out_of_bound()
         root[5] >> v1;
     } catch (json::range_error &e) {
         std::cout << "L" << e.line << " : " << e.index << " >= " << e.size << " : " << e.what() << "\n";
-        return true;
-    } catch (json::parser_error &e) {
-        std::cout << "L" << e.line << " : " << e.what() << "\n";
         return true;
     }
     std::cout << "We did not detect an out-of-bound error.\n";
