@@ -1,10 +1,6 @@
 
 #include <iostream>
 #include <sstream>
-
-#define JSON_STRICT_TYPE_CHECK
-#define JSON_STRICT_EXISTENCE_CHECK
-
 #include <json/json.hpp>
 
 bool test_error_format()
@@ -110,6 +106,9 @@ bool test_error_no_entry()
 
 int main(int, char *[])
 {
+    json::get_global_config().strict_type_check      = true;
+    json::get_global_config().strict_existance_check = true;
+
     if (!test_error_format()) {
         return 1;
     }
