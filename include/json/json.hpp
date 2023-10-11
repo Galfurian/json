@@ -52,20 +52,27 @@ enum jtype_t {
 /// @return the string representing the JSON type.
 inline std::string jtype_to_string(jtype_t type)
 {
-    if (type == JSTRING)
+    if (type == JSTRING) {
         return "JSTRING";
-    if (type == JOBJECT)
+    }
+    if (type == JOBJECT) {
         return "JOBJECT";
-    if (type == JARRAY)
+    }
+    if (type == JARRAY) {
         return "JARRAY";
-    if (type == JBOOLEAN)
+    }
+    if (type == JBOOLEAN) {
         return "JBOOLEAN";
-    if (type == JNUMBER)
+    }
+    if (type == JNUMBER) {
         return "JNUMBER";
-    if (type == JNULL)
+    }
+    if (type == JNULL) {
         return "JNULL";
-    if (type == JERROR)
+    }
+    if (type == JERROR) {
         return "JERROR";
+    }
     return "JUNKNOWN";
 }
 
