@@ -50,31 +50,7 @@ enum jtype_t {
 /// @brief Transforms the given JSON type to string.
 /// @param type the JSON type to transform to string.
 /// @return the string representing the JSON type.
-inline std::string jtype_to_string(jtype_t type)
-{
-    if (type == JSTRING) {
-        return "JSTRING";
-    }
-    if (type == JOBJECT) {
-        return "JOBJECT";
-    }
-    if (type == JARRAY) {
-        return "JARRAY";
-    }
-    if (type == JBOOLEAN) {
-        return "JBOOLEAN";
-    }
-    if (type == JNUMBER) {
-        return "JNUMBER";
-    }
-    if (type == JNULL) {
-        return "JNULL";
-    }
-    if (type == JERROR) {
-        return "JERROR";
-    }
-    return "JUNKNOWN";
-}
+std::string jtype_to_string(jtype_t type);
 
 /// @brief Represents a type error.
 class parser_error : public std::runtime_error {
@@ -84,12 +60,7 @@ public:
     /// @brief Construct a new type error.
     /// @param line the line where the error was found.
     /// @param message the error message.
-    parser_error(std::size_t _line, std::string _message)
-        : std::runtime_error(_message),
-          line(_line)
-    {
-        // Nothing to do.
-    }
+    parser_error(std::size_t _line, std::string _message);
 };
 
 /// @brief Represents a type error.
@@ -101,22 +72,10 @@ public:
     /// @brief Construct a new type error.
     /// @param line the line where the error was found.
     /// @param message the error message.
-    type_error(std::size_t _line, json::jtype_t _expected, json::jtype_t _found)
-        : json::parser_error(_line, build_message(_expected, _found)),
-          expected(_expected),
-          found(_found)
-    {
-        // Nothing to do.
-    }
+    type_error(std::size_t _line, json::jtype_t _expected, json::jtype_t _found);
 
 private:
-    static std::string build_message(json::jtype_t _expected, json::jtype_t _found)
-    {
-        std::stringstream ss;
-        ss << "Trying to access item of type " << json::jtype_to_string(_expected)
-           << ", but we found a " << json::jtype_to_string(_found) << ".";
-        return ss.str();
-    }
+    static std::string build_message(json::jtype_t _expected, json::jtype_t _found);
 };
 
 /// @brief Represents an out-of-bound error.
@@ -128,21 +87,10 @@ public:
     /// @brief Construct a new range error.
     /// @param index the index we tried to access.
     /// @param size the size of the container.
-    range_error(std::size_t _line, std::size_t _index, std::size_t _size)
-        : json::parser_error(_line, build_message(_index, _size)),
-          index(_index),
-          size(_size)
-    {
-        // Nothing to do.
-    }
+    range_error(std::size_t _line, std::size_t _index, std::size_t _size);
 
 private:
-    static std::string build_message(std::size_t _index, std::size_t _size)
-    {
-        std::stringstream ss;
-        ss << "Trying to access item at " << _index << " of " << _size << ".";
-        return ss.str();
-    }
+    static std::string build_message(std::size_t _index, std::size_t _size);
 };
 
 /// @brief Represent a json node.
@@ -176,27 +124,27 @@ public:
 
     /// @brief Checks wheter the node is a JSTRING.
     /// @return true if the internal value is a string, false otherwise.
-    inline bool is_string() const;
+    bool is_string() const;
 
     /// @brief Checks wheter the node is a JBOOLEAN.
     /// @return true if the internal value is a bool, false otherwise.
-    inline bool is_bool() const;
+    bool is_bool() const;
 
     /// @brief Checks wheter the node is a JARRAY.
     /// @return true if the node is an array of elements, false otherwise.
-    inline bool is_array() const;
+    bool is_array() const;
 
     /// @brief Checks wheter the node is a JOBJECT.
     /// @return true if the node is an object, false otherwise.
-    inline bool is_object() const;
+    bool is_object() const;
 
     /// @brief Checks wheter the node is a JNUMBER.
     /// @return true if the internal value is a number, false otherwise.
-    inline bool is_number() const;
+    bool is_number() const;
 
     /// @brief Checks wheter the node is a JNULL.
     /// @return true if the node contains is invalid, false otherwise.
-    inline bool is_null() const;
+    bool is_null() const;
 
     /// @brief Returns the line number where the object resides in the original code.
     /// @return the line number if the object was created by parsing a file, -1 otherwise.
@@ -391,215 +339,6 @@ private:
 namespace detail
 {
 
-/// @brief Access map's elements in a linear fashion.
-/// @param map the map we want to access.
-/// @param n the index of the element we want to retrieve.
-/// @return an interator to the element.
-template <class K, class T>
-inline typename std::map<K, T>::const_iterator get_iterator_at(const std::map<K, T> &map, std::size_t n)
-{
-    typename std::map<K, T>::const_iterator it = map.begin();
-    for (std::size_t i = 0; i < n; ++i, ++it)
-        if (it == map.end())
-            break;
-    return it;
-}
-
-/// @brief Access map's elements in a linear fashion.
-/// @param map the map we want to access.
-/// @param n the index of the element we want to retrieve.
-/// @return an interator to the element.
-template <class K, class T>
-inline typename std::map<K, T>::iterator get_iterator_at(std::map<K, T> &map, std::size_t n)
-{
-    typename std::map<K, T>::iterator it = map.begin();
-    for (std::size_t i = 0; i < n; ++i, ++it)
-        if (it == map.end())
-            break;
-    return it;
-}
-
-/// @brief Replaces all the occurences of WHAT with WITH, in INPUT.
-/// @param input the string we want to manipulate.
-/// @param what the string we want to replace.
-/// @param with the string we use as replacement.
-/// @return a reference to the input string.
-inline std::string &replace_all(std::string &input, const std::string &what, const std::string &with)
-{
-    std::size_t i = 0;
-    while ((i = input.find(what, i)) != std::string::npos) {
-        input.replace(i, what.size(), with);
-        i += with.size();
-    }
-    return input;
-}
-
-/// @brief Replaces all the occurences of WHAT with WITH, in INPUT.
-/// @param input the string we want to manipulate.
-/// @param what the char we want to replace.
-/// @param with the string we use as replacement.
-/// @return a reference to the input string.
-inline std::string &replace_all(std::string &input, char what, const std::string &with)
-{
-    std::size_t i = 0;
-    while ((i = input.find(what, i)) != std::string::npos) {
-        input.replace(i, 1U, with);
-        i += with.size();
-    }
-    return input;
-}
-
-/// @brief Transforms the boolean value to string.
-/// @param value the boolean value.
-/// @return the string representation of the boolean value.
-inline std::string bool_to_string(bool value)
-{
-    return value ? "true" : "false";
-}
-
-/// @brief Transforms the ASCII integer representing the character into a string.
-/// @param value the input character.
-/// @return the output string.
-template <typename T>
-inline std::string char_to_string(T value)
-{
-    std::stringstream ss;
-    ss << static_cast<int>(value);
-    return ss.str();
-}
-
-/// @brief Transforms the number to string.
-/// @param value the input number.
-/// @return the output string.
-template <typename T>
-inline std::string number_to_string(T value)
-{
-    std::stringstream ss;
-    ss << value;
-    return ss.str();
-}
-
-/// @brief Generates the indenation.
-/// @param depth depth of the indentation.
-/// @param tabsize the number of character for each depth unit.
-/// @return the output indentation as string.
-inline std::string make_indentation(unsigned depth, unsigned tabsize = 4)
-{
-    return std::string(depth * tabsize, ' ');
-}
-
-/// @brief Checks if the given character is a newline.
-/// @param c the input character.
-/// @return if the character is a newline.
-inline bool isnewline(char c)
-{
-    return (c == '\n') || (c == '\r');
-}
-
-/// @brief Searches for the next whitespace in SOURCE starting from I.
-/// @param source the source string.
-/// @param index the index.
-/// @return the index of the next whitespace.
-inline std::size_t next_whitespace(const std::string &source, std::size_t index)
-{
-    std::size_t slength = source.length();
-    while (index < slength) {
-        if (source[index] == '"') {
-            ++index;
-            while (index < slength) {
-                if (source[index] == '"') {
-                    if (source[index - 1] != '\\')
-                        break;
-                    else if ((source[index - 2] == '\\') && (source[index - 3] != '\\'))
-                        break;
-                }
-                ++index;
-            }
-        }
-        if (source[index] == '\'') {
-            ++index;
-            while (index < slength) {
-                if (source[index] == '\'') {
-                    if (source[index - 1] != '\\')
-                        break;
-                    else if (source[index - 2] == '\\')
-                        break;
-                }
-                ++index;
-            }
-        }
-        if (std::isspace(source[index])) {
-            return index;
-        }
-        ++index;
-    }
-    return slength;
-}
-
-/// @brief Skips the whitespaces starting from INDEX.
-/// @param source the sources string.
-/// @param index the index we start skipping from.
-/// @param line_number the current line number.
-/// @return the index of the next non-whitespace character.
-inline std::size_t skip_whitespaces(const std::string &source, std::size_t index, std::size_t &line_number)
-{
-    std::size_t slength = source.length();
-    while (index < slength) {
-        if (!std::isspace(source[index])) {
-            return index;
-        }
-        line_number += detail::isnewline(source[index]);
-        ++index;
-    }
-    return slength;
-}
-
-/// @brief Deserializes the given string.
-/// @param ref the input string.
-/// @return the deserialized input string.
-inline std::string deserialize(const std::string &ref)
-{
-    std::size_t i, j, offset;
-    std::string out;
-    for (i = 0; i < ref.length(); ++i) {
-        if ((ref[i] == '\\') && ((i + 1) < ref.length())) {
-            offset = 2;
-            if (ref[i + 1] == '\"') {
-                out.push_back('"');
-            } else if (ref[i + 1] == '\\') {
-                out.push_back('\\');
-            } else if (ref[i + 1] == '/') {
-                out.push_back('/');
-            } else if (ref[i + 1] == 'b') {
-                out.push_back('\b');
-            } else if (ref[i + 1] == 'f') {
-                out.push_back('\f');
-            } else if (ref[i + 1] == 'n') {
-                out.push_back('\n');
-            } else if (ref[i + 1] == 'r') {
-                out.push_back('\r');
-            } else if (ref[i + 1] == 't') {
-                out.push_back('\t');
-            } else if (ref[i + 1] == 'u' && i + 5 < ref.length()) {
-                int value = 0;
-                for (j = 0; j < 4; j++) {
-                    value *= 16;
-                    if (ref[i + 2 + j] <= '9' && ref[i + 2 + j] >= '0')
-                        value += ref[i + 2 + j] - '0';
-                    if (ref[i + 2 + j] <= 'f' && ref[i + 2 + j] >= 'a')
-                        value += ref[i + 2 + j] - 'a' + 10;
-                }
-                out.push_back(static_cast<char>(value));
-                offset = 6;
-            }
-            i += offset - 1;
-            continue;
-        }
-        out.push_back(ref[i]);
-    }
-    return out;
-}
-
 /// @brief The type of tokens we use to control parsing.
 enum token_type_t {
     UNKNOWN,       ///< An unknown token.
@@ -641,136 +380,7 @@ typedef struct token_t {
 /// @param source the input string.
 /// @param tokens a vector where we store the parsed tokens.
 /// @return a reference to the token vector.
-std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens)
-{
-    std::size_t line_number = 0;
-    std::size_t index = 0, next = 0;
-    index = detail::skip_whitespaces(source, 0, line_number);
-    while (index <= source.size()) {
-        next = detail::next_whitespace(source, index);
-        if (next == index)
-            break;
-        std::string str = source.substr(index, next - index);
-        std::size_t k   = 0;
-        while (k < str.length()) {
-            if (str[k] == '"') {
-                std::size_t j = k + 1;
-                while (j < str.length()) {
-                    if (str[j] == '"') {
-                        if (str[j - 1] != '\\')
-                            break;
-                        else if ((str[j - 2] == '\\') && (str[j - 3] != '\\'))
-                            break;
-                    }
-                    ++j;
-                }
-                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
-                k = j + 1;
-                continue;
-            }
-            if (str[k] == '\'') {
-                std::size_t j = k + 1;
-                while (j < str.length()) {
-                    if (str[j] == '\'') {
-                        if (str[j - 1] != '\\')
-                            break;
-                        else if (str[j - 2] == '\\')
-                            break;
-                    }
-                    ++j;
-                }
-                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
-                k = j + 1;
-                continue;
-            }
-            if (str[k] == ',') {
-                tokens.push_back(token_t(",", COMMA, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
-                tokens.push_back(token_t("true", BOOLEAN, line_number));
-                k += 4;
-                continue;
-            }
-            if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
-                tokens.push_back(token_t("false", BOOLEAN, line_number));
-                k += 5;
-                continue;
-            }
-            if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
-                tokens.push_back(token_t("null", NUL, line_number));
-                k += 4;
-                continue;
-            }
-            if (str[k] == '}') {
-                tokens.push_back(token_t("}", CURLY_CLOSE, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == '{') {
-                tokens.push_back(token_t("{", CURLY_OPEN, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == ']') {
-                tokens.push_back(token_t("]", BRACKET_CLOSE, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == '[') {
-                tokens.push_back(token_t("[", BRACKET_OPEN, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == ':') {
-                tokens.push_back(token_t(":", COLON, line_number));
-                ++k;
-                continue;
-            }
-            if (str[k] == '-' || std::isdigit(str[k])) {
-                std::size_t k2 = k;
-                if (str[k2] == '-') {
-                    ++k2;
-                }
-                while (k2 < str.size()) {
-                    if ((str[k2] != '.') && !std::isdigit(str[k2])) {
-                        if ((str[k2] != 'e') && (str[k2] != 'E')) {
-                            break;
-                        }
-                        if ((k2 + 1) >= str.size()) {
-                            break;
-                        }
-                        if ((str[k2 + 1] != '+') && (str[k2 + 1] != '-')) {
-                            if (std::isdigit(str[k2 + 1])) {
-                                k2 += 2;
-                            } else {
-                                break;
-                            }
-                        } else {
-                            if ((k2 + 3) >= str.size()) {
-                                break;
-                            }
-                            if (std::isdigit(str[k2 + 3])) {
-                                k2 += 3;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                    ++k2;
-                }
-                tokens.push_back(token_t(str.substr(k, k2 - k), NUMBER, line_number));
-                k = k2;
-                continue;
-            }
-            tokens.push_back(token_t(str.substr(k), UNKNOWN, line_number));
-            k = str.length();
-        }
-        index = detail::skip_whitespaces(source, next, line_number);
-    }
-    return tokens;
-}
+std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens);
 
 /// @brief Parse the list of tokens into a JSON tree.
 /// @param tokens the list of tokens.
@@ -778,107 +388,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
 /// @param output_index the index we are currently dealing with.
 /// @param current the current node we are building.
 /// @return the generated json sub-tree.
-jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
-{
-    // Let us keep track a previous index.
-    std::size_t next_index;
-    // A pointer to the key.
-    const char *key;
-    //
-    // Set line number.
-    current.set_line_number(tokens[index].line_number + 1);
-    // Parse the element.
-    if (tokens[index].type == CURLY_OPEN) {
-        // We need to skip the braket, and check if we ran out of tokens.
-        if ((++index) >= tokens.size()) {
-            throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-        }
-        // Set type.
-        current.set_type(JOBJECT);
-        // Iterate until we find the end of the object, i.e., the closing braket.
-        while (tokens[index].type != CURLY_CLOSE) {
-            // Set the key.
-            key = tokens[index].value.c_str();
-            // We need to skip the key, and check if we ran out of tokens.
-            if ((++index) >= tokens.size()) {
-                throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-            }
-            // We should find a COLON ':'.
-            if (tokens[index].type != COLON) {
-                throw json::parser_error(current.get_line_number(), "We did not find a COLON.");
-            }
-            // We need to skip the COLON, and check if we ran out of tokens.
-            if ((++index) >= tokens.size()) {
-                throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-            }
-            // Set the next_index.
-            next_index = index;
-            // Add the property.
-            jnode_t &property = current.add_property(key);
-            // Build the property.
-            json_parse(tokens, index, next_index, property);
-            // Update the index.
-            index = next_index;
-            // If the next token is a comma, we need to parse another property,
-            // but we also need to skip that comma.
-            index += (tokens[index].type == COMMA);
-            // Now, if the index goes outside the number of tokens we need to stop.
-            if (index >= tokens.size()) {
-                throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-            }
-        }
-    } else if (tokens[index].type == BRACKET_OPEN) {
-        // We need to skip the braket, and check if we ran out of tokens.
-        if ((++index) >= tokens.size()) {
-            throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-        }
-        // Set type.
-        current.set_type(JARRAY);
-        // Iterate until we find the end of the array, i.e., the closing braket.
-        while (tokens[index].type != BRACKET_CLOSE) {
-            // Set the next_index.
-            next_index = index;
-            // Add the element.
-            jnode_t &element = current.add_element();
-            // Build the element.
-            json_parse(tokens, index, next_index, element);
-            // Update the index.
-            index = next_index;
-            // If the next token is a comma, we need to parse another property,
-            // but we also need to skip that comma.
-            index += (tokens[index].type == COMMA);
-            // Now, if the index goes outside the number of tokens we need to stop.
-            if (index >= tokens.size()) {
-                throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
-            }
-        }
-    } else if (tokens[index].type == NUMBER) {
-        // Set type.
-        current.set_type(JNUMBER);
-        // Set the value.
-        current.set_value(tokens[index].value);
-    } else if (tokens[index].type == STRING) {
-        // Set type.
-        current.set_type(JSTRING);
-        // Set the value.
-        current.set_value(tokens[index].value);
-    } else if (tokens[index].type == BOOLEAN) {
-        // Set type.
-        current.set_type(JBOOLEAN);
-        // Set the value.
-        current.set_value(tokens[index].value);
-    } else if (tokens[index].type == NUL) {
-        // Set type.
-        current.set_type(JNULL);
-        // Set the value.
-        current.set_value("null");
-    } else {
-        throw json::parser_error(current.get_line_number(), "Cannot type the entry.");
-    }
-    // Move to the next token.
-    output_index = index + 1;
-    return current;
-}
+jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current);
 
 } // namespace detail
 
@@ -889,46 +399,17 @@ namespace parser
 /// @brief Parse the json formatted string.
 /// @param json_string The json formatted string.
 /// @return the root of the generated json tree.
-jnode_t parse(const std::string &json_string)
-{
-    std::size_t k = 0;
-    std::vector<detail::token_t> tokens;
-    // Extract the tokens.
-    detail::tokenize(json_string, tokens);
-    // Prepare the root.
-    jnode_t root;
-    // Parse the tokens.
-    return detail::json_parse(tokens, 0UL, k, root);
-}
+jnode_t parse(const std::string &json_string);
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
-bool read_file(const std::string &filename, std::string &content)
-{
-    std::ifstream in(filename.c_str());
-    if (!in.is_open()) {
-        return false;
-    }
-    std::stringstream ss;
-    ss << in.rdbuf() << " ";
-    content.append(ss.str());
-    in.close();
-    return true;
-}
+bool read_file(const std::string &filename, std::string &content);
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
-jnode_t parse_file(const std::string &filename)
-{
-    std::string content;
-    if (!json::parser::read_file(filename, content)) {
-        jnode_t null_value(JNULL);
-        return null_value;
-    }
-    return parser::parse(content);
-}
+jnode_t parse_file(const std::string &filename);
 
 /// @brief Write the json node on file.
 /// @param filename Path to the json file.
@@ -936,359 +417,9 @@ jnode_t parse_file(const std::string &filename)
 /// @param pretty   Enable/Disable pretty print of json.
 /// @param tabsize	The dimension of tabulation (if pretto == true).
 /// @return if the operation is a success.
-bool write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4)
-{
-    std::ofstream out(filename.c_str());
-    if (out.is_open()) {
-        out << node.to_string(pretty, tabsize);
-        out.close();
-        return true;
-    }
-    return false;
-}
+bool write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4);
 
 } // namespace parser
-
-jnode_t::jnode_t()
-    : type(JNULL),
-      value(),
-      line_number(),
-      properties(),
-      arr()
-{
-    // Nothing to do.
-}
-
-jnode_t::jnode_t(jtype_t _type)
-    : type(_type),
-      value(),
-      line_number(),
-      properties(),
-      arr()
-{
-    // Nothing to do.
-}
-
-inline std::string jnode_t::get_value() const
-{
-    return value;
-}
-
-inline jtype_t jnode_t::get_type() const
-{
-    return type;
-}
-
-inline bool jnode_t::is_string() const
-{
-    return type == JSTRING;
-}
-
-inline bool jnode_t::is_bool() const
-{
-    return type == JBOOLEAN;
-}
-
-inline bool jnode_t::is_array() const
-{
-    return type == JARRAY;
-}
-
-inline bool jnode_t::is_object() const
-{
-    return type == JOBJECT;
-}
-
-inline bool jnode_t::is_number() const
-{
-    return type == JNUMBER;
-}
-
-inline bool jnode_t::is_null() const
-{
-    return type == JNULL;
-}
-
-inline std::size_t jnode_t::get_line_number() const
-{
-    return line_number;
-}
-
-inline std::size_t jnode_t::size() const
-{
-    if (type == JARRAY)
-        return arr.size();
-    if (type == JOBJECT)
-        return properties.size();
-    return 0;
-}
-
-inline bool jnode_t::has_property(const std::string &key) const
-{
-    if (type == JOBJECT)
-        return properties.find(key) != properties.end();
-    return false;
-}
-
-inline bool jnode_t::as_bool() const
-{
-    if (type == JBOOLEAN)
-        return value == "true";
-#ifdef JSON_STRICT_TYPE_CHECK
-    throw json::type_error(line_number, JBOOLEAN, type);
-#else
-    return false;
-#endif
-}
-
-inline std::string jnode_t::as_string() const
-{
-    if (type == JSTRING)
-        return detail::deserialize(value);
-#ifdef JSON_STRICT_TYPE_CHECK
-    throw json::type_error(line_number, JSTRING, type);
-#else
-    return std::string();
-#endif
-}
-
-inline jnode_t &jnode_t::set_type(jtype_t _type)
-{
-    type = _type;
-    return *this;
-}
-
-inline jnode_t &jnode_t::set_value(const std::string &_value)
-{
-    if ((type != JOBJECT) && (type != JARRAY))
-        value = _value;
-    else
-        throw json::parser_error(line_number, "Trying to set the value of a " + json::jtype_to_string(type) + " node.");
-    return *this;
-}
-
-inline jnode_t &jnode_t::set_line_number(std::size_t _line_number)
-{
-    line_number = _line_number;
-    return *this;
-}
-
-inline jnode_t &jnode_t::add_property(const std::string &key)
-{
-    if (type != JOBJECT)
-        throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
-    return properties.set(key, jnode_t())->second;
-}
-
-inline jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
-{
-    if (type != JOBJECT)
-        throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
-    return properties.set(key, node)->second;
-}
-
-inline void jnode_t::remove_property(const std::string &key)
-{
-    if (type != JOBJECT)
-        throw json::parser_error(line_number, "Trying to remove a property from a " + json::jtype_to_string(type) + " node.");
-    properties.erase(key);
-}
-
-inline jnode_t &jnode_t::add_element(const jnode_t &node)
-{
-    if (type != JARRAY)
-        throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
-    arr.push_back(node);
-    return arr.back();
-}
-
-inline void jnode_t::remove_element(std::size_t index)
-{
-    if (type != JARRAY)
-        throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
-    if (index >= arr.size())
-        throw json::range_error(line_number, index, arr.size());
-    arr.erase(arr.begin() + static_cast<std::ptrdiff_t>(index));
-}
-
-inline void jnode_t::reserve(std::size_t size)
-{
-    if (type != JARRAY)
-        throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
-    arr.reserve(size);
-}
-
-inline void jnode_t::resize(std::size_t size)
-{
-    if (type != JARRAY)
-        throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
-    arr.resize(size);
-}
-
-inline void jnode_t::clear()
-{
-    // We set the type to error, so that the node must be properly set again to
-    // make the tree coherent again.
-    type = JERROR;
-    value.clear();
-    properties.clear();
-    arr.clear();
-}
-
-inline const jnode_t &jnode_t::operator[](std::size_t i) const
-{
-    if (type == JARRAY) {
-        if (i >= arr.size())
-            throw json::range_error(line_number, i, arr.size());
-        return arr[i];
-    } else if (type == JOBJECT) {
-        if (i >= properties.size())
-            throw json::range_error(line_number, i, properties.size());
-        property_map_t::const_iterator it = properties.at(i);
-        if (it == properties.end())
-            throw json::parser_error(line_number, "Reached end of properties.");
-        return it->second;
-    }
-    throw json::parser_error(line_number, "Trying to use index-base acces for a " + json::jtype_to_string(type) + " node.");
-}
-
-inline jnode_t &jnode_t::operator[](std::size_t i)
-{
-    if (type == JARRAY) {
-        if (i >= arr.size())
-            throw json::range_error(line_number, i, arr.size());
-        return arr[i];
-    } else if (type == JOBJECT) {
-        if (i >= properties.size())
-            throw json::range_error(line_number, i, properties.size());
-        property_map_t::iterator it = properties.at(i);
-        if (it == properties.end())
-            throw json::parser_error(line_number, "We reached the end of the properties.");
-        return it->second;
-    }
-    throw json::parser_error(line_number, "Trying to use index-base acces for a " + json::jtype_to_string(type) + " node.");
-}
-
-inline const jnode_t &jnode_t::operator[](const std::string &key) const
-{
-    if (type == JOBJECT) {
-        property_map_t::const_iterator it = properties.find(key);
-        if (it != properties.end()) {
-            return it->second;
-        }
-    }
-    throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
-}
-
-inline jnode_t &jnode_t::operator[](const std::string &key)
-{
-    if (type == JOBJECT) {
-        property_map_t::iterator it = properties.find(key);
-        if (it != properties.end()) {
-            return it->second;
-        }
-#ifdef JSON_STRICT_EXISTENCE_CHECK
-        throw json::parser_error(line_number, "Trying to access a non-existing property `" + key + "`.");
-#else
-        return this->add_property(key);
-#endif
-    }
-    throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
-}
-
-inline std::string jnode_t::to_string(bool pretty, unsigned tabsize) const
-{
-    return this->to_string_d(1, pretty, tabsize);
-}
-
-inline jnode_t::property_map_t::const_iterator jnode_t::pbegin() const
-{
-    return properties.begin();
-}
-
-inline jnode_t::property_map_t::iterator jnode_t::pbegin()
-{
-    return properties.begin();
-}
-
-inline jnode_t::property_map_t::const_iterator jnode_t::pend() const
-{
-    return properties.end();
-}
-
-inline jnode_t::property_map_t::iterator jnode_t::pend()
-{
-    return properties.end();
-}
-
-inline jnode_t::array_data_t::const_iterator jnode_t::abegin() const
-{
-    return arr.begin();
-}
-
-inline jnode_t::array_data_t::iterator jnode_t::abegin()
-{
-    return arr.begin();
-}
-
-inline jnode_t::array_data_t::const_iterator jnode_t::aend() const
-{
-    return arr.end();
-}
-
-inline jnode_t::array_data_t::iterator jnode_t::aend()
-{
-    return arr.end();
-}
-
-std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) const
-{
-    std::stringstream ss;
-    if (type == JSTRING)
-        return std::string("\"") + value + std::string("\"");
-    if (type == JNUMBER)
-        return value;
-    if (type == JBOOLEAN)
-        return value;
-    if (type == JOBJECT) {
-        ss << "{";
-        if (pretty)
-            ss << "\n";
-        property_map_t::const_iterator it = properties.begin();
-        for (it = properties.begin(); it != properties.end(); ++it) {
-            if (pretty)
-                ss << detail::make_indentation(depth, tabsize);
-            ss << "\"" << it->first << "\": "
-               << it->second.to_string_d(depth + 1, pretty, tabsize)
-               << ((std::distance(it, properties.end()) == 1) ? "" : ",");
-            if (pretty)
-                ss << "\n";
-        }
-        if (pretty)
-            ss << detail::make_indentation(depth - 1, tabsize);
-        ss << "}";
-        return ss.str();
-    }
-    if (type == JARRAY) {
-        ss << "[";
-        for (std::size_t i = 0; i < arr.size(); ++i) {
-            if (i)
-                ss << ", ";
-            if (pretty && ((arr[i].type == JARRAY) || (arr[i].type == JOBJECT))) {
-                ss << "\n"
-                   << detail::make_indentation(depth, tabsize);
-            }
-            ss << arr[i].to_string_d(depth + 1, pretty, tabsize);
-        }
-        if (pretty && !arr.empty() && ((arr[0].type == JARRAY) || (arr[0].type == JOBJECT))) {
-            ss << "\n"
-               << detail::make_indentation(depth - 1, tabsize);
-        }
-        ss << "]";
-        return ss.str();
-    }
-    return "null";
-}
 
 /// @brief Genering output writer.
 /// @param lhs the JSON node we are writing into.
@@ -1302,7 +433,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
 {
     return lhs << (*rhs);
 }
@@ -1334,7 +465,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, char *rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
 {
     lhs.clear();
     lhs.set_type(json::JARRAY);
@@ -1351,7 +482,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
 {
     lhs.clear();
     lhs.set_type(json::JARRAY);
@@ -1368,7 +499,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
 {
     lhs.clear();
     lhs.set_type(json::JARRAY);
@@ -1385,7 +516,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
 {
     lhs.clear();
     lhs.set_type(json::JARRAY);
@@ -1402,7 +533,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2>
-json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs)
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs)
 {
     lhs.clear();
     lhs.set_type(json::JOBJECT);
@@ -1427,7 +558,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
 {
     return lhs >> (*rhs);
 }
@@ -1437,7 +568,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
 {
     if (lhs.get_type() == json::JARRAY) {
         // Clear the vector.
@@ -1459,7 +590,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
 {
     if (lhs.get_type() == json::JARRAY) {
         assert(lhs.size() <= rhs.size());
@@ -1478,7 +609,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
 {
     if (lhs.get_type() == json::JARRAY) {
         rhs.clear();
@@ -1496,7 +627,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rhs)
 {
     if (lhs.get_type() == json::JARRAY) {
         rhs.clear();
@@ -1514,7 +645,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JOBJECT) {
@@ -1530,42 +661,6 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
     }
     return lhs;
 }
-
-/// @brief Allows to easily implement stream operators.
-#define JSON_DEFINE_OP(json_type, type, write_function, read_function)          \
-    template <>                                                                 \
-    inline json::jnode_t &operator<<(json::jnode_t &lhs, const type &rhs)       \
-    {                                                                           \
-        lhs.set_type(json_type);                                                \
-        lhs.set_value(write_function(rhs));                                     \
-        return lhs;                                                             \
-    }                                                                           \
-    template <>                                                                 \
-    inline const json::jnode_t &operator>>(const json::jnode_t &lhs, type &rhs) \
-    {                                                                           \
-        rhs = static_cast<type>(lhs.read_function());                           \
-        return lhs;                                                             \
-    }
-
-JSON_DEFINE_OP(json::JBOOLEAN, bool, json::detail::bool_to_string, as_bool)
-JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string<char>, as_number<int>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string<unsigned char>, as_number<unsigned int>)
-JSON_DEFINE_OP(json::JNUMBER, short, json::detail::number_to_string, as_number<short>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned short, json::detail::number_to_string, as_number<unsigned short>)
-JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_number<int>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::detail::number_to_string, as_number<unsigned int>)
-JSON_DEFINE_OP(json::JNUMBER, long, json::detail::number_to_string, as_number<long>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::detail::number_to_string, as_number<unsigned long>)
-JSON_DEFINE_OP(json::JNUMBER, float, json::detail::number_to_string, as_number<float>)
-JSON_DEFINE_OP(json::JNUMBER, double, json::detail::number_to_string, as_number<double>)
-JSON_DEFINE_OP(json::JNUMBER, long double, json::detail::number_to_string, as_number<long double>)
-JSON_DEFINE_OP(json::JSTRING, std::string, json::detail::number_to_string, as_string)
-#if __cplusplus >= 201103L
-JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_number<long long>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_number<unsigned long long>)
-#endif
-
-#undef JSON_DEFINE_OP
 
 } // namespace json
 
@@ -1590,18 +685,10 @@ JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string
 /// @param lhs the stream we are writing the content of the JSON node.
 /// @param rhs the JSON node.
 /// @return a reference to the output stream.
-inline std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs)
-{
-    lhs << rhs.to_string();
-    return lhs;
-}
+std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs);
 
 /// @brief Sends the JSON node to the output file stream.
 /// @param lhs the stream we are writing the content of the JSON node.
 /// @param rhs the JSON node.
 /// @return a reference to the output file stream.
-inline std::ofstream &operator<<(std::ofstream &lhs, const json::jnode_t &rhs)
-{
-    lhs << rhs.to_string();
-    return lhs;
-}
+std::ofstream &operator<<(std::ofstream &lhs, const json::jnode_t &rhs);
