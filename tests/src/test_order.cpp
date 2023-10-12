@@ -19,7 +19,7 @@ int main(int, char *[])
     float v2 = 3.14f;
 
     // Prepare the example.
-    json::jnode_t root(json::JOBJECT);
+    json::jnode_t root(json::JTYPE_OBJECT);
 
     // Extract the values.
     root["v0"] << v0;

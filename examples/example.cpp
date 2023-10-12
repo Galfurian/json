@@ -31,7 +31,7 @@ namespace json
 template <>
 jnode_t &operator<<(jnode_t &lhs, const Person &rhs)
 {
-    lhs.set_type(JOBJECT);
+    lhs.set_type(JTYPE_OBJECT);
     lhs["name"] << rhs.name;
     lhs["age"] << rhs.age;
     return lhs;

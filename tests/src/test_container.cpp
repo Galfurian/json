@@ -10,7 +10,7 @@ namespace json
 template <>
 json::jnode_t &operator<<(json::jnode_t &lhs, const Person &rhs)
 {
-    lhs.set_type(json::JOBJECT);
+    lhs.set_type(json::JTYPE_OBJECT);
     lhs["name"] << rhs.name;
     lhs["age"] << rhs.age;
     return lhs;
@@ -35,7 +35,7 @@ int main(int, char *[])
     // Prepare the recipients.
     std::vector<Person> in_ps;
     // Prepare the output json tree.
-    json::jnode_t out_root(json::JOBJECT);
+    json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.
     out_root["persons"] << out_ps;
     // Create the json string.

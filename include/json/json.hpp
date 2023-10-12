@@ -28,13 +28,13 @@ namespace json
 
 /// @brief JSON types.
 enum jtype_t {
-    JSTRING,
-    JOBJECT,
-    JARRAY,
-    JBOOLEAN,
-    JNUMBER,
-    JNULL,
-    JERROR
+    JTYPE_STRING,
+    JTYPE_OBJECT,
+    JTYPE_ARRAY,
+    JTYPE_BOOLEAN,
+    JTYPE_NUMBER,
+    JTYPE_NULL,
+    JTYPE_ERROR
 };
 
 /// @brief Transforms the given JSON type to string.
@@ -100,15 +100,15 @@ extern bool replace_escape_characters;
 /// @brief Represent a json node.
 class jnode_t {
 public:
-    /// The internal map of properties for JOBJECT nodes.
+    /// The internal map of properties for JTYPE_OBJECT nodes.
     typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
     /// How properties are stored inside the internal map.
     typedef ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t property_t;
-    /// The internal array of objects for JARRAY nodes.
+    /// The internal array of objects for JTYPE_ARRAY nodes.
     typedef std::vector<jnode_t> array_data_t;
-    /// Sorting function for JARRAY.
+    /// Sorting function for JTYPE_ARRAY.
     typedef bool (*sort_function_array_t)(const jnode_t &, const jnode_t &);
-    /// Sorting function for JOBJECT.
+    /// Sorting function for JTYPE_OBJECT.
     typedef bool (*sort_function_object_t)(const property_t &, const property_t &);
 
     /// @brief Constructor.
@@ -126,27 +126,27 @@ public:
     /// @return the jtype_t of this node.
     jtype_t get_type() const;
 
-    /// @brief Checks wheter the node is a JSTRING.
+    /// @brief Checks wheter the node is a JTYPE_STRING.
     /// @return true if the internal value is a string, false otherwise.
     bool is_string() const;
 
-    /// @brief Checks wheter the node is a JBOOLEAN.
+    /// @brief Checks wheter the node is a JTYPE_BOOLEAN.
     /// @return true if the internal value is a bool, false otherwise.
     bool is_bool() const;
 
-    /// @brief Checks wheter the node is a JARRAY.
+    /// @brief Checks wheter the node is a JTYPE_ARRAY.
     /// @return true if the node is an array of elements, false otherwise.
     bool is_array() const;
 
-    /// @brief Checks wheter the node is a JOBJECT.
+    /// @brief Checks wheter the node is a JTYPE_OBJECT.
     /// @return true if the node is an object, false otherwise.
     bool is_object() const;
 
-    /// @brief Checks wheter the node is a JNUMBER.
+    /// @brief Checks wheter the node is a JTYPE_NUMBER.
     /// @return true if the internal value is a number, false otherwise.
     bool is_number() const;
 
-    /// @brief Checks wheter the node is a JNULL.
+    /// @brief Checks wheter the node is a JTYPE_NULL.
     /// @return true if the node contains is invalid, false otherwise.
     bool is_null() const;
 
@@ -170,12 +170,12 @@ public:
     T as_number() const
     {
         T output = 0;
-        if (type == JNUMBER) {
+        if (type == JTYPE_NUMBER) {
             std::stringstream ss;
             ss << value;
             ss >> output;
         } else if (json::config::strict_type_check) {
-            throw json::type_error(line_number, JNUMBER, type);
+            throw json::type_error(line_number, JTYPE_NUMBER, type);
         }
         return output;
     }
@@ -240,42 +240,42 @@ public:
     /// @brief Clears all the internal data structures.
     void clear();
 
-    /// @brief Allows to sort the entry inside the node, which be a JARRAY.
+    /// @brief Allows to sort the entry inside the node, which be a JTYPE_ARRAY.
     /// @param fun The function used to sort.
     template <typename SortFunction>
     void sort(const SortFunction &fun)
     {
-        if (type == JARRAY) {
+        if (type == JTYPE_ARRAY) {
             std::sort(arr.begin(), arr.end(), fun);
-        } else if (type == JOBJECT) {
+        } else if (type == JTYPE_OBJECT) {
             properties.sort(fun);
         } else {
-            throw json::parser_error(line_number, "You are trying to sort neither a JARRAY nor a JOBJECT");
+            throw json::parser_error(line_number, "You are trying to sort neither a JTYPE_ARRAY nor a JTYPE_OBJECT");
         }
     }
 
     /// @brief Provides access to an internal node.
     /// @param i The index of the node.
     /// @return A const reference to the node. If this node is not
-    ///          an array, or an object, returns a node of type JNULL.
+    ///          an array, or an object, returns a node of type JTYPE_NULL.
     const jnode_t &operator[](std::size_t i) const;
 
     /// @brief Provides access to an internal node (THIS=Object/Array).
     /// @param i The index of the node.
     /// @return A reference to the node. If this node is not an array,
-    ///          or an object, returns a node of type JNULL.
+    ///          or an object, returns a node of type JTYPE_NULL.
     jnode_t &operator[](std::size_t i);
 
     /// @brief Provides access to an internal node.
     /// @param key The key of the internal node.
     /// @return A const reference to the node. If this node is not
-    ///          an array, or an object, returns a node of type JNULL.
+    ///          an array, or an object, returns a node of type JTYPE_NULL.
     const jnode_t &operator[](const std::string &key) const;
 
     /// @brief Provides access to an internal node.
     /// @param key The key of the internal node.
     /// @return A reference to the node. If this node is not
-    ///          an array, or an object, returns a node of type JNULL.
+    ///          an array, or an object, returns a node of type JTYPE_NULL.
     jnode_t &operator[](const std::string &key);
 
     /// @brief Turns the json object to a formatted string.
@@ -342,17 +342,17 @@ namespace detail
 
 /// @brief The type of tokens we use to control parsing.
 enum token_type_t {
-    UNKNOWN,       ///< An unknown token.
-    STRING,        ///< We are parsing a string.
-    NUMBER,        ///< We are parsing a number.
-    CURLY_OPEN,    ///< We found an open curly braket.
-    CURLY_CLOSE,   ///< We found a close curly braket.
-    BRACKET_OPEN,  ///< We found an open braket.
-    BRACKET_CLOSE, ///< We found a close braket.
-    COMMA,         ///< We found a comma.
-    COLON,         ///< We found a colon.
-    BOOLEAN,       ///< We found a boolean.
-    NUL            ///< We found a NULL value.
+    JTOKEN_UNKNOWN,       ///< An unknown token.
+    JTOKEN_STRING,        ///< We are parsing a string.
+    JTOKEN_NUMBER,        ///< We are parsing a number.
+    JTOKEN_CURLY_OPEN,    ///< We found an open curly braket.
+    JTOKEN_CURLY_CLOSE,   ///< We found a close curly braket.
+    JTOKEN_BRACKET_OPEN,  ///< We found an open braket.
+    JTOKEN_BRACKET_CLOSE, ///< We found a close braket.
+    JTOKEN_COMMA,         ///< We found a comma.
+    JTOKEN_COLON,         ///< We found a colon.
+    JTOKEN_BOOLEAN,       ///< We found a boolean.
+    JTOKEN_NULL           ///< We found a NULL value.
 };
 
 /// @brief A token use for parsing.
@@ -368,7 +368,7 @@ typedef struct token_t {
     /// @param _value the value contained in the token.
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
-    token_t(const std::string &_value = "", token_type_t _type = UNKNOWN, std::size_t _line_number = 0)
+    token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
         : value(_value),
           type(_type),
           line_number(_line_number)
@@ -445,7 +445,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
 /// @return a reference to the JSON node.
 inline json::jnode_t &operator<<(json::jnode_t &lhs, char const *rhs)
 {
-    lhs.set_type(json::JSTRING);
+    lhs.set_type(json::JTYPE_STRING);
     lhs.set_value(rhs);
     return lhs;
 }
@@ -456,7 +456,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, char const *rhs)
 /// @return a reference to the JSON node.
 inline json::jnode_t &operator<<(json::jnode_t &lhs, char *rhs)
 {
-    lhs.set_type(json::JSTRING);
+    lhs.set_type(json::JTYPE_STRING);
     lhs.set_value(rhs);
     return lhs;
 }
@@ -469,7 +469,7 @@ template <typename T>
 inline json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
 {
     lhs.clear();
-    lhs.set_type(json::JARRAY);
+    lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
     for (std::size_t i = 0; i < rhs.size(); ++i) {
         lhs[i] << rhs[i];
@@ -486,7 +486,7 @@ template <typename T>
 inline json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
 {
     lhs.clear();
-    lhs.set_type(json::JARRAY);
+    lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
     for (std::size_t i = 0; i < rhs.size(); ++i) {
         lhs[i] << rhs[i];
@@ -503,7 +503,7 @@ template <typename T>
 inline json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
 {
     lhs.clear();
-    lhs.set_type(json::JARRAY);
+    lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
     std::size_t i = 0;
     for (typename std::list<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
@@ -520,7 +520,7 @@ template <typename T>
 inline json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
 {
     lhs.clear();
-    lhs.set_type(json::JARRAY);
+    lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
     std::size_t i = 0;
     for (typename std::set<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
@@ -537,7 +537,7 @@ template <typename T1, typename T2>
 inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs)
 {
     lhs.clear();
-    lhs.set_type(json::JOBJECT);
+    lhs.set_type(json::JTYPE_OBJECT);
     typename std::map<T1, T2>::const_iterator it;
     for (it = rhs.begin(); it != rhs.end(); ++it) {
         std::stringstream ss;
@@ -571,7 +571,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
 template <typename T>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
 {
-    if (lhs.get_type() == json::JARRAY) {
+    if (lhs.get_type() == json::JTYPE_ARRAY) {
         // Clear the vector.
         rhs.clear();
         // Resize the vector.
@@ -593,7 +593,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> 
 template <typename T>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rhs)
 {
-    if (lhs.get_type() == json::JARRAY) {
+    if (lhs.get_type() == json::JTYPE_ARRAY) {
         assert(lhs.size() <= rhs.size());
         // NOTE: This should not be necessary (see assert above) but for safety reasons, ensure there is no out of bounds acces
         const std::size_t elem_count = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
@@ -612,7 +612,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rh
 template <typename T>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
 {
-    if (lhs.get_type() == json::JARRAY) {
+    if (lhs.get_type() == json::JTYPE_ARRAY) {
         rhs.clear();
         rhs.resize(lhs.size());
         std::size_t i = 0;
@@ -630,7 +630,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &r
 template <typename T>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rhs)
 {
-    if (lhs.get_type() == json::JARRAY) {
+    if (lhs.get_type() == json::JTYPE_ARRAY) {
         rhs.clear();
         for (std::size_t i = 0; i < lhs.size(); ++i) {
             T t;
@@ -649,7 +649,7 @@ template <typename T1, typename T2>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
-    if (lhs.get_type() == json::JOBJECT) {
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
         rhs.clear();
         json::jnode_t::property_map_t::const_iterator it;
         for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
