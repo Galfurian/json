@@ -546,6 +546,8 @@ namespace parser
 /// @return the root of the generated json tree.
 jnode_t parse(const std::string &json_string)
 {
+    std::cout << json::get_global_config().strict_type_check << "\n";
+    std::cout << json::get_global_config().strict_existance_check << "\n";
     std::size_t k = 0;
     std::vector<detail::token_t> tokens;
     // Extract the tokens.
@@ -988,10 +990,11 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
     template <>                                                                       \
     const jnode_t &operator>>(const jnode_t &lhs, type &rhs)                          \
     {                                                                                 \
-        if ((json_type) != lhs.get_type()) {                                          \
+        if ((json_type) == lhs.get_type()) {                                          \
+            rhs = static_cast<type>(lhs.read_function());                             \
+        } else if (json::get_global_config().strict_type_check) {                     \
             throw json::type_error(lhs.get_line_number(), json_type, lhs.get_type()); \
         }                                                                             \
-        rhs = static_cast<type>(lhs.read_function());                                 \
         return lhs;                                                                   \
     }
 

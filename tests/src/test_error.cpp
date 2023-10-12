@@ -33,7 +33,6 @@ bool test_error_type()
         json::jnode_t root = json::parser::parse(input);
         float v1;
         root["v1"] >> v1;
-        std::cout << root["v1"].get_type();
     } catch (json::type_error &e) {
         std::cout << "L" << e.line << " : " << e.found << " vs " << e.expected << " : " << e.what() << "\n";
         return true;

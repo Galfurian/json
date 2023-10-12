@@ -170,17 +170,15 @@ public:
     template <typename T>
     T as_number() const
     {
+        T output = 0;
         if (type == JNUMBER) {
             std::stringstream ss;
             ss << value;
-            T output;
             ss >> output;
-            return output;
-        }
-        if (json::get_global_config().strict_type_check) {
+        } else if (json::get_global_config().strict_type_check) {
             throw json::type_error(line_number, JNUMBER, type);
         }
-        return static_cast<T>(0);
+        return output;
     }
 
     /// @brief Turns the value to BOOL.
