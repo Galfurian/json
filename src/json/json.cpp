@@ -20,26 +20,26 @@ bool replace_escape_characters = false;
 /// @return the string representing the JSON type.
 std::string jtype_to_string(jtype_t type)
 {
-    if (type == JSTRING) {
-        return "JSTRING";
+    if (type == JTYPE_STRING) {
+        return "JTYPE_STRING";
     }
-    if (type == JOBJECT) {
-        return "JOBJECT";
+    if (type == JTYPE_OBJECT) {
+        return "JTYPE_OBJECT";
     }
-    if (type == JARRAY) {
-        return "JARRAY";
+    if (type == JTYPE_ARRAY) {
+        return "JTYPE_ARRAY";
     }
-    if (type == JBOOLEAN) {
-        return "JBOOLEAN";
+    if (type == JTYPE_BOOLEAN) {
+        return "JTYPE_BOOLEAN";
     }
-    if (type == JNUMBER) {
-        return "JNUMBER";
+    if (type == JTYPE_NUMBER) {
+        return "JTYPE_NUMBER";
     }
-    if (type == JNULL) {
-        return "JNULL";
+    if (type == JTYPE_NULL) {
+        return "JTYPE_NULL";
     }
-    if (type == JERROR) {
-        return "JERROR";
+    if (type == JTYPE_ERROR) {
+        return "JTYPE_ERROR";
     }
     return "JUNKNOWN";
 }
@@ -330,7 +330,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                     }
                     ++j;
                 }
-                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
+                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), JTOKEN_STRING, line_number));
                 k = j + 1;
                 continue;
             }
@@ -347,52 +347,52 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                     }
                     ++j;
                 }
-                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), STRING, line_number));
+                tokens.push_back(token_t(str.substr(k + 1, j - k - 1), JTOKEN_STRING, line_number));
                 k = j + 1;
                 continue;
             }
             if (str[k] == ',') {
-                tokens.push_back(token_t(",", COMMA, line_number));
+                tokens.push_back(token_t(",", JTOKEN_COMMA, line_number));
                 ++k;
                 continue;
             }
             if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
-                tokens.push_back(token_t("true", BOOLEAN, line_number));
+                tokens.push_back(token_t("true", JTOKEN_BOOLEAN, line_number));
                 k += 4;
                 continue;
             }
             if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
-                tokens.push_back(token_t("false", BOOLEAN, line_number));
+                tokens.push_back(token_t("false", JTOKEN_BOOLEAN, line_number));
                 k += 5;
                 continue;
             }
             if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
-                tokens.push_back(token_t("null", NUL, line_number));
+                tokens.push_back(token_t("null", JTOKEN_NULL, line_number));
                 k += 4;
                 continue;
             }
             if (str[k] == '}') {
-                tokens.push_back(token_t("}", CURLY_CLOSE, line_number));
+                tokens.push_back(token_t("}", JTOKEN_CURLY_CLOSE, line_number));
                 ++k;
                 continue;
             }
             if (str[k] == '{') {
-                tokens.push_back(token_t("{", CURLY_OPEN, line_number));
+                tokens.push_back(token_t("{", JTOKEN_CURLY_OPEN, line_number));
                 ++k;
                 continue;
             }
             if (str[k] == ']') {
-                tokens.push_back(token_t("]", BRACKET_CLOSE, line_number));
+                tokens.push_back(token_t("]", JTOKEN_BRACKET_CLOSE, line_number));
                 ++k;
                 continue;
             }
             if (str[k] == '[') {
-                tokens.push_back(token_t("[", BRACKET_OPEN, line_number));
+                tokens.push_back(token_t("[", JTOKEN_BRACKET_OPEN, line_number));
                 ++k;
                 continue;
             }
             if (str[k] == ':') {
-                tokens.push_back(token_t(":", COLON, line_number));
+                tokens.push_back(token_t(":", JTOKEN_COLON, line_number));
                 ++k;
                 continue;
             }
@@ -428,11 +428,11 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                     }
                     ++k2;
                 }
-                tokens.push_back(token_t(str.substr(k, k2 - k), NUMBER, line_number));
+                tokens.push_back(token_t(str.substr(k, k2 - k), JTOKEN_NUMBER, line_number));
                 k = k2;
                 continue;
             }
-            tokens.push_back(token_t(str.substr(k), UNKNOWN, line_number));
+            tokens.push_back(token_t(str.substr(k), JTOKEN_UNKNOWN, line_number));
             k = str.length();
         }
         index = detail::skip_whitespaces(source, next, line_number);
@@ -450,15 +450,15 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
     // Set line number.
     current.set_line_number(tokens[index].line_number + 1);
     // Parse the element.
-    if (tokens[index].type == CURLY_OPEN) {
+    if (tokens[index].type == JTOKEN_CURLY_OPEN) {
         // We need to skip the braket, and check if we ran out of tokens.
         if ((++index) >= tokens.size()) {
             throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
         }
         // Set type.
-        current.set_type(JOBJECT);
+        current.set_type(JTYPE_OBJECT);
         // Iterate until we find the end of the object, i.e., the closing braket.
-        while (tokens[index].type != CURLY_CLOSE) {
+        while (tokens[index].type != JTOKEN_CURLY_CLOSE) {
             // Set the key.
             key = tokens[index].value.c_str();
             // We need to skip the key, and check if we ran out of tokens.
@@ -466,7 +466,7 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
                 throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
             }
             // We should find a COLON ':'.
-            if (tokens[index].type != COLON) {
+            if (tokens[index].type != JTOKEN_COLON) {
                 throw json::parser_error(current.get_line_number(), "We did not find a COLON.");
             }
             // We need to skip the COLON, and check if we ran out of tokens.
@@ -483,21 +483,21 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
             index = next_index;
             // If the next token is a comma, we need to parse another property,
             // but we also need to skip that comma.
-            index += (tokens[index].type == COMMA);
+            index += (tokens[index].type == JTOKEN_COMMA);
             // Now, if the index goes outside the number of tokens we need to stop.
             if (index >= tokens.size()) {
                 throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
             }
         }
-    } else if (tokens[index].type == BRACKET_OPEN) {
+    } else if (tokens[index].type == JTOKEN_BRACKET_OPEN) {
         // We need to skip the braket, and check if we ran out of tokens.
         if ((++index) >= tokens.size()) {
             throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
         }
         // Set type.
-        current.set_type(JARRAY);
+        current.set_type(JTYPE_ARRAY);
         // Iterate until we find the end of the array, i.e., the closing braket.
-        while (tokens[index].type != BRACKET_CLOSE) {
+        while (tokens[index].type != JTOKEN_BRACKET_CLOSE) {
             // Set the next_index.
             next_index = index;
             // Add the element.
@@ -508,30 +508,30 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
             index = next_index;
             // If the next token is a comma, we need to parse another property,
             // but we also need to skip that comma.
-            index += (tokens[index].type == COMMA);
+            index += (tokens[index].type == JTOKEN_COMMA);
             // Now, if the index goes outside the number of tokens we need to stop.
             if (index >= tokens.size()) {
                 throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
             }
         }
-    } else if (tokens[index].type == NUMBER) {
+    } else if (tokens[index].type == JTOKEN_NUMBER) {
         // Set type.
-        current.set_type(JNUMBER);
+        current.set_type(JTYPE_NUMBER);
         // Set the value.
         current.set_value(tokens[index].value);
-    } else if (tokens[index].type == STRING) {
+    } else if (tokens[index].type == JTOKEN_STRING) {
         // Set type.
-        current.set_type(JSTRING);
+        current.set_type(JTYPE_STRING);
         // Set the value.
         current.set_value(tokens[index].value);
-    } else if (tokens[index].type == BOOLEAN) {
+    } else if (tokens[index].type == JTOKEN_BOOLEAN) {
         // Set type.
-        current.set_type(JBOOLEAN);
+        current.set_type(JTYPE_BOOLEAN);
         // Set the value.
         current.set_value(tokens[index].value);
-    } else if (tokens[index].type == NUL) {
+    } else if (tokens[index].type == JTOKEN_NULL) {
         // Set type.
-        current.set_type(JNULL);
+        current.set_type(JTYPE_NULL);
         // Set the value.
         current.set_value("null");
     } else {
@@ -586,7 +586,7 @@ jnode_t parse_file(const std::string &filename)
 {
     std::string content;
     if (!json::parser::read_file(filename, content)) {
-        jnode_t null_value(JNULL);
+        jnode_t null_value(JTYPE_NULL);
         return null_value;
     }
     return parser::parse(content);
@@ -612,7 +612,7 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty, u
 } // namespace parser
 
 jnode_t::jnode_t()
-    : type(JNULL),
+    : type(JTYPE_NULL),
       value(),
       line_number(),
       properties(),
@@ -643,32 +643,32 @@ jtype_t jnode_t::get_type() const
 
 bool jnode_t::is_string() const
 {
-    return type == JSTRING;
+    return type == JTYPE_STRING;
 }
 
 bool jnode_t::is_bool() const
 {
-    return type == JBOOLEAN;
+    return type == JTYPE_BOOLEAN;
 }
 
 bool jnode_t::is_array() const
 {
-    return type == JARRAY;
+    return type == JTYPE_ARRAY;
 }
 
 bool jnode_t::is_object() const
 {
-    return type == JOBJECT;
+    return type == JTYPE_OBJECT;
 }
 
 bool jnode_t::is_number() const
 {
-    return type == JNUMBER;
+    return type == JTYPE_NUMBER;
 }
 
 bool jnode_t::is_null() const
 {
-    return type == JNULL;
+    return type == JTYPE_NULL;
 }
 
 std::size_t jnode_t::get_line_number() const
@@ -678,10 +678,10 @@ std::size_t jnode_t::get_line_number() const
 
 std::size_t jnode_t::size() const
 {
-    if (type == JARRAY) {
+    if (type == JTYPE_ARRAY) {
         return arr.size();
     }
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         return properties.size();
     }
     return 0;
@@ -689,7 +689,7 @@ std::size_t jnode_t::size() const
 
 bool jnode_t::has_property(const std::string &key) const
 {
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         return properties.find(key) != properties.end();
     }
     return false;
@@ -697,22 +697,22 @@ bool jnode_t::has_property(const std::string &key) const
 
 bool jnode_t::as_bool() const
 {
-    if (type == JBOOLEAN) {
+    if (type == JTYPE_BOOLEAN) {
         return value == "true";
     }
     if (json::config::strict_type_check) {
-        throw json::type_error(line_number, JBOOLEAN, type);
+        throw json::type_error(line_number, JTYPE_BOOLEAN, type);
     }
     return false;
 }
 
 std::string jnode_t::as_string() const
 {
-    if (type == JSTRING) {
+    if (type == JTYPE_STRING) {
         return detail::deserialize(value);
     }
     if (json::config::strict_type_check) {
-        throw json::type_error(line_number, JSTRING, type);
+        throw json::type_error(line_number, JTYPE_STRING, type);
     }
     return std::string();
 }
@@ -725,7 +725,7 @@ jnode_t &jnode_t::set_type(jtype_t _type)
 
 jnode_t &jnode_t::set_value(const std::string &_value)
 {
-    if ((type != JOBJECT) && (type != JARRAY)) {
+    if ((type != JTYPE_OBJECT) && (type != JTYPE_ARRAY)) {
         value = _value;
     } else {
         throw json::parser_error(line_number, "Trying to set the value of a " + json::jtype_to_string(type) + " node.");
@@ -741,7 +741,7 @@ jnode_t &jnode_t::set_line_number(std::size_t _line_number)
 
 jnode_t &jnode_t::add_property(const std::string &key)
 {
-    if (type != JOBJECT) {
+    if (type != JTYPE_OBJECT) {
         throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
     }
     return properties.set(key, jnode_t())->second;
@@ -749,7 +749,7 @@ jnode_t &jnode_t::add_property(const std::string &key)
 
 jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 {
-    if (type != JOBJECT) {
+    if (type != JTYPE_OBJECT) {
         throw json::parser_error(line_number, "Trying to add a property to a " + json::jtype_to_string(type) + " node.");
     }
     return properties.set(key, node)->second;
@@ -757,7 +757,7 @@ jnode_t &jnode_t::add_property(const std::string &key, const jnode_t &node)
 
 void jnode_t::remove_property(const std::string &key)
 {
-    if (type != JOBJECT) {
+    if (type != JTYPE_OBJECT) {
         throw json::parser_error(line_number, "Trying to remove a property from a " + json::jtype_to_string(type) + " node.");
     }
     properties.erase(key);
@@ -765,7 +765,7 @@ void jnode_t::remove_property(const std::string &key)
 
 jnode_t &jnode_t::add_element(const jnode_t &node)
 {
-    if (type != JARRAY) {
+    if (type != JTYPE_ARRAY) {
         throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
     }
     arr.push_back(node);
@@ -774,7 +774,7 @@ jnode_t &jnode_t::add_element(const jnode_t &node)
 
 void jnode_t::remove_element(std::size_t index)
 {
-    if (type != JARRAY) {
+    if (type != JTYPE_ARRAY) {
         throw json::parser_error(line_number, "Trying to add an element to a " + json::jtype_to_string(type) + " node.");
     }
     if (index >= arr.size()) {
@@ -785,7 +785,7 @@ void jnode_t::remove_element(std::size_t index)
 
 void jnode_t::reserve(std::size_t size)
 {
-    if (type != JARRAY) {
+    if (type != JTYPE_ARRAY) {
         throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
     }
     arr.reserve(size);
@@ -793,7 +793,7 @@ void jnode_t::reserve(std::size_t size)
 
 void jnode_t::resize(std::size_t size)
 {
-    if (type != JARRAY) {
+    if (type != JTYPE_ARRAY) {
         throw json::parser_error(line_number, "Trying to reserve space in a " + json::jtype_to_string(type) + " node.");
     }
     arr.resize(size);
@@ -803,7 +803,7 @@ void jnode_t::clear()
 {
     // We set the type to error, so that the node must be properly set again to
     // make the tree coherent again.
-    type = JERROR;
+    type = JTYPE_ERROR;
     value.clear();
     properties.clear();
     arr.clear();
@@ -811,13 +811,13 @@ void jnode_t::clear()
 
 const jnode_t &jnode_t::operator[](std::size_t i) const
 {
-    if (type == JARRAY) {
+    if (type == JTYPE_ARRAY) {
         if (i >= arr.size()) {
             throw json::range_error(line_number, i, arr.size());
         }
         return arr[i];
     }
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         if (i >= properties.size()) {
             throw json::range_error(line_number, i, properties.size());
         }
@@ -832,13 +832,13 @@ const jnode_t &jnode_t::operator[](std::size_t i) const
 
 jnode_t &jnode_t::operator[](std::size_t i)
 {
-    if (type == JARRAY) {
+    if (type == JTYPE_ARRAY) {
         if (i >= arr.size()) {
             throw json::range_error(line_number, i, arr.size());
         }
         return arr[i];
     }
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         if (i >= properties.size()) {
             throw json::range_error(line_number, i, properties.size());
         }
@@ -853,7 +853,7 @@ jnode_t &jnode_t::operator[](std::size_t i)
 
 const jnode_t &jnode_t::operator[](const std::string &key) const
 {
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         property_map_t::const_iterator it = properties.find(key);
         if (it != properties.end()) {
             return it->second;
@@ -862,13 +862,13 @@ const jnode_t &jnode_t::operator[](const std::string &key) const
     if (json::config::strict_existance_check) {
         throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
     }
-    static jnode_t null_value(JNULL);
+    static jnode_t null_value(JTYPE_NULL);
     return null_value;
 }
 
 jnode_t &jnode_t::operator[](const std::string &key)
 {
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         property_map_t::iterator it = properties.find(key);
         if (it != properties.end()) {
             return it->second;
@@ -929,7 +929,7 @@ jnode_t::array_data_t::iterator jnode_t::aend()
 std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) const
 {
     std::stringstream ss;
-    if (type == JSTRING) {
+    if (type == JTYPE_STRING) {
         if (json::config::replace_escape_characters) {
             // Replace special characters, with UTF-8 supported ones.
             std::string str = value;
@@ -943,13 +943,13 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
         }
         return std::string("\"") + value + std::string("\"");
     }
-    if (type == JNUMBER) {
+    if (type == JTYPE_NUMBER) {
         return value;
     }
-    if (type == JBOOLEAN) {
+    if (type == JTYPE_BOOLEAN) {
         return value;
     }
-    if (type == JOBJECT) {
+    if (type == JTYPE_OBJECT) {
         ss << "{";
         if (pretty) {
             ss << "\n";
@@ -972,19 +972,19 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
         ss << "}";
         return ss.str();
     }
-    if (type == JARRAY) {
+    if (type == JTYPE_ARRAY) {
         ss << "[";
         for (std::size_t i = 0; i < arr.size(); ++i) {
             if (i) {
                 ss << ", ";
             }
-            if (pretty && ((arr[i].type == JARRAY) || (arr[i].type == JOBJECT))) {
+            if (pretty && ((arr[i].type == JTYPE_ARRAY) || (arr[i].type == JTYPE_OBJECT))) {
                 ss << "\n"
                    << detail::make_indentation(depth, tabsize);
             }
             ss << arr[i].to_string_d(depth + 1, pretty, tabsize);
         }
-        if (pretty && !arr.empty() && ((arr[0].type == JARRAY) || (arr[0].type == JOBJECT))) {
+        if (pretty && !arr.empty() && ((arr[0].type == JTYPE_ARRAY) || (arr[0].type == JTYPE_OBJECT))) {
             ss << "\n"
                << detail::make_indentation(depth - 1, tabsize);
         }
@@ -1014,22 +1014,22 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
         return lhs;                                                                   \
     }
 
-JSON_DEFINE_OP(json::JBOOLEAN, bool, json::detail::bool_to_string, as_bool)
-JSON_DEFINE_OP(json::JNUMBER, char, json::detail::char_to_string<char>, as_number<int>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned char, json::detail::char_to_string<unsigned char>, as_number<unsigned int>)
-JSON_DEFINE_OP(json::JNUMBER, short, json::detail::number_to_string, as_number<short>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned short, json::detail::number_to_string, as_number<unsigned short>)
-JSON_DEFINE_OP(json::JNUMBER, int, json::detail::number_to_string, as_number<int>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned int, json::detail::number_to_string, as_number<unsigned int>)
-JSON_DEFINE_OP(json::JNUMBER, long, json::detail::number_to_string, as_number<long>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long, json::detail::number_to_string, as_number<unsigned long>)
-JSON_DEFINE_OP(json::JNUMBER, float, json::detail::number_to_string, as_number<float>)
-JSON_DEFINE_OP(json::JNUMBER, double, json::detail::number_to_string, as_number<double>)
-JSON_DEFINE_OP(json::JNUMBER, long double, json::detail::number_to_string, as_number<long double>)
-JSON_DEFINE_OP(json::JSTRING, std::string, json::detail::number_to_string, as_string)
+JSON_DEFINE_OP(json::JTYPE_BOOLEAN, bool, json::detail::bool_to_string, as_bool)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, char, json::detail::char_to_string<char>, as_number<int>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, unsigned char, json::detail::char_to_string<unsigned char>, as_number<unsigned int>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, short, json::detail::number_to_string, as_number<short>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, unsigned short, json::detail::number_to_string, as_number<unsigned short>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, int, json::detail::number_to_string, as_number<int>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, unsigned int, json::detail::number_to_string, as_number<unsigned int>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, long, json::detail::number_to_string, as_number<long>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, unsigned long, json::detail::number_to_string, as_number<unsigned long>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, float, json::detail::number_to_string, as_number<float>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, double, json::detail::number_to_string, as_number<double>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, long double, json::detail::number_to_string, as_number<long double>)
+JSON_DEFINE_OP(json::JTYPE_STRING, std::string, json::detail::number_to_string, as_string)
 #if __cplusplus >= 201103L
-JSON_DEFINE_OP(json::JNUMBER, long long, json::detail::number_to_string, as_number<long long>)
-JSON_DEFINE_OP(json::JNUMBER, unsigned long long, json::detail::number_to_string, as_number<unsigned long long>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, long long, json::detail::number_to_string, as_number<long long>)
+JSON_DEFINE_OP(json::JTYPE_NUMBER, unsigned long long, json::detail::number_to_string, as_number<unsigned long long>)
 #endif
 
 #undef JSON_DEFINE_OP

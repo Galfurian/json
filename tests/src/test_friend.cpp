@@ -36,7 +36,7 @@ public:
 
     friend json::jnode_t &operator<<(json::jnode_t &lhs, const Animal &rhs)
     {
-        lhs.set_type(json::JOBJECT);
+        lhs.set_type(json::JTYPE_OBJECT);
         lhs["name"] << rhs.name;
         return lhs;
     }
@@ -55,7 +55,7 @@ int main(int, char *[])
     // Prepare the recipients.
     Animal cat_in;
     // Prepare the output json tree.
-    json::jnode_t out_root(json::JOBJECT);
+    json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.
     out_root["Animal"] << cat_out;
     // Create the json string.

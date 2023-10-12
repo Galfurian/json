@@ -47,7 +47,7 @@ int main(int, char *[])
 
     // ========================================================================
     // Prepare the output json tree.
-    json::jnode_t out_root(json::JOBJECT);
+    json::jnode_t out_root(json::JTYPE_OBJECT);
 
     // ========================================================================
     // Write the values.
