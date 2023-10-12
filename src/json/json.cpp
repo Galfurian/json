@@ -8,15 +8,11 @@
 namespace json
 {
 
-/// @brief JSON parser configuration.
 namespace config
 {
-/// @brief If true, the library will throw an error if the C++ variable you
-/// are using to read or write to a json node have different types.
-bool strict_type_check = false;
-/// @brief If true, the library will throw an error if the field of an
-/// object you are trying to access does not exist.
-bool strict_existance_check = false;
+bool strict_type_check         = false;
+bool strict_existance_check    = false;
+bool replace_escape_characters = false;
 }; // namespace config
 
 /// @brief Transforms the given JSON type to string.
@@ -934,6 +930,17 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
 {
     std::stringstream ss;
     if (type == JSTRING) {
+        if (json::config::replace_escape_characters) {
+            // Replace special characters, with UTF-8 supported ones.
+            std::string str = value;
+            detail::replace_all(str, '\\', "\\\\");
+            detail::replace_all(str, '\"', "\\\"");
+            detail::replace_all(str, '\t', "\\t");
+            detail::replace_all(str, "\r\n", "\\r\\n");
+            detail::replace_all(str, '\r', "\\r");
+            detail::replace_all(str, '\n', "\\n");
+            return std::string("\"") + str + std::string("\"");
+        }
         return std::string("\"") + value + std::string("\"");
     }
     if (type == JNUMBER) {

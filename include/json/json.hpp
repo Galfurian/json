@@ -92,6 +92,9 @@ extern bool strict_type_check;
 /// @brief If true, the library will throw an error if the field of an
 /// object you are trying to access does not exist.
 extern bool strict_existance_check;
+/// @brief If true, the library will replace escape character when printing to
+/// output.
+extern bool replace_escape_characters;
 }; // namespace config
 
 /// @brief Represent a json node.
