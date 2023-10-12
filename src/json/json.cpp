@@ -8,6 +8,17 @@
 namespace json
 {
 
+/// @brief JSON parser configuration.
+namespace config
+{
+/// @brief If true, the library will throw an error if the C++ variable you
+/// are using to read or write to a json node have different types.
+bool strict_type_check = false;
+/// @brief If true, the library will throw an error if the field of an
+/// object you are trying to access does not exist.
+bool strict_existance_check = false;
+}; // namespace config
+
 /// @brief Transforms the given JSON type to string.
 /// @param type the JSON type to transform to string.
 /// @return the string representing the JSON type.
@@ -546,8 +557,6 @@ namespace parser
 /// @return the root of the generated json tree.
 jnode_t parse(const std::string &json_string)
 {
-    std::cout << json::get_global_config().strict_type_check << "\n";
-    std::cout << json::get_global_config().strict_existance_check << "\n";
     std::size_t k = 0;
     std::vector<detail::token_t> tokens;
     // Extract the tokens.
@@ -695,7 +704,7 @@ bool jnode_t::as_bool() const
     if (type == JBOOLEAN) {
         return value == "true";
     }
-    if (json::get_global_config().strict_type_check) {
+    if (json::config::strict_type_check) {
         throw json::type_error(line_number, JBOOLEAN, type);
     }
     return false;
@@ -706,7 +715,7 @@ std::string jnode_t::as_string() const
     if (type == JSTRING) {
         return detail::deserialize(value);
     }
-    if (json::get_global_config().strict_type_check) {
+    if (json::config::strict_type_check) {
         throw json::type_error(line_number, JSTRING, type);
     }
     return std::string();
@@ -854,7 +863,7 @@ const jnode_t &jnode_t::operator[](const std::string &key) const
             return it->second;
         }
     }
-    if (json::get_global_config().strict_existance_check) {
+    if (json::config::strict_existance_check) {
         throw json::parser_error(line_number, "Trying to access the property `" + key + "` for a " + json::jtype_to_string(type) + " node.");
     }
     static jnode_t null_value(JNULL);
@@ -868,7 +877,7 @@ jnode_t &jnode_t::operator[](const std::string &key)
         if (it != properties.end()) {
             return it->second;
         }
-        if (json::get_global_config().strict_existance_check) {
+        if (json::config::strict_existance_check) {
             throw json::parser_error(line_number, "Trying to access a non-existing property `" + key + "`.");
         }
         return this->add_property(key);
@@ -992,7 +1001,7 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
     {                                                                                 \
         if ((json_type) == lhs.get_type()) {                                          \
             rhs = static_cast<type>(lhs.read_function());                             \
-        } else if (json::get_global_config().strict_type_check) {                     \
+        } else if (json::config::strict_type_check) {                                 \
             throw json::type_error(lhs.get_line_number(), json_type, lhs.get_type()); \
         }                                                                             \
         return lhs;                                                                   \

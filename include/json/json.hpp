@@ -83,20 +83,16 @@ private:
     static std::string build_message(std::size_t _index, std::size_t _size);
 };
 
-struct globa_config_t {
-    /// @brief If true, the library will throw an error if the C++ variable you
-    /// are using to read or write to a json node have different types.
-    bool strict_type_check;
-    /// @brief If true, the library will throw an error if the field of an
-    /// object you are trying to access does not exist.
-    bool strict_existance_check;
-};
-
-static inline globa_config_t &get_global_config()
+/// @brief JSON parser configuration.
+namespace config
 {
-    static globa_config_t config{ false, false };
-    return config;
-}
+/// @brief If true, the library will throw an error if the C++ variable you
+/// are using to read or write to a json node have different types.
+extern bool strict_type_check;
+/// @brief If true, the library will throw an error if the field of an
+/// object you are trying to access does not exist.
+extern bool strict_existance_check;
+}; // namespace config
 
 /// @brief Represent a json node.
 class jnode_t {
@@ -175,7 +171,7 @@ public:
             std::stringstream ss;
             ss << value;
             ss >> output;
-        } else if (json::get_global_config().strict_type_check) {
+        } else if (json::config::strict_type_check) {
             throw json::type_error(line_number, JNUMBER, type);
         }
         return output;
