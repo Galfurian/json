@@ -13,14 +13,12 @@ int check_equivalence(const std::string &name, const T &v1, const T &v2)
     return 0;
 }
 
-enum direction_t {
+enum direction_t : int {
     north,
     south,
     east,
     west
 };
-
-JSON_DEFINE_OP_ENUM(direction_t)
 
 int main(int, char *[])
 {

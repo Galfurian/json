@@ -368,7 +368,7 @@ typedef struct token_t {
     /// @param _value the value contained in the token.
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
-    token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
+    explicit token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
         : value(_value),
           type(_type),
           line_number(_line_number)
@@ -426,8 +426,18 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T>
+template <typename T, std::enable_if_t<!std::is_enum<T>{}> * = nullptr>
 json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
+
+/// @brief Genering output writer.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T, std::enable_if_t<std::is_enum<T>{}> * = nullptr>
+json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
+{
+    return lhs << static_cast<int>(rhs);
+}
 
 /// @brief Output writer for pointers.
 /// @param lhs the JSON node we are writing into.
@@ -551,8 +561,19 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T>
+template <typename T, std::enable_if_t<!std::is_enum<T>{}> * = nullptr>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
+
+/// @brief Genering input reader.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T, std::enable_if_t<std::is_enum<T>{}> * = nullptr>
+const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
+{
+    rhs = static_cast<T>(lhs.as_number<int>());
+    return lhs;
+}
 
 /// @brief Input reader for pointers.
 /// @param lhs the JSON node we are reading from.
@@ -664,23 +685,6 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
 }
 
 } // namespace json
-
-/// @brief Define the pair of operators required to handle C++ enums.
-#define JSON_DEFINE_OP_ENUM(ENUM_TYPE)                                        \
-    namespace json                                                            \
-    {                                                                         \
-    template <>                                                               \
-    json::jnode_t &operator<<(json::jnode_t &lhs, const ENUM_TYPE &rhs)       \
-    {                                                                         \
-        return (lhs << static_cast<int>(rhs));                                \
-    }                                                                         \
-    template <>                                                               \
-    const json::jnode_t &operator>>(const json::jnode_t &lhs, ENUM_TYPE &rhs) \
-    {                                                                         \
-        rhs = static_cast<ENUM_TYPE>(lhs.as_number<int>());                   \
-        return lhs;                                                           \
-    }                                                                         \
-    }
 
 /// @brief Sends the JSON node to the output stream.
 /// @param lhs the stream we are writing the content of the JSON node.
