@@ -426,14 +426,14 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T, std::enable_if_t<!std::is_enum<T>{}> * = nullptr>
+template <typename T, typename std::enable_if<!std::is_enum<T>{}>::type * = nullptr>
 json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
 
 /// @brief Genering output writer.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T, std::enable_if_t<std::is_enum<T>{}> * = nullptr>
+template <typename T, typename std::enable_if<std::is_enum<T>{}>::type * = nullptr>
 json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
 {
     return lhs << static_cast<int>(rhs);
@@ -561,14 +561,14 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T, std::enable_if_t<!std::is_enum<T>{}> * = nullptr>
+template <typename T, typename std::enable_if<!std::is_enum<T>{}>::type * = nullptr>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
 
 /// @brief Genering input reader.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T, std::enable_if_t<std::is_enum<T>{}> * = nullptr>
+template <typename T, typename std::enable_if<std::is_enum<T>{}>::type * = nullptr>
 const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
 {
     rhs = static_cast<T>(lhs.as_number<int>());
