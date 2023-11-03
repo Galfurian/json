@@ -13,7 +13,7 @@ namespace config
 bool strict_type_check         = false;
 bool strict_existance_check    = false;
 bool replace_escape_characters = false;
-}; // namespace config
+} // namespace config
 
 /// @brief Transforms the given JSON type to string.
 /// @param type the JSON type to transform to string.
