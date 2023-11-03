@@ -95,7 +95,7 @@ extern bool strict_existance_check;
 /// @brief If true, the library will replace escape character when printing to
 /// output.
 extern bool replace_escape_characters;
-}; // namespace config
+} // namespace config
 
 /// @brief Represent a json node.
 class jnode_t {
