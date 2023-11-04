@@ -426,15 +426,17 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T, typename std::enable_if<!std::is_enum<T>{}>::type * = nullptr>
-json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
+template <typename T>
+typename std::enable_if<!std::is_enum<T>::value, json::jnode_t &>::type
+operator<<(json::jnode_t &lhs, T const &rhs);
 
 /// @brief Genering output writer.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T, typename std::enable_if<std::is_enum<T>{}>::type * = nullptr>
-json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
+template <typename T>
+typename std::enable_if<std::is_enum<T>::value, json::jnode_t &>::type
+operator<<(json::jnode_t &lhs, T rhs)
 {
     return lhs << static_cast<int>(rhs);
 }
@@ -561,15 +563,17 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T, typename std::enable_if<!std::is_enum<T>{}>::type * = nullptr>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
+template <typename T>
+typename std::enable_if<!std::is_enum<T>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, T &rhs);
 
 /// @brief Genering input reader.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T, typename std::enable_if<std::is_enum<T>{}>::type * = nullptr>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
+template <typename T>
+typename std::enable_if<std::is_enum<T>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, T &rhs)
 {
     rhs = static_cast<T>(lhs.as_number<int>());
     return lhs;
@@ -666,8 +670,9 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rh
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>{}>::type * = nullptr>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+template <typename T1, typename T2>
+inline typename std::enable_if<!std::is_enum<T1>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
@@ -688,8 +693,9 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>{}>::type * = nullptr>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+template <typename T1, typename T2>
+inline typename std::enable_if<std::is_enum<T1>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
