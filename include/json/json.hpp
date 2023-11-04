@@ -662,11 +662,11 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rh
     return lhs;
 }
 
-/// @brief Input reader for maps.
+/// @brief Input reader for maps, with NOT an enum as key.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T1, typename T2>
+template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>{}>::type * = nullptr>
 inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
@@ -679,6 +679,28 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
             T1 key;
             ss >> key;
             it->second >> rhs[key];
+        }
+    }
+    return lhs;
+}
+
+/// @brief Input reader for maps, with enum as key.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>{}>::type * = nullptr>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+{
+    // Check the type.
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        rhs.clear();
+        json::jnode_t::property_map_t::const_iterator it;
+        for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
+            std::stringstream ss;
+            ss << it->first;
+            int key;
+            ss >> key;
+            it->second >> rhs[T1(key)];
         }
     }
     return lhs;
