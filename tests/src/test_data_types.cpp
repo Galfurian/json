@@ -28,7 +28,7 @@ int check_equivalence(const std::string &name, const std::vector<T> &v1, const s
     return 0;
 }
 
-enum direction_t : int {
+enum direction_t {
     north,
     south,
     east,
@@ -58,9 +58,11 @@ int main(int, char *[])
     std::string in_string, out_string = "Hello world!";
     direction_t in_enum, out_enum     = east;
     // Vectors.
-    std::vector<direction_t> in_vector, out_vector = {
-        north, south, west, east
-    };
+    std::vector<direction_t> in_vector, out_vector;
+    out_vector.emplace_back(north);
+    out_vector.emplace_back(south);
+    out_vector.emplace_back(west);
+    out_vector.emplace_back(east);
     // Maps
     std::map<direction_t, int> in_map, out_map;
     out_map[north] = 0;
