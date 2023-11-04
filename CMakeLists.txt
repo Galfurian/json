@@ -1,14 +1,10 @@
 # -----------------------------------------------------------------------------
-# @brief  : CmakeFile for building the executable.
+# @brief  : Root cmake file.
 # @author : Enrico Fraccaroli
-# @create : 02/02/2018
-# @update : 20/08/2019
 # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Set the minimum CMake version.
-# -----------------------------------------------------------------------------
-cmake_minimum_required(VERSION 2.8...3.22)
+# Set the minimum CMake version, the project name and default build type.
+cmake_minimum_required(VERSION 3.1...3.18)
 
 # Set the project name.
 project(json CXX)
@@ -37,10 +33,10 @@ mark_as_advanced(FORCE
 # OPTIONS
 # -----------------------------------------------------------------------------
 
-option(${PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
-option(${PROJECT_NAME}_BUILD_TESTS "Build tests" OFF)
-option(${PROJECT_NAME}_STRICT_WARNINGS "Enable strict compiler warnings" ON)
-option(${PROJECT_NAME}_WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
+option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
+option(BUILD_TESTS "Build tests" OFF)
 
 # -----------------------------------------------------------------------------
 # DEPENDENCY (SYSTEM LIBRARIES)
@@ -55,25 +51,26 @@ find_package(Doxygen)
 # Add the C++ Library.
 add_library(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/json/json.cpp)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-# Inlcude header directories and set the library.
+# Include header directories, and link libraries.
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # -----------------------------------------------------------------------------
 # COMPILATION FLAGS
 # -----------------------------------------------------------------------------
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
     target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
-    if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
+    if(WARNINGS_AS_ERRORS)
         target_compile_options(${PROJECT_NAME} PUBLIC /WX)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(${PROJECT_NAME}_WARNINGS_AS_ERRORS)
+    if(WARNINGS_AS_ERRORS)
         target_compile_options(${PROJECT_NAME} PUBLIC -Werror)
     endif()
 endif()
 
-if(${PROJECT_NAME}_STRICT_WARNINGS)
+if(STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
@@ -120,7 +117,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${ordered_map_SOURCE_DIR}/incl
 # EXAMPLES
 # -----------------------------------------------------------------------------
 
-if(${PROJECT_NAME}_BUILD_EXAMPLES)
+if(BUILD_EXAMPLES)
 
     # Retrieve the stopwatch.
     FetchContent_Declare(stopwatch
@@ -163,13 +160,13 @@ if(${PROJECT_NAME}_BUILD_EXAMPLES)
     # Set compiler flags.
     target_compile_features(${PROJECT_NAME}_run_on_file PUBLIC cxx_std_98)
     
-endif(${PROJECT_NAME}_BUILD_EXAMPLES)
+endif(BUILD_EXAMPLES)
 
 # -----------------------------------------------------------------------------
 # TESTS
 # -----------------------------------------------------------------------------
 
-if(${PROJECT_NAME}_BUILD_TESTS)
+if(BUILD_TESTS)
 
     # CMake has support for adding tests to a project.
     enable_testing()
@@ -246,7 +243,7 @@ if(${PROJECT_NAME}_BUILD_TESTS)
     # Add the test.
     add_test(${PROJECT_NAME}_test_error_run ${PROJECT_NAME}_test_error)
 
-endif(${PROJECT_NAME}_BUILD_TESTS)
+endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------
 # DOCUMENTATION
@@ -288,7 +285,7 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
     doxygen_add_docs(
-        ${PROJECT_NAME}_documentation
+        documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
     )
