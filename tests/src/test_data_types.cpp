@@ -59,10 +59,10 @@ int main(int, char *[])
     direction_t in_enum, out_enum     = east;
     // Vectors.
     std::vector<direction_t> in_vector, out_vector;
-    out_vector.emplace_back(north);
-    out_vector.emplace_back(south);
-    out_vector.emplace_back(west);
-    out_vector.emplace_back(east);
+    out_vector.push_back(north);
+    out_vector.push_back(south);
+    out_vector.push_back(west);
+    out_vector.push_back(east);
     // Maps
     std::map<direction_t, int> in_map, out_map;
     out_map[north] = 0;
