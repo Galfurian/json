@@ -91,7 +91,7 @@ endif()
 
 # Retrieve the source.
 FetchContent_Declare(ordered_map
-    GIT_REPOSITORY "https://github.com/Galfurian/cpp_ordered_map.git"
+    GIT_REPOSITORY "https://github.com/Galfurian/ordered_map.git"
     GIT_TAG main
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
