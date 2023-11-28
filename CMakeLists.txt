@@ -85,6 +85,8 @@ if(STRICT_WARNINGS)
     endif()
 endif()
 
+target_compile_options(${PROJECT_NAME} PUBLIC -fPIC)
+
 # -----------------------------------------------------------------------------
 # DIPENDENCIES
 # -----------------------------------------------------------------------------
@@ -176,8 +178,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_data_types ${PROJECT_SOURCE_DIR}/tests/test_data_types.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_data_types PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_data_types ${PROJECT_NAME})
     # Add the test.
@@ -188,8 +188,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_struct ${PROJECT_SOURCE_DIR}/tests/test_struct.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_struct PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_struct ${PROJECT_NAME})
     # Add the test.
@@ -200,8 +198,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_container ${PROJECT_SOURCE_DIR}/tests/test_container.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_container PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_container ${PROJECT_NAME})
     # Add the test.
@@ -212,8 +208,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_friend ${PROJECT_SOURCE_DIR}/tests/test_friend.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_friend PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_friend ${PROJECT_NAME})
     # Add the test.
@@ -224,8 +218,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/test_order.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_order PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_order ${PROJECT_NAME})
     # Add the test.
@@ -236,8 +228,6 @@ if(BUILD_TESTS)
     # -------------------------------------
     # Add the test.
     add_executable(${PROJECT_NAME}_test_error ${PROJECT_SOURCE_DIR}/tests/test_error.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_test_error PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_error ${PROJECT_NAME})
     # Add the test.
