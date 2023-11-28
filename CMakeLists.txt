@@ -49,7 +49,7 @@ find_package(Doxygen)
 # -----------------------------------------------------------------------------
 
 # Add the C++ Library.
-add_library(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/json/json.cpp)
+add_library(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/json.cpp)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # Include header directories, and link libraries.
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
@@ -175,7 +175,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_data_types ${PROJECT_SOURCE_DIR}/tests/src/test_data_types.cpp)
+    add_executable(${PROJECT_NAME}_test_data_types ${PROJECT_SOURCE_DIR}/tests/test_data_types.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_data_types PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -187,7 +187,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_struct ${PROJECT_SOURCE_DIR}/tests/src/test_struct.cpp)
+    add_executable(${PROJECT_NAME}_test_struct ${PROJECT_SOURCE_DIR}/tests/test_struct.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_struct PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -199,7 +199,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_container ${PROJECT_SOURCE_DIR}/tests/src/test_container.cpp)
+    add_executable(${PROJECT_NAME}_test_container ${PROJECT_SOURCE_DIR}/tests/test_container.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_container PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -211,7 +211,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_friend ${PROJECT_SOURCE_DIR}/tests/src/test_friend.cpp)
+    add_executable(${PROJECT_NAME}_test_friend ${PROJECT_SOURCE_DIR}/tests/test_friend.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_friend PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -223,7 +223,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/src/test_order.cpp)
+    add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/test_order.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_order PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -235,7 +235,7 @@ if(BUILD_TESTS)
     # TEST
     # -------------------------------------
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_error ${PROJECT_SOURCE_DIR}/tests/src/test_error.cpp)
+    add_executable(${PROJECT_NAME}_test_error ${PROJECT_SOURCE_DIR}/tests/test_error.cpp)
     # Inlcude header directories.
     target_include_directories(${PROJECT_NAME}_test_error PUBLIC ${PROJECT_SOURCE_DIR}/tests/include)
     # Liking for the test.
@@ -288,5 +288,6 @@ if(DOXYGEN_FOUND)
         ${PROJECT_NAME}_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
+        ${PROJECT_SOURCE_DIR}/src/json.cpp
     )
 endif()

@@ -1,7 +1,6 @@
 #include <iostream>
-#include <sstream>
-
 #include <json/json.hpp>
+#include <sstream>
 
 bool test_error_format()
 {

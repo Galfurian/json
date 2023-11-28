@@ -548,9 +548,6 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
 namespace parser
 {
 
-/// @brief Parse the json formatted string.
-/// @param json_string The json formatted string.
-/// @return the root of the generated json tree.
 jnode_t parse(const std::string &json_string)
 {
     std::size_t k = 0;
@@ -563,9 +560,6 @@ jnode_t parse(const std::string &json_string)
     return detail::json_parse(tokens, 0UL, k, root);
 }
 
-/// @brief Parse the json file.
-/// @param filename Path to the json file.
-/// @return the root of the generated json tree.
 bool read_file(const std::string &filename, std::string &content)
 {
     std::ifstream in(filename.c_str());
@@ -579,9 +573,6 @@ bool read_file(const std::string &filename, std::string &content)
     return true;
 }
 
-/// @brief Parse the json file.
-/// @param filename Path to the json file.
-/// @return the root of the generated json tree.
 jnode_t parse_file(const std::string &filename)
 {
     std::string content;
@@ -592,12 +583,6 @@ jnode_t parse_file(const std::string &filename)
     return parser::parse(content);
 }
 
-/// @brief Write the json node on file.
-/// @param filename Path to the json file.
-/// @param node     The json tree to write.
-/// @param pretty   Enable/Disable pretty print of json.
-/// @param tabsize	The dimension of tabulation (if pretto == true).
-/// @return if the operation is a success.
 bool write_file(const std::string &filename, const jnode_t &node, bool pretty, unsigned tabsize)
 {
     std::ofstream out(filename.c_str());

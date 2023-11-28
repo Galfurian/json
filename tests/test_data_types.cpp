@@ -1,6 +1,5 @@
-#include <json/json.hpp>
-
 #include <iostream>
+#include <json/json.hpp>
 #include <sstream>
 
 template <typename T>

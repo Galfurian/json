@@ -28,13 +28,13 @@ namespace json
 
 /// @brief JSON types.
 enum jtype_t {
-    JTYPE_STRING,
-    JTYPE_OBJECT,
-    JTYPE_ARRAY,
-    JTYPE_BOOLEAN,
-    JTYPE_NUMBER,
-    JTYPE_NULL,
-    JTYPE_ERROR
+    JTYPE_STRING,  ///< A string.
+    JTYPE_OBJECT,  ///< An object.
+    JTYPE_ARRAY,   ///< An array.
+    JTYPE_BOOLEAN, ///< A boolean value.
+    JTYPE_NUMBER,  ///< A number.
+    JTYPE_NULL,    ///< A null value.
+    JTYPE_ERROR    ///< An error.
 };
 
 /// @brief Transforms the given JSON type to string.
@@ -45,41 +45,56 @@ std::string jtype_to_string(jtype_t type);
 /// @brief Represents a type error.
 class parser_error : public std::runtime_error {
 public:
+    /// @brief The line where the error is located.
     const std::size_t line;
 
     /// @brief Construct a new type error.
-    /// @param line the line where the error was found.
-    /// @param message the error message.
+    /// @param _line the line where the error was found.
+    /// @param _message the error message.
     parser_error(std::size_t _line, std::string _message);
 };
 
 /// @brief Represents a type error.
 class type_error : public json::parser_error {
 public:
+    /// @brief The expected type.
     const json::jtype_t expected;
+    /// @brief The type we found.
     const json::jtype_t found;
 
     /// @brief Construct a new type error.
-    /// @param line the line where the error was found.
-    /// @param message the error message.
+    /// @param _line the line where the error was found.
+    /// @param _expected the expected type.
+    /// @param _found the type we found.
     type_error(std::size_t _line, json::jtype_t _expected, json::jtype_t _found);
 
 private:
+    /// @brief Builds the error message.
+    /// @param _expected the expected type.
+    /// @param _found the type we found.
+    /// @return the message.
     static std::string build_message(json::jtype_t _expected, json::jtype_t _found);
 };
 
 /// @brief Represents an out-of-bound error.
 class range_error : public json::parser_error {
 public:
+    /// @brief The index we tried to access.
     const std::size_t index;
+    /// @brief The size of the container.
     const std::size_t size;
 
     /// @brief Construct a new range error.
-    /// @param index the index we tried to access.
-    /// @param size the size of the container.
+    /// @param _line the line where the error was found.
+    /// @param _index the index we tried to access.
+    /// @param _size the size of the container.
     range_error(std::size_t _line, std::size_t _index, std::size_t _size);
 
 private:
+    /// @brief Builds the error message.
+    /// @param _index the index we tried to access.
+    /// @param _size the size of the container.
+    /// @return the message.
     static std::string build_message(std::size_t _index, std::size_t _size);
 };
 
@@ -404,6 +419,7 @@ jnode_t parse(const std::string &json_string);
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
+/// @param content where we need to place the content of the file.
 /// @return the root of the generated json tree.
 bool read_file(const std::string &filename, std::string &content);
 
