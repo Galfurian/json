@@ -33,5 +33,7 @@
 
 # Project specific.
 build
+cmake-build-*
+.idea
 .vscode
 .cache

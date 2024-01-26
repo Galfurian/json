@@ -1,6 +1,10 @@
 /// @file json.hpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
-/// @brief
+/// @brief Defines the jnode_t class.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
 
 #pragma once
 
@@ -28,13 +32,13 @@ namespace json
 
 /// @brief JSON types.
 enum jtype_t {
-    JTYPE_STRING,
-    JTYPE_OBJECT,
-    JTYPE_ARRAY,
-    JTYPE_BOOLEAN,
-    JTYPE_NUMBER,
-    JTYPE_NULL,
-    JTYPE_ERROR
+    JTYPE_STRING,  ///< A string.
+    JTYPE_OBJECT,  ///< An object.
+    JTYPE_ARRAY,   ///< An array.
+    JTYPE_BOOLEAN, ///< A boolean value.
+    JTYPE_NUMBER,  ///< A number.
+    JTYPE_NULL,    ///< A null value.
+    JTYPE_ERROR    ///< An error.
 };
 
 /// @brief Transforms the given JSON type to string.
@@ -45,41 +49,56 @@ std::string jtype_to_string(jtype_t type);
 /// @brief Represents a type error.
 class parser_error : public std::runtime_error {
 public:
+    /// @brief The line where the error is located.
     const std::size_t line;
 
     /// @brief Construct a new type error.
-    /// @param line the line where the error was found.
-    /// @param message the error message.
+    /// @param _line the line where the error was found.
+    /// @param _message the error message.
     parser_error(std::size_t _line, std::string _message);
 };
 
 /// @brief Represents a type error.
 class type_error : public json::parser_error {
 public:
+    /// @brief The expected type.
     const json::jtype_t expected;
+    /// @brief The type we found.
     const json::jtype_t found;
 
     /// @brief Construct a new type error.
-    /// @param line the line where the error was found.
-    /// @param message the error message.
+    /// @param _line the line where the error was found.
+    /// @param _expected the expected type.
+    /// @param _found the type we found.
     type_error(std::size_t _line, json::jtype_t _expected, json::jtype_t _found);
 
 private:
+    /// @brief Builds the error message.
+    /// @param _expected the expected type.
+    /// @param _found the type we found.
+    /// @return the message.
     static std::string build_message(json::jtype_t _expected, json::jtype_t _found);
 };
 
 /// @brief Represents an out-of-bound error.
 class range_error : public json::parser_error {
 public:
+    /// @brief The index we tried to access.
     const std::size_t index;
+    /// @brief The size of the container.
     const std::size_t size;
 
     /// @brief Construct a new range error.
-    /// @param index the index we tried to access.
-    /// @param size the size of the container.
+    /// @param _line the line where the error was found.
+    /// @param _index the index we tried to access.
+    /// @param _size the size of the container.
     range_error(std::size_t _line, std::size_t _index, std::size_t _size);
 
 private:
+    /// @brief Builds the error message.
+    /// @param _index the index we tried to access.
+    /// @param _size the size of the container.
+    /// @return the message.
     static std::string build_message(std::size_t _index, std::size_t _size);
 };
 
@@ -95,7 +114,7 @@ extern bool strict_existance_check;
 /// @brief If true, the library will replace escape character when printing to
 /// output.
 extern bool replace_escape_characters;
-}; // namespace config
+} // namespace config
 
 /// @brief Represent a json node.
 class jnode_t {
@@ -368,7 +387,7 @@ typedef struct token_t {
     /// @param _value the value contained in the token.
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
-    token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
+    explicit token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
         : value(_value),
           type(_type),
           line_number(_line_number)
@@ -404,6 +423,7 @@ jnode_t parse(const std::string &json_string);
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
+/// @param content where we need to place the content of the file.
 /// @return the root of the generated json tree.
 bool read_file(const std::string &filename, std::string &content);
 
@@ -427,7 +447,19 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
+typename std::enable_if<!std::is_enum<T>::value, json::jnode_t &>::type
+operator<<(json::jnode_t &lhs, T const &rhs);
+
+/// @brief Genering output writer.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T>
+typename std::enable_if<std::is_enum<T>::value, json::jnode_t &>::type
+operator<<(json::jnode_t &lhs, T rhs)
+{
+    return lhs << static_cast<int>(rhs);
+}
 
 /// @brief Output writer for pointers.
 /// @param lhs the JSON node we are writing into.
@@ -552,7 +584,20 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
+typename std::enable_if<!std::is_enum<T>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, T &rhs);
+
+/// @brief Genering input reader.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T>
+typename std::enable_if<std::is_enum<T>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, T &rhs)
+{
+    rhs = static_cast<T>(lhs.as_number<int>());
+    return lhs;
+}
 
 /// @brief Input reader for pointers.
 /// @param lhs the JSON node we are reading from.
@@ -641,12 +686,13 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rh
     return lhs;
 }
 
-/// @brief Input reader for maps.
+/// @brief Input reader for maps, with NOT an enum as key.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+inline typename std::enable_if<!std::is_enum<T1>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
@@ -663,24 +709,30 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
     return lhs;
 }
 
-} // namespace json
-
-/// @brief Define the pair of operators required to handle C++ enums.
-#define JSON_DEFINE_OP_ENUM(ENUM_TYPE)                                        \
-    namespace json                                                            \
-    {                                                                         \
-    template <>                                                               \
-    json::jnode_t &operator<<(json::jnode_t &lhs, const ENUM_TYPE &rhs)       \
-    {                                                                         \
-        return (lhs << static_cast<int>(rhs));                                \
-    }                                                                         \
-    template <>                                                               \
-    const json::jnode_t &operator>>(const json::jnode_t &lhs, ENUM_TYPE &rhs) \
-    {                                                                         \
-        rhs = static_cast<ENUM_TYPE>(lhs.as_number<int>());                   \
-        return lhs;                                                           \
-    }                                                                         \
+/// @brief Input reader for maps, with enum as key.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T1, typename T2>
+inline typename std::enable_if<std::is_enum<T1>::value, const json::jnode_t &>::type
+operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+{
+    // Check the type.
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        rhs.clear();
+        json::jnode_t::property_map_t::const_iterator it;
+        for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
+            std::stringstream ss;
+            ss << it->first;
+            int key;
+            ss >> key;
+            it->second >> rhs[T1(key)];
+        }
     }
+    return lhs;
+}
+
+} // namespace json
 
 /// @brief Sends the JSON node to the output stream.
 /// @param lhs the stream we are writing the content of the JSON node.

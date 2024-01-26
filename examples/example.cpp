@@ -1,3 +1,11 @@
+/// @file example.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Contains a couple of examples with the json library.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
+
 #include <json/json.hpp>
 
 #include <iostream>
@@ -7,11 +15,7 @@ struct Person {
     std::string name;
     unsigned age;
 
-    Person()
-        : name(),
-          age()
-    {
-    }
+    Person() = default;
 
     Person(std::string _name, unsigned _age)
         : name(_name),
@@ -19,33 +23,49 @@ struct Person {
     {
     }
 
+    inline bool operator==(const Person &rhs)
+    {
+        if (name != rhs.name) {
+            return false;
+        }
+        if (age != rhs.age) {
+            return false;
+        }
+        return true;
+    }
+
+    inline bool operator!=(const Person &rhs)
+    {
+        if (name != rhs.name) {
+            return true;
+        }
+        if (age != rhs.age) {
+            return true;
+        }
+        return false;
+    }
+
     friend inline std::ostream &operator<<(std::ostream &lhs, const Person &rhs)
     {
         lhs << "[" << rhs.name << ", " << rhs.age << "]";
         return lhs;
     }
+
+    friend json::jnode_t &operator<<(json::jnode_t &lhs, const Person &rhs)
+    {
+        lhs.set_type(json::JTYPE_OBJECT);
+        lhs["name"] << rhs.name;
+        lhs["age"] << rhs.age;
+        return lhs;
+    }
+
+    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
+    {
+        lhs["name"] >> rhs.name;
+        lhs["age"] >> rhs.age;
+        return lhs;
+    }
 };
-
-namespace json
-{
-template <>
-jnode_t &operator<<(jnode_t &lhs, const Person &rhs)
-{
-    lhs.set_type(JTYPE_OBJECT);
-    lhs["name"] << rhs.name;
-    lhs["age"] << rhs.age;
-    return lhs;
-}
-
-template <>
-const jnode_t &operator>>(const jnode_t &lhs, Person &rhs)
-{
-    lhs["name"] >> rhs.name;
-    lhs["age"] >> rhs.age;
-    return lhs;
-}
-
-} // namespace json
 
 int main(int, char *[])
 {
@@ -85,11 +105,11 @@ int main(int, char *[])
     std::cout << "Parsing the json-formatted content...\n\n";
     // Prepare the example.
     json::jnode_t root = json::parser::parse(example);
-    
+
     // Print the tree.
     std::cout << "This is the json tree we just built:\n";
     std::cout << root.to_string(true, 2) << "\n";
-    
+
     std::cout << "\nExtracting the values from the json...\n\n";
     // Extract the values.
     root["p0"] >> p0;

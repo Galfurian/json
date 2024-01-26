@@ -1,6 +1,13 @@
-#include <json/json.hpp>
+/// @file test_data_types.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Tests compatibility of the json library with different data types.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
 
 #include <iostream>
+#include <json/json.hpp>
 #include <sstream>
 
 template <typename T>
@@ -13,14 +20,27 @@ int check_equivalence(const std::string &name, const T &v1, const T &v2)
     return 0;
 }
 
+template <typename T>
+int check_equivalence(const std::string &name, const std::vector<T> &v1, const std::vector<T> &v2)
+{
+    if (v1.size() != v2.size()) {
+        return 1;
+    }
+    for (std::size_t i = 0; i < v1.size(); ++i) {
+        if (v1[i] != v2[i]) {
+            std::cerr << name << "[" << i << "] : " << v1[i] << " != " << v2[i] << "\n";
+            return 1;
+        }
+    }
+    return 0;
+}
+
 enum direction_t {
     north,
     south,
     east,
     west
 };
-
-JSON_DEFINE_OP_ENUM(direction_t)
 
 int main(int, char *[])
 {
@@ -44,6 +64,18 @@ int main(int, char *[])
     double in_double_2, out_double_2  = 1e-06;
     std::string in_string, out_string = "Hello world!";
     direction_t in_enum, out_enum     = east;
+    // Vectors.
+    std::vector<direction_t> in_vector, out_vector;
+    out_vector.push_back(north);
+    out_vector.push_back(south);
+    out_vector.push_back(west);
+    out_vector.push_back(east);
+    // Maps
+    std::map<direction_t, int> in_map, out_map;
+    out_map[north] = 0;
+    out_map[south] = 1;
+    out_map[west]  = 2;
+    out_map[east]  = 3;
 
     // ========================================================================
     // Prepare the output json tree.
@@ -69,6 +101,8 @@ int main(int, char *[])
     out_root["double_2"] << out_double_2;
     out_root["string"] << out_string;
     out_root["enum"] << out_enum;
+    out_root["vector"] << out_vector;
+    out_root["map"] << out_map;
 
     // ========================================================================
     // Create the json string.
@@ -98,6 +132,8 @@ int main(int, char *[])
     in_root["double_2"] >> in_double_2;
     in_root["string"] >> in_string;
     in_root["enum"] >> in_enum;
+    in_root["vector"] >> in_vector;
+    in_root["map"] >> in_map;
 
     // ========================================================================
     // Check equivalence.

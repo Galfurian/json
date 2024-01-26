@@ -1,6 +1,13 @@
-#include <json/json.hpp>
+/// @file test_friend.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Tests if friends streaming functions work.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
 
 #include <iostream>
+#include <json/json.hpp>
 #include <sstream>
 
 class Animal {
@@ -8,12 +15,9 @@ private:
     std::string name;
 
 public:
-    Animal()
-        : name()
-    {
-    }
+    Animal() = default;
 
-    Animal(std::string _name)
+    explicit Animal(std::string _name)
         : name(_name)
     {
     }

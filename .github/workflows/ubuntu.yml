@@ -8,28 +8,16 @@ on:
             - ".gitignore"
             - "macos.yml"
             - "windows.yml"
+            - "documentation.yml"
     pull_request:
         paths-ignore:
             - "**.md"
             - ".gitignore"
             - "macos.yml"
             - "windows.yml"
+            - "documentation.yml"
 jobs:
-    doxygen:
-        name: Doxygen
-        runs-on: ubuntu-latest
-        steps:
-            - name: Clone repository
-              uses: actions/checkout@v3
-            - name: Install dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y doxygen
-            - name: Generate documentation
-              run: |
-                  cmake -B build -DDOXYGEN_WARN_AS_ERROR=NO
-                  cmake --build build --target json_documentation
-    build:
+    test:
         name: Build
         strategy:
             fail-fast: false
@@ -82,7 +70,7 @@ jobs:
                   sudo apt-get install -y ${{ matrix.pkgs }}
             - name: Build
               run: |
-                  cmake -B build -DJSON_BUILD_TESTS=ON -DJSON_WARNINGS_AS_ERRORS=ON 
+                  cmake -B build -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON 
                   cmake --build build --parallel 2
             - name: Test
               run: ctest -C Debug --test-dir build --no-tests=error --verbose
