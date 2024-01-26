@@ -1,6 +1,10 @@
-/// @file json.hpp
+/// @file json.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
-/// @brief
+/// @brief Implement the functionality of the jnode_t class.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
 
 #include "json/json.hpp"
 

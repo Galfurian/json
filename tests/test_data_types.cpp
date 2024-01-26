@@ -1,3 +1,11 @@
+/// @file test_data_types.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Tests compatibility of the json library with different data types.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
+
 #include <iostream>
 #include <json/json.hpp>
 #include <sstream>

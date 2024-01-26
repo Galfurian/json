@@ -1,3 +1,11 @@
+/// @file test_container.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Tests compatibility of the json library with containers.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
+
 #include <iostream>
 #include <json/json.hpp>
 #include <sstream>

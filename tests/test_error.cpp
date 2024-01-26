@@ -1,3 +1,11 @@
+/// @file test_error.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Tests the error reporting capability of the json library.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
+
 #include <iostream>
 #include <json/json.hpp>
 #include <sstream>

@@ -1,3 +1,11 @@
+/// @file example.cpp
+/// @author Enrico Fraccaroli (enry.frak@gmail.com)
+/// @brief Contains a couple of examples with the json library.
+/// 
+/// @copyright (c) 2024 This file is distributed under the MIT License.
+/// See LICENSE.md for details.
+/// 
+
 #include <json/json.hpp>
 
 #include <iostream>
