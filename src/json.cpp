@@ -1,10 +1,10 @@
 /// @file json.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Implement the functionality of the jnode_t class.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include "json/json.hpp"
 
@@ -234,6 +234,10 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
                 ++index;
             }
         }
+        if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '/')) {
+            index += 2;
+            while ((index < slength) && (source[index] != '\n')) { ++index; }
+        }
         if (std::isspace(source[index])) {
             return index;
         }
@@ -318,12 +322,19 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
         if (next == index) {
             break;
         }
-        std::string str = source.substr(index, next - index);
-        std::size_t k   = 0;
-        while (k < str.length()) {
+        std::string str     = source.substr(index, next - index);
+        std::size_t str_len = str.length();
+        std::size_t k       = 0;
+        while (k < str_len) {
+            if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '/')) {
+                std::size_t j = k + 2;
+                while ((j < str_len) && (str[j] != '\n')) { ++j; }
+                k = j + 1;
+                continue;
+            }
             if (str[k] == '"') {
                 std::size_t j = k + 1;
-                while (j < str.length()) {
+                while (j < str_len) {
                     if (str[j] == '"') {
                         if (str[j - 1] != '\\') {
                             break;
@@ -340,7 +351,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
             }
             if (str[k] == '\'') {
                 std::size_t j = k + 1;
-                while (j < str.length()) {
+                while (j < str_len) {
                     if (str[j] == '\'') {
                         if (str[j - 1] != '\\') {
                             break;
@@ -360,17 +371,17 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 ++k;
                 continue;
             }
-            if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
+            if (str[k] == 't' && k + 3 < str_len && str.substr(k, 4) == "true") {
                 tokens.push_back(token_t("true", JTOKEN_BOOLEAN, line_number));
                 k += 4;
                 continue;
             }
-            if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
+            if (str[k] == 'f' && k + 4 < str_len && str.substr(k, 5) == "false") {
                 tokens.push_back(token_t("false", JTOKEN_BOOLEAN, line_number));
                 k += 5;
                 continue;
             }
-            if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
+            if (str[k] == 'n' && k + 3 < str_len && str.substr(k, 4) == "null") {
                 tokens.push_back(token_t("null", JTOKEN_NULL, line_number));
                 k += 4;
                 continue;
@@ -437,7 +448,7 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 continue;
             }
             tokens.push_back(token_t(str.substr(k), JTOKEN_UNKNOWN, line_number));
-            k = str.length();
+            k = str_len;
         }
         index = detail::skip_whitespaces(source, next, line_number);
     }
