@@ -17,6 +17,7 @@ namespace config
 bool strict_type_check         = false;
 bool strict_existance_check    = false;
 bool replace_escape_characters = false;
+char string_delimiter_character = '\'';
 } // namespace config
 
 /// @brief Transforms the given JSON type to string.
@@ -151,6 +152,17 @@ std::string &replace_all(std::string &input, char what, const std::string &with)
     return input;
 }
 
+/// @brief Removes the specified characters from both the beginning and the end of the string.
+/// @param s the input string.
+/// @param padchar the char that should be removed.
+/// @return the trimmed string.
+inline std::string trim(const std::string &s, const std::string &padchar = " ")
+{
+    std::string::size_type left  = s.find_first_not_of(padchar);
+    std::string::size_type right = s.find_last_not_of(padchar);
+    return (left != std::string::npos) ? s.substr(left, right - left + 1) : "";
+}
+
 /// @brief Transforms the boolean value to string.
 /// @param value the boolean value.
 /// @return the string representation of the boolean value.
@@ -236,7 +248,22 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
         }
         if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '/')) {
             index += 2;
-            while ((index < slength) && (source[index] != '\n')) { ++index; }
+            while (index < slength) {
+                if (source[index] == '\n'){
+                    break;
+                }
+                ++index;
+            }
+        }
+        if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '*')) {
+            index += 2;
+            while (index < slength) { 
+                if ((source[index] != '*') && (index + 1 < slength) && (source[index] == '/'))
+                {
+                    break;
+                }
+                ++index; 
+            }
         }
         if (std::isspace(source[index])) {
             return index;
@@ -328,7 +355,25 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
         while (k < str_len) {
             if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '/')) {
                 std::size_t j = k + 2;
-                while ((j < str_len) && (str[j] != '\n')) { ++j; }
+                while (j < str_len) {
+                    if (str[j] == '\n'){
+                        break;
+                    }
+                    ++j;
+                }
+                //tokens.push_back(token_t(detail::trim(str.substr(k + 2, j - k - 1)), JTOKEN_COMMENT, line_number));
+                k = j + 1;
+                continue;
+            }
+            if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '*')) {
+                std::size_t j = k + 2;
+                while (j < str_len) {
+                    if ((str[j] != '*') && (j + 1 < str_len) && (str[j] == '/')){
+                        break;
+                    }
+                    ++j;
+                }
+                //tokens.push_back(token_t(detail::trim(str.substr(k + 2, j - k - 1)), JTOKEN_COMMENT, line_number));
                 k = j + 1;
                 continue;
             }
@@ -474,6 +519,14 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
         current.set_type(JTYPE_OBJECT);
         // Iterate until we find the end of the object, i.e., the closing braket.
         while (tokens[index].type != JTOKEN_CURLY_CLOSE) {
+#if 0
+            // Skip comments.
+            while (tokens[index].type == JTOKEN_COMMENT) {
+                if ((++index) >= tokens.size()) {
+                   throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
+                }
+            }
+#endif
             // Set the key.
             key = tokens[index].value.c_str();
             // We need to skip the key, and check if we ran out of tokens.
@@ -503,6 +556,14 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
             if (index >= tokens.size()) {
                 throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
             }
+#if 0
+            // Skip comments.
+            while (tokens[index].type == JTOKEN_COMMENT) {
+                if ((++index) >= tokens.size()) {
+                   throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
+                }
+            }
+#endif
         }
     } else if (tokens[index].type == JTOKEN_BRACKET_OPEN) {
         // We need to skip the braket, and check if we ran out of tokens.
@@ -930,6 +991,7 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
 {
     std::stringstream ss;
     if (type == JTYPE_STRING) {
+        std::string string_delimiter(1, config::string_delimiter_character);
         if (json::config::replace_escape_characters) {
             // Replace special characters, with UTF-8 supported ones.
             std::string str = value;
@@ -939,9 +1001,9 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
             detail::replace_all(str, "\r\n", "\\r\\n");
             detail::replace_all(str, '\r', "\\r");
             detail::replace_all(str, '\n', "\\n");
-            return std::string("\"") + str + std::string("\"");
+            return string_delimiter + str + string_delimiter;
         }
-        return std::string("\"") + value + std::string("\"");
+        return string_delimiter + value + string_delimiter;
     }
     if (type == JTYPE_NUMBER) {
         return value;

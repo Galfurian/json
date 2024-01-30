@@ -114,6 +114,8 @@ extern bool strict_existance_check;
 /// @brief If true, the library will replace escape character when printing to
 /// output.
 extern bool replace_escape_characters;
+/// @brief The character used to delimit strings.
+extern char string_delimiter_character;
 } // namespace config
 
 /// @brief Represent a json node.
@@ -371,7 +373,6 @@ enum token_type_t {
     JTOKEN_COMMA,         ///< We found a comma.
     JTOKEN_COLON,         ///< We found a colon.
     JTOKEN_BOOLEAN,       ///< We found a boolean.
-    JTOKEN_COMMENT,       ///< We found a commnet.
     JTOKEN_NULL           ///< We found a NULL value.
 };
 
