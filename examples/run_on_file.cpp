@@ -50,5 +50,7 @@ int main(int argc, char *argv[])
 
     std::cout << "In total it took           : " << sw.total() << "\n";
 
+    std::cout << root << "\n";
+    std::cout << root["c"] << "\n";
     return 0;
 }

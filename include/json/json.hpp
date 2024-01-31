@@ -114,6 +114,8 @@ extern bool strict_existance_check;
 /// @brief If true, the library will replace escape character when printing to
 /// output.
 extern bool replace_escape_characters;
+/// @brief The character used to delimit strings.
+extern char string_delimiter_character;
 } // namespace config
 
 /// @brief Represent a json node.
