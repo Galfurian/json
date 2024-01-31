@@ -86,39 +86,34 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${ordered_map_SOURCE_DIR}/include)
 
+target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
+
 # =====================================
 # COMPILATION FLAGS
 # =====================================
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
-    
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PUBLIC /WX)
+        target_compile_options(${PROJECT_NAME} PRIVATE /WX)
     endif()
-
     if(STRICT_WARNINGS)
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(${PROJECT_NAME} PUBLIC /experimental:external)
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:anglebrackets)
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:W0)
-
-        target_compile_options(${PROJECT_NAME} PUBLIC /W4)
+        target_compile_options(${PROJECT_NAME} PRIVATE /experimental:external)
+        target_compile_options(${PROJECT_NAME} PRIVATE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(${PROJECT_NAME} PRIVATE /external:anglebrackets)
+        target_compile_options(${PROJECT_NAME} PRIVATE /external:W0)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4)
     endif()
-
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PUBLIC -Werror)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Werror)
     endif()
-    
     if(STRICT_WARNINGS)
-        target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wconversion -pedantic)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wconversion -pedantic)
     endif()
-
 endif()
 
 # -----------------------------------------------------------------------------
