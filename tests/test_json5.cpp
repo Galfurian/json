@@ -89,17 +89,40 @@ int test_comments_in_inline_json(void)
     return true;
 }
 
+int test_line_break(void)
+{
+    const char example[] =
+        "{\n"
+        "   'a': 1,\n"
+        "    b : 2,\n"
+        "   'c': 'Lorem ipsum dolor sit amet, \
+consectetur adipiscing elit.'\n"
+        "}\n";
+    // Parse the json string.
+    json::jnode_t root = json::parser::parse(example);
+    // Check correctness.
+    if (root.to_string(false) != "{'a': 1,'b': 2,'c': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}") {
+        std::cerr << "Different!\n"
+                  << "{'a': 1,'b': 2,'c': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}"
+                  << "\n"
+                  << root.to_string(false) << "\n";
+        return false;
+    }
+    return true;
+}
+
 int main(int, char *[])
 {
     if (!test_comments_in_ojbect()) {
         return 1;
     }
-    std::cout << "\n";
     if (!test_comments_in_array()) {
         return 1;
     }
-    std::cout << "\n";
     if (!test_comments_in_inline_json()) {
+        return 1;
+    }
+    if (!test_line_break()) {
         return 1;
     }
     return 0;

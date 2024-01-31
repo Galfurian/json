@@ -8,6 +8,8 @@
 
 #include "json/json.hpp"
 
+#include <regex>
+
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json
 {
@@ -258,9 +260,13 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
         if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '*')) {
             index += 2;
             while (index < slength) {
-                if (source[index] == '\n') {
+                if ((source[index] == '*') && (index + 1 < slength) && (source[index + 1] == '/')) {
+                    ++index;
                     break;
                 }
+                //if (source[index] == '\n') {
+                //    break;
+                //}
                 ++index;
             }
         }
@@ -353,6 +359,9 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
         std::string str     = source.substr(index, next - index);
         std::size_t str_len = str.length();
         std::size_t k       = 0, j;
+
+        std::cout << "STR("<<str<<")\n";
+
         while (k < str_len) {
             if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '/')) {
                 j = k + 2;
@@ -611,7 +620,7 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
         // Set type.
         current.set_type(JTYPE_STRING);
         // Set the value.
-        current.set_value(tokens[index].value);
+        current.set_value(std::regex_replace(tokens[index].value, std::regex("\\\\[ \t]*\n"), "\n"));
     } else if (tokens[index].type == JTOKEN_BOOLEAN) {
         // Set type.
         current.set_type(JTYPE_BOOLEAN);
