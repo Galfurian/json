@@ -1,12 +1,14 @@
 /// @file json.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Implement the functionality of the jnode_t class.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include "json/json.hpp"
+
+#include <regex>
 
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json
@@ -14,9 +16,10 @@ namespace json
 
 namespace config
 {
-bool strict_type_check         = false;
-bool strict_existance_check    = false;
-bool replace_escape_characters = false;
+bool strict_type_check          = false;
+bool strict_existance_check     = false;
+bool replace_escape_characters  = false;
+char string_delimiter_character = '\'';
 } // namespace config
 
 /// @brief Transforms the given JSON type to string.
@@ -151,6 +154,17 @@ std::string &replace_all(std::string &input, char what, const std::string &with)
     return input;
 }
 
+/// @brief Removes the specified characters from both the beginning and the end of the string.
+/// @param s the input string.
+/// @param padchar the char that should be removed.
+/// @return the trimmed string.
+inline std::string trim(const std::string &s, const std::string &padchar = " ")
+{
+    std::string::size_type left  = s.find_first_not_of(padchar);
+    std::string::size_type right = s.find_last_not_of(padchar);
+    return (left != std::string::npos) ? s.substr(left, right - left + 1) : "";
+}
+
 /// @brief Transforms the boolean value to string.
 /// @param value the boolean value.
 /// @return the string representation of the boolean value.
@@ -234,6 +248,28 @@ std::size_t next_whitespace(const std::string &source, std::size_t index)
                 ++index;
             }
         }
+        if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '/')) {
+            index += 2;
+            while (index < slength) {
+                if (source[index] == '\n') {
+                    break;
+                }
+                ++index;
+            }
+        }
+        if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '*')) {
+            index += 2;
+            while (index < slength) {
+                if ((source[index] == '*') && (index + 1 < slength) && (source[index + 1] == '/')) {
+                    ++index;
+                    break;
+                }
+                //if (source[index] == '\n') {
+                //    break;
+                //}
+                ++index;
+            }
+        }
         if (std::isspace(source[index])) {
             return index;
         }
@@ -271,7 +307,9 @@ std::string deserialize(const std::string &ref)
         if ((ref[i] == '\\') && ((i + 1) < ref.length())) {
             offset = 2;
             if (ref[i + 1] == '\"') {
-                out.push_back('"');
+                out.push_back(config::string_delimiter_character);
+            } else if (ref[i + 1] == '\'') {
+                out.push_back(config::string_delimiter_character);
             } else if (ref[i + 1] == '\\') {
                 out.push_back('\\');
             } else if (ref[i + 1] == '/') {
@@ -318,12 +356,40 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
         if (next == index) {
             break;
         }
-        std::string str = source.substr(index, next - index);
-        std::size_t k   = 0;
-        while (k < str.length()) {
+        std::string str     = source.substr(index, next - index);
+        std::size_t str_len = str.length();
+        std::size_t k       = 0, j;
+
+        std::cout << "STR("<<str<<")\n";
+
+        while (k < str_len) {
+            if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '/')) {
+                j = k + 2;
+                while (j < str_len) {
+                    if (str[j] == '\n') {
+                        j += 1;
+                        break;
+                    }
+                    ++j;
+                }
+                k = j;
+                continue;
+            }
+            if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '*')) {
+                j = k + 2;
+                while (j < str_len) {
+                    if ((str[j] == '*') && (j + 1 < str_len) && (str[j + 1] == '/')) {
+                        j += 2;
+                        break;
+                    }
+                    ++j;
+                }
+                k = j;
+                continue;
+            }
             if (str[k] == '"') {
-                std::size_t j = k + 1;
-                while (j < str.length()) {
+                j = k + 1;
+                while (j < str_len) {
                     if (str[j] == '"') {
                         if (str[j - 1] != '\\') {
                             break;
@@ -339,8 +405,8 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 continue;
             }
             if (str[k] == '\'') {
-                std::size_t j = k + 1;
-                while (j < str.length()) {
+                j = k + 1;
+                while (j < str_len) {
                     if (str[j] == '\'') {
                         if (str[j - 1] != '\\') {
                             break;
@@ -360,17 +426,17 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 ++k;
                 continue;
             }
-            if (str[k] == 't' && k + 3 < str.length() && str.substr(k, 4) == "true") {
+            if (str[k] == 't' && k + 3 < str_len && str.substr(k, 4) == "true") {
                 tokens.push_back(token_t("true", JTOKEN_BOOLEAN, line_number));
                 k += 4;
                 continue;
             }
-            if (str[k] == 'f' && k + 4 < str.length() && str.substr(k, 5) == "false") {
+            if (str[k] == 'f' && k + 4 < str_len && str.substr(k, 5) == "false") {
                 tokens.push_back(token_t("false", JTOKEN_BOOLEAN, line_number));
                 k += 5;
                 continue;
             }
-            if (str[k] == 'n' && k + 3 < str.length() && str.substr(k, 4) == "null") {
+            if (str[k] == 'n' && k + 3 < str_len && str.substr(k, 4) == "null") {
                 tokens.push_back(token_t("null", JTOKEN_NULL, line_number));
                 k += 4;
                 continue;
@@ -397,6 +463,10 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
             }
             if (str[k] == ':') {
                 tokens.push_back(token_t(":", JTOKEN_COLON, line_number));
+                ++k;
+                continue;
+            }
+            if (str[k] == ' ') {
                 ++k;
                 continue;
             }
@@ -436,8 +506,15 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
                 k = k2;
                 continue;
             }
-            tokens.push_back(token_t(str.substr(k), JTOKEN_UNKNOWN, line_number));
-            k = str.length();
+            j = k;
+            while (j < str_len) {
+                if (str[j] == ':') {
+                    break;
+                }
+                ++j;
+            }
+            tokens.push_back(token_t(str.substr(k, j - k), JTOKEN_STRING, line_number));
+            k = j;
         }
         index = detail::skip_whitespaces(source, next, line_number);
     }
@@ -463,6 +540,14 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
         current.set_type(JTYPE_OBJECT);
         // Iterate until we find the end of the object, i.e., the closing braket.
         while (tokens[index].type != JTOKEN_CURLY_CLOSE) {
+#if 0
+            // Skip comments.
+            while (tokens[index].type == JTOKEN_COMMENT) {
+                if ((++index) >= tokens.size()) {
+                   throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
+                }
+            }
+#endif
             // Set the key.
             key = tokens[index].value.c_str();
             // We need to skip the key, and check if we ran out of tokens.
@@ -492,6 +577,14 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
             if (index >= tokens.size()) {
                 throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
             }
+#if 0
+            // Skip comments.
+            while (tokens[index].type == JTOKEN_COMMENT) {
+                if ((++index) >= tokens.size()) {
+                   throw json::parser_error(current.get_line_number(), "We ran out of tokens.");
+                }
+            }
+#endif
         }
     } else if (tokens[index].type == JTOKEN_BRACKET_OPEN) {
         // We need to skip the braket, and check if we ran out of tokens.
@@ -527,7 +620,7 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
         // Set type.
         current.set_type(JTYPE_STRING);
         // Set the value.
-        current.set_value(tokens[index].value);
+        current.set_value(std::regex_replace(tokens[index].value, std::regex("\\\\[ \t]*\n"), "\n"));
     } else if (tokens[index].type == JTOKEN_BOOLEAN) {
         // Set type.
         current.set_type(JTYPE_BOOLEAN);
@@ -919,6 +1012,7 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
 {
     std::stringstream ss;
     if (type == JTYPE_STRING) {
+        std::string string_delimiter(1, config::string_delimiter_character);
         if (json::config::replace_escape_characters) {
             // Replace special characters, with UTF-8 supported ones.
             std::string str = value;
@@ -928,9 +1022,9 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
             detail::replace_all(str, "\r\n", "\\r\\n");
             detail::replace_all(str, '\r', "\\r");
             detail::replace_all(str, '\n', "\\n");
-            return std::string("\"") + str + std::string("\"");
+            return string_delimiter + str + string_delimiter;
         }
-        return std::string("\"") + value + std::string("\"");
+        return string_delimiter + value + string_delimiter;
     }
     if (type == JTYPE_NUMBER) {
         return value;
@@ -948,7 +1042,7 @@ std::string jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) 
             if (pretty) {
                 ss << detail::make_indentation(depth, tabsize);
             }
-            ss << "\"" << it->first << "\": "
+            ss << config::string_delimiter_character << it->first << config::string_delimiter_character << ": "
                << it->second.to_string_d(depth + 1, pretty, tabsize)
                << ((std::distance(it, properties.end()) == 1) ? "" : ",");
             if (pretty) {
