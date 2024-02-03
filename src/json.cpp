@@ -360,8 +360,6 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
         std::size_t str_len = str.length();
         std::size_t k       = 0, j;
 
-        std::cout << "STR("<<str<<")\n";
-
         while (k < str_len) {
             if ((k + 1 < str_len) && (str[k] == '/') && (str[k + 1] == '/')) {
                 j = k + 2;
