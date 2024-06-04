@@ -1,4 +1,4 @@
-/// @file test_container.cpp
+/// @file test_pointer.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Tests compatibility of the json library with containers.
 ///
@@ -64,16 +64,32 @@ struct Person {
         lhs["age"] >> rhs.age;
         return lhs;
     }
+
+    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, Person *&rhs)
+    {
+        if (!rhs)
+            rhs = new Person();
+        lhs >> (*rhs);
+        return lhs;
+    }
+
+    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, std::shared_ptr<Person> &rhs)
+    {
+        if (!rhs)
+            rhs = std::make_shared<Person>();
+        lhs >> (*rhs);
+        return lhs;
+    }
 };
 
-int test_vector()
+int test_pointer()
 {
     // Define the values.
-    std::vector<Person> out;
-    out.push_back(Person("Json", 47));
-    out.push_back(Person("Terry", 23));
+    std::vector<Person *> out;
+    out.push_back(new Person("Json", 47));
+    out.push_back(new Person("Terry", 23));
     // Prepare the recipients.
-    std::vector<Person> in;
+    std::vector<Person *> in;
     // Prepare the output json tree.
     json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.
@@ -90,7 +106,7 @@ int test_vector()
         return 1;
     }
     for (unsigned i = 0; i < in.size(); ++i) {
-        if (in[i] != out[i]) {
+        if (*in[i] != *out[i]) {
             std::cerr << "p[" << i << "] : " << in[i] << " != " << out[i] << "\n";
             return 1;
         }
@@ -98,14 +114,14 @@ int test_vector()
     return 0;
 }
 
-int test_array()
+int test_smart_pointer()
 {
     // Define the values.
-    std::array<Person, 2UL> out;
-    out[0] = Person("Json", 47);
-    out[1] = Person("Terry", 23);
+    std::vector<std::shared_ptr<Person>> out;
+    out.push_back(std::make_shared<Person>("Json", 47));
+    out.push_back(std::make_shared<Person>("Terry", 23));
     // Prepare the recipients.
-    std::array<Person, 2UL> in;
+    std::vector<std::shared_ptr<Person>> in;
     // Prepare the output json tree.
     json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.
@@ -117,8 +133,12 @@ int test_array()
     // Extract the values.
     in_root["people"] >> in;
     // Check equivalence.
+    if (in.size() != out.size()) {
+        std::cerr << "size : " << in.size() << " != " << out.size() << "\n";
+        return 1;
+    }
     for (unsigned i = 0; i < in.size(); ++i) {
-        if (in[i] != out[i]) {
+        if (*in[i] != *out[i]) {
             std::cerr << "p[" << i << "] : " << in[i] << " != " << out[i] << "\n";
             return 1;
         }
@@ -128,10 +148,10 @@ int test_array()
 
 int main(int, char *[])
 {
-    if (test_vector()) {
+    if (test_pointer()) {
         return 1;
     }
-    if (test_array()) {
+    if (test_smart_pointer()) {
         return 1;
     }
     return 0;
