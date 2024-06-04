@@ -191,6 +191,12 @@ if(BUILD_TESTS)
     # Liking for the test.
     target_link_libraries(${PROJECT_NAME}_test_json5 ${PROJECT_NAME})
 
+    # Add the test.
+    add_executable(${PROJECT_NAME}_test_pointer ${PROJECT_SOURCE_DIR}/tests/test_pointer.cpp)
+    add_test(${PROJECT_NAME}_test_pointer_run ${PROJECT_NAME}_test_pointer)
+    # Liking for the test.
+    target_link_libraries(${PROJECT_NAME}_test_pointer ${PROJECT_NAME})
+
 endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------

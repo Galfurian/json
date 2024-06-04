@@ -1,10 +1,10 @@
 /// @file json.hpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Defines the jnode_t class.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #pragma once
 
@@ -19,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #ifdef __cpp_lib_span
 #include <span>
@@ -473,6 +474,16 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
     return lhs << (*rhs);
 }
 
+/// @brief Output writer for pointers.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::shared_ptr<T> const &rhs)
+{
+    return lhs << (*rhs);
+}
+
 /// @brief Output writer for const char pointers.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
@@ -541,6 +552,23 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
     lhs.resize(rhs.size());
     std::size_t i = 0;
     for (typename std::list<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
+        lhs[i++] << (*it);
+    }
+    return lhs;
+}
+
+/// @brief Output writer for arrays.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T, std::size_t N>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, std::array<T, N> const &rhs)
+{
+    lhs.clear();
+    lhs.set_type(json::JTYPE_ARRAY);
+    lhs.resize(rhs.size());
+    std::size_t i = 0;
+    for (typename std::array<T, N>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
         lhs[i++] << (*it);
     }
     return lhs;
