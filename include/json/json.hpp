@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <complex>
 
 #ifdef __cpp_lib_span
 #include <span>
@@ -506,6 +507,32 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, char *rhs)
     return lhs;
 }
 
+/// @brief Output writer for complex types.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::complex<T> &rhs)
+{
+    lhs.set_type(json::JTYPE_OBJECT);
+    lhs["real"] << rhs.real();
+    lhs["imag"] << rhs.imag();
+    return lhs;
+}
+
+/// @brief Output writer for pairs.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T1, typename T2>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::pair<T1, T2> &rhs)
+{
+    lhs.set_type(json::JTYPE_OBJECT);
+    lhs["first"] << rhs.first;
+    lhs["second"] << rhs.second;
+    return lhs;
+}
+
 /// @brief Output writer for vectors.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
@@ -567,9 +594,8 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::array<T, N> const &rhs
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    std::size_t i = 0;
-    for (typename std::array<T, N>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
-        lhs[i++] << (*it);
+    for (std::size_t i = 0; i < N; ++i) {
+        lhs[i] << rhs[i];
     }
     return lhs;
 }
@@ -639,6 +665,37 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
     return lhs >> (*rhs);
 }
 
+/// @brief Input reader for complex types.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::complex<T> &rhs)
+{
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        T real, imag;
+        lhs["real"] >> real;
+        lhs["imag"] >> imag;
+        rhs.real(real);
+        rhs.imag(imag);
+    }
+    return lhs;
+}
+
+/// @brief Input reader for pairs.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T1, typename T2>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::pair<T1, T2> &rhs)
+{
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        lhs["first"] >> rhs.first;
+        lhs["second"] >> rhs.second;
+    }
+    return lhs;
+}
+
 /// @brief Input reader for vectors.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
@@ -693,6 +750,21 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &r
         std::size_t i = 0;
         for (typename std::list<T>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
             lhs[i++] >> (*it);
+        }
+    }
+    return lhs;
+}
+
+/// @brief Input reader for arrays.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T, std::size_t N>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::array<T, N> &rhs)
+{
+    if ((lhs.get_type() == json::JTYPE_ARRAY) && (lhs.size() == N)) {
+        for (std::size_t i = 0; i < N; ++i) {
+            lhs[i] >> rhs[i];
         }
     }
     return lhs;

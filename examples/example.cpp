@@ -86,7 +86,8 @@ int main(int, char *[])
         "   'v5': 'Hello world!',"
         "   'v6': 97,"
         "   'v7': 5,"
-        "   'v8': 7"
+        "   'v8': 7,"
+        "   'v9': {'real':0.75, 'imag':0.25}"
         "}";
     // Prepare the recipients.
     Person p0;
@@ -102,6 +103,7 @@ int main(int, char *[])
 #if __cplusplus >= 201103L
     long long v8;
 #endif
+    std::complex<double> v9;
     std::cout << "Parsing the json-formatted content...\n\n";
     // Prepare the example.
     json::jnode_t root = json::parser::parse(example);
@@ -125,6 +127,7 @@ int main(int, char *[])
 #if __cplusplus >= 201103L
     root["v8"] >> v8;
 #endif
+    root["v9"] >> v9;
 
     // Print the values.
     std::cout << "These are the values we extracted:\n";
@@ -141,5 +144,6 @@ int main(int, char *[])
 #if __cplusplus >= 201103L
     std::cout << "    v8 : " << v8 << "\n";
 #endif
+    std::cout << "    v9 : " << v9 << "\n";
     return 0;
 }

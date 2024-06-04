@@ -105,7 +105,7 @@ int test_array()
     out[0] = Person("Json", 47);
     out[1] = Person("Terry", 23);
     // Prepare the recipients.
-    std::vector<Person> in;
+    std::array<Person, 2UL> in;
     // Prepare the output json tree.
     json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.

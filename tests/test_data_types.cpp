@@ -1,14 +1,23 @@
 /// @file test_data_types.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Tests compatibility of the json library with different data types.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
+
+#include <json/json.hpp>
 
 #include <iostream>
-#include <json/json.hpp>
 #include <sstream>
+#include <complex>
+
+template <typename T1, typename T2>
+std::ostream &operator<<(std::ostream &os, const std::pair<T1, T2> &v)
+{
+    os << "< " << v.first << ", " << v.second << ">";
+    return os;
+}
 
 template <typename T>
 int check_equivalence(const std::string &name, const T &v1, const T &v2)
@@ -76,6 +85,10 @@ int main(int, char *[])
     out_map[south] = 1;
     out_map[west]  = 2;
     out_map[east]  = 3;
+    // Complex.
+    std::complex<double> in_complex, out_complex(0.75, 0.25);
+    // Pair, Tuple
+    std::pair<int, double> in_pair, out_pair(75, 0.25);
 
     // ========================================================================
     // Prepare the output json tree.
@@ -103,6 +116,8 @@ int main(int, char *[])
     out_root["enum"] << out_enum;
     out_root["vector"] << out_vector;
     out_root["map"] << out_map;
+    out_root["complex"] << out_complex;
+    out_root["pair"] << out_pair;
 
     // ========================================================================
     // Create the json string.
@@ -134,6 +149,8 @@ int main(int, char *[])
     in_root["enum"] >> in_enum;
     in_root["vector"] >> in_vector;
     in_root["map"] >> in_map;
+    in_root["complex"] >> in_complex;
+    in_root["pair"] >> in_pair;
 
     // ========================================================================
     // Check equivalence.
@@ -155,5 +172,7 @@ int main(int, char *[])
            check_equivalence("double_1", in_double_1, out_double_1) ||
            check_equivalence("double_2", in_double_2, out_double_2) ||
            check_equivalence("string", in_string, out_string) ||
-           check_equivalence("enum", in_enum, out_enum);
+           check_equivalence("enum", in_enum, out_enum) ||
+           check_equivalence("complex", in_complex, out_complex) ||
+           check_equivalence("pair", in_pair, out_pair);
 }
