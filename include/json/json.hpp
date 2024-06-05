@@ -414,6 +414,98 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
 /// @return the generated json sub-tree.
 jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current);
 
+/// @brief Struct for transforming a std::tuple into a json::jnode_t.
+/// @details
+/// This struct provides a static method `transform` that recursively transforms
+/// each element of a std::tuple into a json::jnode_t object. The transformation
+/// starts from the element at index N and continues until the element at index Last.
+/// @tparam Type The type of the std::tuple.
+/// @tparam N The index of the current element being transformed.
+/// @tparam Last The index of the last element in the tuple.
+template <typename Type, unsigned N, unsigned Last>
+struct tuple_to_json {
+    /// @brief Transform an element of a the std::tuple into a json::jnode_t.
+    /// @details
+    /// This method recursively transforms each element of the std::tuple into
+    /// a json::jnode_t object. It starts from the element at index N and
+    /// continues until the element at index Last.
+    /// @param lhs The json::jnode_t object where the transformation result will be stored.
+    /// @param rhs The std::tuple to be transformed.
+    static void transform(json::jnode_t &lhs, const Type &rhs)
+    {
+        lhs[N] << std::get<N>(rhs);
+        tuple_to_json<Type, N + 1, Last>::transform(lhs, rhs);
+    }
+};
+
+/// @brief Struct for transforming a std::tuple into a json::jnode_t.
+/// @details
+/// This specialization provides a static method `transform` for the base case
+/// of the transformation, where N equals Last. It transforms the last element
+/// of the std::tuple into a json::jnode_t object.
+/// @tparam Type The type of the std::tuple.
+/// @tparam N The index of the current element being transformed.
+template <typename Type, unsigned N>
+struct tuple_to_json<Type, N, N> {
+    /// @brief Transform the last element of the std::tuple into a json::jnode_t.
+    /// @details
+    /// This method transforms the last element of the std::tuple into a json::jnode_t
+    /// object. It sets the value of the json::jnode_t at index N to the value of the
+    /// corresponding element in the std::tuple.
+    /// @param lhs The json::jnode_t object where the transformation result will be stored.
+    /// @param rhs The std::tuple to be transformed.
+    static void transform(json::jnode_t &lhs, const Type &rhs)
+    {
+        lhs[N] << std::get<N>(rhs);
+    }
+};
+
+/// @brief Struct for transforming a json::jnode_t into a std::tuple.
+/// @details
+/// This struct provides a static method `transform` that recursively transforms
+/// each element of a json::jnode_t object into a std::tuple. The transformation
+/// starts from the element at index N and continues until the element at index Last.
+/// @tparam Type The type of the std::tuple.
+/// @tparam N The index of the current element being transformed.
+/// @tparam Last The index of the last element in the tuple.
+template <typename Type, unsigned N, unsigned Last>
+struct json_to_tuple {
+    /// @brief Transform the json::jnode_t into a std::tuple.
+    /// @details
+    /// This method recursively transforms each element of the json::jnode_t object into
+    /// a corresponding element of the std::tuple. It starts from the element at index N and
+    /// continues until the element at index Last.
+    /// @param lhs The json::jnode_t object to be transformed.
+    /// @param rhs The std::tuple where the transformation result will be stored.
+    static void transform(const json::jnode_t &lhs, Type &rhs)
+    {
+        lhs[N] >> std::get<N>(rhs);
+        json_to_tuple<Type, N + 1, Last>::transform(lhs, rhs);
+    }
+};
+
+/// @brief Specialization of json_to_tuple struct for the base case.
+/// @details
+/// This specialization provides a static method `transform` for the base case
+/// of the transformation, where N equals Last. It transforms the last element
+/// of the json::jnode_t object into the corresponding element of the std::tuple.
+/// @tparam Type The type of the std::tuple.
+/// @tparam N The index of the current element being transformed.
+template <typename Type, unsigned N>
+struct json_to_tuple<Type, N, N> {
+    /// @brief Transform the last element of the json::jnode_t into the std::tuple.
+    /// @details
+    /// This method transforms the last element of the json::jnode_t object into
+    /// the corresponding element of the std::tuple. It sets the value of the
+    /// corresponding element in the std::tuple to the value of the json::jnode_t at index N.
+    /// @param lhs The json::jnode_t object to be transformed.
+    /// @param rhs The std::tuple where the transformation result will be stored.
+    static void transform(const json::jnode_t &lhs, Type &rhs)
+    {
+        lhs[N] >> std::get<N>(rhs);
+    }
+};
+
 } // namespace detail
 
 /// @brief Contains parsing functions.
@@ -530,6 +622,28 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::pair<T1, T2> &rh
     lhs.set_type(json::JTYPE_OBJECT);
     lhs["first"] << rhs.first;
     lhs["second"] << rhs.second;
+    return lhs;
+}
+
+/// @brief Overloaded output stream operator for streaming a std::tuple into a json::jnode_t.
+/// @details
+/// This operator streams the elements of a std::tuple into a json::jnode_t object.
+/// It sets the type of the json::jnode_t object to JTYPE_ARRAY and resizes it to the
+/// size of the tuple. Then, it calls the `transform` method of the `tuple_to_json` struct
+/// to transform each element of the tuple into a corresponding element of the json::jnode_t.
+/// @tparam Types The types of the elements in the std::tuple.
+/// @param lhs The json::jnode_t object where the tuple elements will be streamed.
+/// @param rhs The std::tuple to be streamed into the json::jnode_t.
+/// @return A reference to the json::jnode_t object after streaming the tuple.
+template <typename... Types>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::tuple<Types...> &rhs)
+{
+    constexpr std::size_t tuple_size = sizeof...(Types);
+    if (tuple_size > 0) {
+        lhs.set_type(json::JTYPE_ARRAY);
+        lhs.resize(tuple_size);
+        detail::tuple_to_json<std::tuple<Types...>, 0, tuple_size - 1>::transform(lhs, rhs);
+    }
     return lhs;
 }
 
@@ -692,6 +806,27 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::pair<T1, T
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         lhs["first"] >> rhs.first;
         lhs["second"] >> rhs.second;
+    }
+    return lhs;
+}
+
+/// @brief Overloaded input stream operator for reading a std::tuple from a json::jnode_t.
+/// @details
+/// This operator reads the elements of a json::jnode_t object into a std::tuple.
+/// It checks if the json::jnode_t object is of type JTYPE_ARRAY and its size matches
+/// the size of the tuple. If so, it calls the `transform` method of the `json_to_tuple`
+/// struct to transform each element of the json::jnode_t into a corresponding element
+/// of the std::tuple.
+/// @tparam Types The types of the elements in the std::tuple.
+/// @param lhs The json::jnode_t object to be read into the std::tuple.
+/// @param rhs The std::tuple where the json::jnode_t elements will be stored.
+/// @return A reference to the json::jnode_t object after reading into the tuple.
+template <typename... Types>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::tuple<Types...> &rhs)
+{
+    constexpr std::size_t tuple_size = sizeof...(Types);
+    if ((lhs.get_type() == json::JTYPE_ARRAY) && (lhs.size() == tuple_size) && (tuple_size > 0)) {
+        detail::json_to_tuple<std::tuple<Types...>, 0, tuple_size - 1>::transform(lhs, rhs);
     }
     return lhs;
 }
