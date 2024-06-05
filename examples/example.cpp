@@ -1,15 +1,16 @@
 /// @file example.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Contains a couple of examples with the json library.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include <json/json.hpp>
 
 #include <iostream>
 #include <sstream>
+#include <tuple>
 
 struct Person {
     std::string name;
@@ -67,6 +68,32 @@ struct Person {
     }
 };
 
+template <typename Type, unsigned N, unsigned Last>
+struct tuple_printer {
+    static void print(std::ostream &out, const Type &value)
+    {
+        out << std::get<N>(value) << ", ";
+        tuple_printer<Type, N + 1, Last>::print(out, value);
+    }
+};
+
+template <typename Type, unsigned N>
+struct tuple_printer<Type, N, N> {
+    static void print(std::ostream &out, const Type &value)
+    {
+        out << std::get<N>(value);
+    }
+};
+
+template <typename... Types>
+std::ostream &operator<<(std::ostream &out, const std::tuple<Types...> &value)
+{
+    out << "(";
+    tuple_printer<std::tuple<Types...>, 0, sizeof...(Types) - 1>::print(out, value);
+    out << ")";
+    return out;
+}
+
 int main(int, char *[])
 {
     const char example[] =
@@ -87,7 +114,8 @@ int main(int, char *[])
         "   'v6': 97,"
         "   'v7': 5,"
         "   'v8': 7,"
-        "   'v9': {'real':0.75, 'imag':0.25}"
+        "   'v9': {'real':0.75, 'imag':0.25},"
+        "   'v10': [-1, 1, 0.5]"
         "}";
     // Prepare the recipients.
     Person p0;
@@ -104,6 +132,7 @@ int main(int, char *[])
     long long v8;
 #endif
     std::complex<double> v9;
+    std::tuple<int, unsigned, float> v10;
     std::cout << "Parsing the json-formatted content...\n\n";
     // Prepare the example.
     json::jnode_t root = json::parser::parse(example);
@@ -128,6 +157,7 @@ int main(int, char *[])
     root["v8"] >> v8;
 #endif
     root["v9"] >> v9;
+    root["v10"] >> v10;
 
     // Print the values.
     std::cout << "These are the values we extracted:\n";
@@ -145,5 +175,6 @@ int main(int, char *[])
     std::cout << "    v8 : " << v8 << "\n";
 #endif
     std::cout << "    v9 : " << v9 << "\n";
+    std::cout << "    v10 : " << v10 << "\n";
     return 0;
 }
