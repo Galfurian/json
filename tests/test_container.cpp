@@ -6,9 +6,10 @@
 /// See LICENSE.md for details.
 ///
 
-#include <iostream>
 #include <json/json.hpp>
+#include <iostream>
 #include <sstream>
+#include <array>
 
 struct Person {
     std::string name;
