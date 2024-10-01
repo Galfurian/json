@@ -12,6 +12,32 @@
 #include <sstream>
 #include <complex>
 
+template <typename Type, unsigned N, unsigned Last>
+struct tuple_printer {
+    static void print(std::ostream &out, const Type &value)
+    {
+        out << std::get<N>(value) << ", ";
+        tuple_printer<Type, N + 1, Last>::print(out, value);
+    }
+};
+
+template <typename Type, unsigned N>
+struct tuple_printer<Type, N, N> {
+    static void print(std::ostream &out, const Type &value)
+    {
+        out << std::get<N>(value);
+    }
+};
+
+template <typename... Types>
+std::ostream &operator<<(std::ostream &out, const std::tuple<Types...> &value)
+{
+    out << "(";
+    tuple_printer<std::tuple<Types...>, 0, sizeof...(Types) - 1>::print(out, value);
+    out << ")";
+    return out;
+}
+
 template <typename T1, typename T2>
 std::ostream &operator<<(std::ostream &os, const std::pair<T1, T2> &v)
 {
@@ -89,6 +115,7 @@ int main(int, char *[])
     std::complex<double> in_complex, out_complex(0.75, 0.25);
     // Pair, Tuple
     std::pair<int, double> in_pair, out_pair(75, 0.25);
+    std::tuple<int, double, std::string> in_tuple, out_tuple(75, 0.25, "ABC");
 
     // ========================================================================
     // Prepare the output json tree.
@@ -118,6 +145,7 @@ int main(int, char *[])
     out_root["map"] << out_map;
     out_root["complex"] << out_complex;
     out_root["pair"] << out_pair;
+    out_root["tuple"] << out_tuple;
 
     // ========================================================================
     // Create the json string.
@@ -151,6 +179,7 @@ int main(int, char *[])
     in_root["map"] >> in_map;
     in_root["complex"] >> in_complex;
     in_root["pair"] >> in_pair;
+    in_root["tuple"] >> in_tuple;
 
     // ========================================================================
     // Check equivalence.
@@ -174,5 +203,6 @@ int main(int, char *[])
            check_equivalence("string", in_string, out_string) ||
            check_equivalence("enum", in_enum, out_enum) ||
            check_equivalence("complex", in_complex, out_complex) ||
-           check_equivalence("pair", in_pair, out_pair);
+           check_equivalence("pair", in_pair, out_pair) ||
+           check_equivalence("tuple", in_tuple, out_tuple);
 }
