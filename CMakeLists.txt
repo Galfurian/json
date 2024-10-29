@@ -51,7 +51,7 @@ find_package(Doxygen)
 # Retrieve the source.
 FetchContent_Declare(ordered_map
     GIT_REPOSITORY "https://github.com/Galfurian/ordered_map.git"
-    GIT_TAG 8a520162623b1e2bd03f9398c42a6e380064e4a8
+    GIT_TAG main
 )
 # Retrieve the properties related to the content.
 FetchContent_MakeAvailable(ordered_map)
@@ -64,7 +64,7 @@ mark_as_advanced(FORCE
 # Retrieve the source.
 FetchContent_Declare(stopwatch
     GIT_REPOSITORY "https://github.com/Galfurian/stopwatch.git"
-    GIT_TAG a0e98edc32a60e7210a25fccc0e1e9222f16bdac
+    GIT_TAG main
 )
 # Retrieve the properties related to the content.
 FetchContent_MakeAvailable(stopwatch)
@@ -208,7 +208,7 @@ if(DOXYGEN_FOUND)
     # Record the options that describe how to populate the specified content.
     FetchContent_Declare(doxygenawesome
         GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
-        GIT_TAG df88fe4fdd97714fadfd3ef17de0b4401f804052
+        GIT_TAG main
     )
     # Retrieve the properties related to the content.
     FetchContent_MakeAvailable(doxygenawesome)
