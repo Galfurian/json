@@ -62,16 +62,16 @@ mark_as_advanced(FORCE
 )
 
 # Retrieve the source.
-FetchContent_Declare(stopwatch
-    GIT_REPOSITORY "https://github.com/Galfurian/stopwatch.git"
+FetchContent_Declare(timelib
+    GIT_REPOSITORY "https://github.com/Galfurian/timelib.git"
     GIT_TAG main
 )
 # Retrieve the properties related to the content.
-FetchContent_MakeAvailable(stopwatch)
+FetchContent_MakeAvailable(timelib)
 # Hide fetchcontent variables.
 mark_as_advanced(FORCE
-    FETCHCONTENT_UPDATES_DISCONNECTED_STOPWATCH
-    FETCHCONTENT_SOURCE_DIR_STOPWATCH
+    FETCHCONTENT_UPDATES_DISCONNECTED_TIMELIB
+    FETCHCONTENT_SOURCE_DIR_TIMELIB
 )
 
 # -----------------------------------------------------------------------------
@@ -125,18 +125,18 @@ if(BUILD_EXAMPLES)
     # Add the example.
     add_executable(${PROJECT_NAME}_example examples/example.cpp)
     # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_example PUBLIC ${stopwatch_SOURCE_DIR}/include)
+    target_include_directories(${PROJECT_NAME}_example PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
     target_link_libraries(${PROJECT_NAME}_example PUBLIC ${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME}_example PUBLIC stopwatch)
+    target_link_libraries(${PROJECT_NAME}_example PUBLIC timelib)
     
     # Add the example.
     add_executable(${PROJECT_NAME}_run_on_file examples/run_on_file.cpp)
     # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_run_on_file PUBLIC ${stopwatch_SOURCE_DIR}/include)
+    target_include_directories(${PROJECT_NAME}_run_on_file PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
     target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC ${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC stopwatch)
+    target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC timelib)
     
 endif(BUILD_EXAMPLES)
 

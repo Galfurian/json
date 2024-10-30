@@ -7,7 +7,7 @@
 /// 
 
 #include <json/json.hpp>
-#include <stopwatch/stopwatch.hpp>
+#include <timelib/stopwatch.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
         return 1;
     }
     // Prepare the stopwatch.
-    stopwatch::Stopwatch sw;
-    sw.set_print_mode(stopwatch::human);
+    timelib::Stopwatch sw;
+    sw.set_print_mode(timelib::human);
     sw.start();
 
     // Prepare the variables we are going to use.
