@@ -21,6 +21,9 @@
 #include <vector>
 #include <memory>
 #include <complex>
+#include <deque>
+#include <unordered_map>
+#include <bitset>
 
 #ifdef __cpp_lib_span
 #include <span>
@@ -542,17 +545,15 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T>
-typename std::enable_if<!std::is_enum<T>::value, json::jnode_t &>::type
-operator<<(json::jnode_t &lhs, T const &rhs);
+template <typename T, typename std::enable_if<!std::is_enum<T>::value, int>::type = 0>
+json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
 
 /// @brief Genering output writer.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T>
-typename std::enable_if<std::is_enum<T>::value, json::jnode_t &>::type
-operator<<(json::jnode_t &lhs, T rhs)
+template <typename T, typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
+json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
 {
     return lhs << static_cast<int>(rhs);
 }
@@ -731,21 +732,126 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
     return lhs;
 }
 
-/// @brief Output writer for maps.
+/// @brief Output writer for maps with NOT an enum as key.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-template <typename T1, typename T2>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs)
+template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs)
 {
+    // Clear the current contents of the JSON node.
     lhs.clear();
+    // Set the type to object.
     lhs.set_type(json::JTYPE_OBJECT);
-    typename std::map<T1, T2>::const_iterator it;
-    for (it = rhs.begin(); it != rhs.end(); ++it) {
+    for (const auto &pair : rhs) {
         std::stringstream ss;
-        ss << it->first;
-        lhs.add_property(ss.str()) << it->second;
+        // Convert the key to string.
+        ss << pair.first;
+        // Serialize the value.
+        lhs.add_property(ss.str()) << pair.second;
     }
+    return lhs; // Return the updated JSON node
+}
+
+/// @brief Output writer for maps with enum as key.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs)
+{
+    // Clear the current contents of the JSON node.
+    lhs.clear();
+    // Set the type to object.
+    lhs.set_type(json::JTYPE_OBJECT);
+    for (const auto &pair : rhs) {
+        std::stringstream ss;
+        // Convert the key to string.
+        ss << static_cast<int>(pair.first);
+        // Serialize the value.
+        lhs.add_property(ss.str()) << pair.second;
+    }
+    // Return the updated JSON node.
+    return lhs;
+}
+
+/// @brief Output writer for unordered maps with NOT an enum as key.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs)
+{
+    // Clear the current contents of the JSON node.
+    lhs.clear();
+    // Set the type to object.
+    lhs.set_type(json::JTYPE_OBJECT);
+    for (const auto &pair : rhs) {
+        std::stringstream ss;
+        // Convert the key to string.
+        ss << pair.first;
+        // Serialize the value.
+        lhs.add_property(ss.str()) << pair.second;
+    }
+    // Return the updated JSON node.
+    return lhs;
+}
+
+/// @brief Output writer for unordered maps with enum as key.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the value we are writing into the JSON node.
+/// @return a reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs)
+{
+    // Clear the current contents of the JSON node.
+    lhs.clear();
+    // Set the type to object.
+    lhs.set_type(json::JTYPE_OBJECT);
+    for (const auto &pair : rhs) {
+        std::stringstream ss;
+        // Convert the key to string.
+        ss << static_cast<int>(pair.first);
+        // Serialize the value.
+        lhs.add_property(ss.str()) << pair.second;
+    }
+    // Return the updated JSON node.
+    return lhs;
+}
+
+/// @brief Overloaded output stream operator for serializing std::deque into a json::jnode_t.
+/// @param lhs The json::jnode_t object where the deque elements will be streamed.
+/// @param rhs The std::deque to be streamed into the json::jnode_t.
+/// @return A reference to the json::jnode_t object after streaming the deque.
+template <typename T>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::deque<T> &rhs)
+{
+    // Clear the node.
+    lhs.clear();
+    // Set the type to array.
+    lhs.set_type(json::JTYPE_ARRAY);
+    // Resize the JSON node to match the size of the deque.
+    lhs.resize(rhs.size());
+    // Serialize each element of the deque into the JSON node.
+    for (std::size_t i = 0; i < rhs.size(); ++i) {
+        lhs[i] << rhs[i];
+    }
+    // Return the updated JSON node.
+    return lhs;
+}
+
+/// @brief Output writer for std::bitset.
+/// @param lhs the JSON node we are writing into.
+/// @param rhs the std::bitset to be written into the JSON node.
+/// @return a reference to the JSON node.
+template <std::size_t N>
+inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::bitset<N> &rhs)
+{
+    // Set the type to string.
+    lhs.set_type(json::JTYPE_STRING);
+    // Convert the bitset to string and set it as the value.
+    lhs.set_value(rhs.to_string());
+    // Return the updated JSON node.
     return lhs;
 }
 
@@ -753,18 +859,17 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::map<T1, T2> const &rhs
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T>
-typename std::enable_if<!std::is_enum<T>::value, const json::jnode_t &>::type
-operator>>(const json::jnode_t &lhs, T &rhs);
+template <typename T, typename std::enable_if<!std::is_enum<T>::value, int>::type = 0>
+const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
 
 /// @brief Genering input reader.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T>
-typename std::enable_if<std::is_enum<T>::value, const json::jnode_t &>::type
-operator>>(const json::jnode_t &lhs, T &rhs)
+template <typename T, typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
+const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
 {
+    // Convert the JSON node's integer representation to the enum type
     rhs = static_cast<T>(lhs.as_number<int>());
     return lhs;
 }
@@ -927,9 +1032,8 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rh
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T1, typename T2>
-inline typename std::enable_if<!std::is_enum<T1>::value, const json::jnode_t &>::type
-operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
@@ -950,9 +1054,8 @@ operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
-template <typename T1, typename T2>
-inline typename std::enable_if<std::is_enum<T1>::value, const json::jnode_t &>::type
-operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
@@ -966,6 +1069,98 @@ operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
             it->second >> rhs[T1(key)];
         }
     }
+    return lhs;
+}
+
+/// @brief Input reader for unordered maps with NOT an enum as key.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs)
+{
+    // Check the type.
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        rhs.clear();
+        for (auto it = lhs.pbegin(); it != lhs.pend(); ++it) {
+            std::stringstream ss;
+            // Convert key to string.
+            ss << it->first;
+            T1 key;
+            // Convert string back to key type.
+            ss >> key;
+            // Deserialize the corresponding value.
+            it->second >> rhs[key];
+        }
+    }
+    // Return the original JSON node.
+    return lhs;
+}
+
+/// @brief Input reader for unordered maps with enum as key.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the value we are storing the JSON node content.
+/// @return a const reference to the JSON node.
+template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs)
+{
+    // Check the type.
+    if (lhs.get_type() == json::JTYPE_OBJECT) {
+        rhs.clear();
+        for (auto it = lhs.pbegin(); it != lhs.pend(); ++it) {
+            std::stringstream ss;
+            // Convert key to string.
+            ss << it->first;
+            int key;
+            // Convert string back to key type.
+            ss >> key;
+            // Deserialize the corresponding value.
+            it->second >> rhs[T1(key)];
+        }
+    }
+    // Return the original JSON node.
+    return lhs;
+}
+
+/// @brief Overloaded input stream operator for deserializing std::deque from a json::jnode_t.
+/// @param lhs The json::jnode_t object to read from.
+/// @param rhs The std::deque where the json::jnode_t elements will be stored.
+/// @return A const reference to the json::jnode_t object after reading into the deque.
+template <typename T>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::deque<T> &rhs)
+{
+    if (lhs.get_type() == json::JTYPE_ARRAY) {
+        // Clear the existing elements in the deque.
+        rhs.clear();
+        // Resize the deque to match the size of the JSON array.
+        rhs.resize(lhs.size());
+        // Deserialize each element from the JSON node into the deque.
+        for (std::size_t i = 0; i < lhs.size(); ++i) {
+            lhs[i] >> rhs[i];
+        }
+    }
+    // Return the original JSON node.
+    return lhs;
+}
+
+/// @brief Input reader for std::bitset.
+/// @param lhs the JSON node we are reading from.
+/// @param rhs the std::bitset where the value will be stored.
+/// @return a const reference to the JSON node.
+template <std::size_t N>
+inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::bitset<N> &rhs)
+{
+    // Check if the type is string.
+    if (lhs.get_type() == json::JTYPE_STRING) {
+        // Get the string value.
+        std::string value = lhs.get_value();
+        if (value.size() != N) {
+            throw std::invalid_argument("Bitset size mismatch. Expected: " + std::to_string(N) + ", but got: " + std::to_string(value.size()));
+        }
+        // Convert string to bitset
+        rhs = std::bitset<N>(value);
+    }
+    // Return the original JSON node.
     return lhs;
 }
 

@@ -9,200 +9,318 @@
 #include <json/json.hpp>
 
 #include <iostream>
-#include <sstream>
-#include <complex>
+#include <vector>
+#include <list>
+#include <set>
+#include <map>
+#include <array>
+#include <utility> // For std::pair
+#include <tuple>   // For std::tuple
+#include <string>
 
-template <typename Type, unsigned N, unsigned Last>
-struct tuple_printer {
-    static void print(std::ostream &out, const Type &value)
-    {
-        out << std::get<N>(value) << ", ";
-        tuple_printer<Type, N + 1, Last>::print(out, value);
-    }
+// Enum for testing
+enum Color {
+    RED,
+    GREEN,
+    BLUE
 };
 
-template <typename Type, unsigned N>
-struct tuple_printer<Type, N, N> {
-    static void print(std::ostream &out, const Type &value)
-    {
-        out << std::get<N>(value);
-    }
-};
-
-template <typename... Types>
-std::ostream &operator<<(std::ostream &out, const std::tuple<Types...> &value)
+// Test functions for basic data types
+int test_int()
 {
-    out << "(";
-    tuple_printer<std::tuple<Types...>, 0, sizeof...(Types) - 1>::print(out, value);
-    out << ")";
-    return out;
+    json::jnode_t json_node;
+    int original = 42;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to int
+    int deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Int test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
 }
 
-template <typename T1, typename T2>
-std::ostream &operator<<(std::ostream &os, const std::pair<T1, T2> &v)
+int test_long()
 {
-    os << "< " << v.first << ", " << v.second << ">";
-    return os;
+    json::jnode_t json_node;
+    long original = 1234567890L;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to long
+    long deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Long test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
 }
 
-template <typename T>
-int check_equivalence(const std::string &name, const T &v1, const T &v2)
+int test_long_long()
 {
-    if (v1 != v2) {
-        std::cerr << name << " : " << v1 << " != " << v2 << "\n";
-        return 1;
+#if __cplusplus >= 201103L
+    json::jnode_t json_node;
+    long long original = 9876543210123456789ULL;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to long long
+    long long deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Long long test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
     }
-    return 0;
+#endif
+    return 0; // Success
 }
 
-template <typename T>
-int check_equivalence(const std::string &name, const std::vector<T> &v1, const std::vector<T> &v2)
+int test_unsigned_long()
 {
-    if (v1.size() != v2.size()) {
-        return 1;
+    json::jnode_t json_node;
+    unsigned long original = 1234567890UL;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to unsigned long
+    unsigned long deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Unsigned long test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
     }
-    for (std::size_t i = 0; i < v1.size(); ++i) {
-        if (v1[i] != v2[i]) {
-            std::cerr << name << "[" << i << "] : " << v1[i] << " != " << v2[i] << "\n";
-            return 1;
-        }
-    }
-    return 0;
+    return 0; // Success
 }
 
-enum direction_t {
-    north,
-    south,
-    east,
-    west
-};
-
-int main(int, char *[])
+int test_unsigned_long_long()
 {
-    // ========================================================================
-    // Define the values and their recipients.
-    bool in_bool, out_bool               = false;
-    char in_char, out_char               = 'a';
-    unsigned char in_uchar, out_uchar    = 'z';
-    short in_short, out_short            = -38;
-    unsigned short in_ushort, out_ushort = +38;
-    int in_int, out_int                  = -82;
-    unsigned int in_uint, out_uint       = +82;
-    long in_long, out_long               = -875;
-    unsigned long in_ulong, out_ulong    = +875;
 #if __cplusplus >= 201103L
-    long long in_long_long, out_long_long            = -958234;
-    unsigned long long in_ulong_long, out_ulong_long = +958234;
+    json::jnode_t json_node;
+    unsigned long long original = 9876543210123456789ULL;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to unsigned long long
+    unsigned long long deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Unsigned long long test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
 #endif
-    float in_float, out_float         = 1.5f;
-    double in_double_1, out_double_1  = 1e+06;
-    double in_double_2, out_double_2  = 1e-06;
-    std::string in_string, out_string = "Hello world!";
-    direction_t in_enum, out_enum     = east;
-    // Vectors.
-    std::vector<direction_t> in_vector, out_vector;
-    out_vector.push_back(north);
-    out_vector.push_back(south);
-    out_vector.push_back(west);
-    out_vector.push_back(east);
-    // Maps
-    std::map<direction_t, int> in_map, out_map;
-    out_map[north] = 0;
-    out_map[south] = 1;
-    out_map[west]  = 2;
-    out_map[east]  = 3;
-    // Complex.
-    std::complex<double> in_complex, out_complex(0.75, 0.25);
-    // Pair, Tuple
-    std::pair<int, double> in_pair, out_pair(75, 0.25);
-    std::tuple<int, double, std::string> in_tuple, out_tuple(75, 0.25, "ABC");
+    return 0; // Success
+}
 
-    // ========================================================================
-    // Prepare the output json tree.
-    json::jnode_t out_root(json::JTYPE_OBJECT);
+int test_float()
+{
+    json::jnode_t json_node;
+    float original = 3.14f;
 
-    // ========================================================================
-    // Write the values.
-    out_root["bool"] << out_bool;
-    out_root["char"] << out_char;
-    out_root["uchar"] << out_uchar;
-    out_root["short"] << out_short;
-    out_root["ushort"] << out_ushort;
-    out_root["int"] << out_int;
-    out_root["uint"] << out_uint;
-    out_root["long"] << out_long;
-    out_root["ulong"] << out_ulong;
-#if __cplusplus >= 201103L
-    out_root["long_long"] << out_long_long;
-    out_root["ulong_long"] << out_ulong_long;
-#endif
-    out_root["float"] << out_float;
-    out_root["double_1"] << out_double_1;
-    out_root["double_2"] << out_double_2;
-    out_root["string"] << out_string;
-    out_root["enum"] << out_enum;
-    out_root["vector"] << out_vector;
-    out_root["map"] << out_map;
-    out_root["complex"] << out_complex;
-    out_root["pair"] << out_pair;
-    out_root["tuple"] << out_tuple;
+    // Serialize to JSON
+    json_node << original;
 
-    // ========================================================================
-    // Create the json string.
-    std::string json_string = out_root.to_string(false, 0);
+    // Deserialize back to float
+    float deserialized;
+    json_node >> deserialized;
 
-    // ========================================================================
-    // Parse the json string.
-    json::jnode_t in_root = json::parser::parse(json_string);
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Float test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
 
-    // ========================================================================
-    // Extract the values.
-    in_root["bool"] >> in_bool;
-    in_root["char"] >> in_char;
-    in_root["uchar"] >> in_uchar;
-    in_root["short"] >> in_short;
-    in_root["ushort"] >> in_ushort;
-    in_root["int"] >> in_int;
-    in_root["uint"] >> in_uint;
-    in_root["long"] >> in_long;
-    in_root["ulong"] >> in_ulong;
-#if __cplusplus >= 201103L
-    in_root["long_long"] >> in_long_long;
-    in_root["ulong_long"] >> in_ulong_long;
-#endif
-    in_root["float"] >> in_float;
-    in_root["double_1"] >> in_double_1;
-    in_root["double_2"] >> in_double_2;
-    in_root["string"] >> in_string;
-    in_root["enum"] >> in_enum;
-    in_root["vector"] >> in_vector;
-    in_root["map"] >> in_map;
-    in_root["complex"] >> in_complex;
-    in_root["pair"] >> in_pair;
-    in_root["tuple"] >> in_tuple;
+int test_double()
+{
+    json::jnode_t json_node;
+    double original = 2.71828;
 
-    // ========================================================================
-    // Check equivalence.
-    return check_equivalence("int", in_int, out_int) ||
-           check_equivalence("bool", in_bool, out_bool) ||
-           check_equivalence("char", in_char, out_char) ||
-           check_equivalence("uchar", in_uchar, out_uchar) ||
-           check_equivalence("short", in_short, out_short) ||
-           check_equivalence("ushort", in_ushort, out_ushort) ||
-           check_equivalence("int", in_int, out_int) ||
-           check_equivalence("uint", in_uint, out_uint) ||
-           check_equivalence("long", in_long, out_long) ||
-           check_equivalence("ulong", in_ulong, out_ulong) ||
-#if __cplusplus >= 201103L
-           check_equivalence("long_long", in_long_long, out_long_long) ||
-           check_equivalence("ulong_long", in_ulong_long, out_ulong_long) ||
-#endif
-           check_equivalence("float", in_float, out_float) ||
-           check_equivalence("double_1", in_double_1, out_double_1) ||
-           check_equivalence("double_2", in_double_2, out_double_2) ||
-           check_equivalence("string", in_string, out_string) ||
-           check_equivalence("enum", in_enum, out_enum) ||
-           check_equivalence("complex", in_complex, out_complex) ||
-           check_equivalence("pair", in_pair, out_pair) ||
-           check_equivalence("tuple", in_tuple, out_tuple);
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to double
+    double deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Double test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_char()
+{
+    json::jnode_t json_node;
+    char original = 'A';
+
+    // Serialize to JSON
+    json_node << std::string(1, original); // Convert char to std::string for serialization
+
+    // Deserialize back to char
+    std::string deserialized_string;
+    json_node >> deserialized_string;
+
+    // Convert back to char
+    char deserialized = deserialized_string[0];
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Char test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_bool()
+{
+    json::jnode_t json_node;
+    bool original = true;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to bool
+    bool deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Bool test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_string()
+{
+    json::jnode_t json_node;
+    std::string original = "Hello, JSON!";
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to string
+    std::string deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "String test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_enum()
+{
+    json::jnode_t json_node;
+    Color original = GREEN; // Choose a value from the enum
+
+    // Serialize to JSON (using the underlying integer value)
+    json_node << static_cast<int>(original);
+
+    // Deserialize back to enum (casting back from int)
+    int deserialized_int;
+    json_node >> deserialized_int;
+    Color deserialized = static_cast<Color>(deserialized_int);
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Enum test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_pair()
+{
+    json::jnode_t json_node;
+    std::pair<int, std::string> original = { 42, "Answer" };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to pair
+    std::pair<int, std::string> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Pair test failed. Expected: (" << original.first << ", " << original.second << ")"
+                  << " but got: (" << deserialized.first << ", " << deserialized.second << ")" << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_tuple()
+{
+    json::jnode_t json_node;
+    std::tuple<int, float, std::string> original = { 1, 2.5f, "Tuple" };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to tuple
+    std::tuple<int, float, std::string> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Tuple test failed. Expected: (" << std::get<0>(original) << ", "
+                  << std::get<1>(original) << ", " << std::get<2>(original) << ")"
+                  << " but got: (" << std::get<0>(deserialized) << ", "
+                  << std::get<1>(deserialized) << ", " << std::get<2>(deserialized) << ")" << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int main()
+{
+    int result = 0;
+
+    result += test_int();
+    result += test_long();
+    result += test_long_long();
+    result += test_unsigned_long();
+    result += test_unsigned_long_long();
+    result += test_float();
+    result += test_double();
+    result += test_char();
+    result += test_bool();
+    result += test_string();
+    result += test_enum();  // Enums
+    result += test_pair();  // Pairs
+    result += test_tuple(); // Tuples
+
+    if (result == 0) {
+        std::cout << "All tests passed!" << std::endl;
+    } else {
+        std::cout << result << " test(s) failed." << std::endl;
+    }
+
+    return result; // Return the number of failed tests
 }

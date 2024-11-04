@@ -79,14 +79,14 @@ mark_as_advanced(FORCE
 # -----------------------------------------------------------------------------
 
 # Add the C++ Library.
-add_library(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/json.cpp)
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(json ${PROJECT_SOURCE_DIR}/src/json.cpp)
+add_library(json::json ALIAS json)
 
 # Include header directories, and link libraries.
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_include_directories(${PROJECT_NAME} PUBLIC ${ordered_map_SOURCE_DIR}/include)
+target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(json PUBLIC ${ordered_map_SOURCE_DIR}/include)
 
-target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
+target_compile_options(json PRIVATE -fPIC)
 
 # =====================================
 # COMPILATION FLAGS
@@ -94,25 +94,25 @@ target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(json PRIVATE _CRT_SECURE_NO_WARNINGS)
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PRIVATE /WX)
+        target_compile_options(json PRIVATE /WX)
     endif()
     if(STRICT_WARNINGS)
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(${PROJECT_NAME} PRIVATE /experimental:external)
-        target_compile_options(${PROJECT_NAME} PRIVATE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(${PROJECT_NAME} PRIVATE /external:anglebrackets)
-        target_compile_options(${PROJECT_NAME} PRIVATE /external:W0)
-        target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+        target_compile_options(json PRIVATE /experimental:external)
+        target_compile_options(json PRIVATE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(json PRIVATE /external:anglebrackets)
+        target_compile_options(json PRIVATE /external:W0)
+        target_compile_options(json PRIVATE /W4)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Werror)
+        target_compile_options(json PRIVATE -Werror)
     endif()
     if(STRICT_WARNINGS)
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wconversion -pedantic)
+        target_compile_options(json PRIVATE -Wall -Wextra -Wconversion -pedantic)
     endif()
 endif()
 
@@ -123,21 +123,23 @@ endif()
 if(BUILD_EXAMPLES)
 
     # Add the example.
-    add_executable(${PROJECT_NAME}_example examples/example.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_example PUBLIC ${timelib_SOURCE_DIR}/include)
+    add_executable(json_example examples/example.cpp)
+    # Set C++11 standard for this target
+    set_target_properties(json_example PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Include header directories.
+    target_include_directories(json_example PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
-    target_link_libraries(${PROJECT_NAME}_example PUBLIC ${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME}_example PUBLIC timelib)
-    
+    target_link_libraries(json_example PUBLIC json timelib)
+
     # Add the example.
-    add_executable(${PROJECT_NAME}_run_on_file examples/run_on_file.cpp)
-    # Inlcude header directories.
-    target_include_directories(${PROJECT_NAME}_run_on_file PUBLIC ${timelib_SOURCE_DIR}/include)
+    add_executable(json_run_on_file examples/run_on_file.cpp)
+    # Set C++11 standard for this target
+    set_target_properties(json_run_on_file PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Include header directories.
+    target_include_directories(json_run_on_file PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
-    target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC ${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME}_run_on_file PUBLIC timelib)
-    
+    target_link_libraries(json_run_on_file PUBLIC json timelib)
+
 endif(BUILD_EXAMPLES)
 
 # -----------------------------------------------------------------------------
@@ -150,52 +152,68 @@ if(BUILD_TESTS)
     enable_testing()
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_data_types ${PROJECT_SOURCE_DIR}/tests/test_data_types.cpp)
-    add_test(${PROJECT_NAME}_test_data_types_run ${PROJECT_NAME}_test_data_types)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_data_types ${PROJECT_NAME})
+    add_executable(json_test_data_types ${PROJECT_SOURCE_DIR}/tests/test_data_types.cpp)
+    add_test(json_test_data_types_run json_test_data_types)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_data_types PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_data_types json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_struct ${PROJECT_SOURCE_DIR}/tests/test_struct.cpp)
-    add_test(${PROJECT_NAME}_test_struct_run ${PROJECT_NAME}_test_struct)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_struct ${PROJECT_NAME})
+    add_executable(json_test_struct ${PROJECT_SOURCE_DIR}/tests/test_struct.cpp)
+    add_test(json_test_struct_run json_test_struct)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_struct PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_struct json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_container ${PROJECT_SOURCE_DIR}/tests/test_container.cpp)
-    add_test(${PROJECT_NAME}_test_container_run ${PROJECT_NAME}_test_container)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_container ${PROJECT_NAME})
+    add_executable(json_test_container ${PROJECT_SOURCE_DIR}/tests/test_container.cpp)
+    add_test(json_test_container_run json_test_container)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_container PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_container json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_friend ${PROJECT_SOURCE_DIR}/tests/test_friend.cpp)
-    add_test(${PROJECT_NAME}_test_friend_run ${PROJECT_NAME}_test_friend)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_friend ${PROJECT_NAME})
+    add_executable(json_test_friend ${PROJECT_SOURCE_DIR}/tests/test_friend.cpp)
+    add_test(json_test_friend_run json_test_friend)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_friend PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_friend json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_order ${PROJECT_SOURCE_DIR}/tests/test_order.cpp)
-    add_test(${PROJECT_NAME}_test_order_run ${PROJECT_NAME}_test_order)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_order ${PROJECT_NAME})
+    add_executable(json_test_order ${PROJECT_SOURCE_DIR}/tests/test_order.cpp)
+    add_test(json_test_order_run json_test_order)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_order PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_order json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_error ${PROJECT_SOURCE_DIR}/tests/test_error.cpp)
-    add_test(${PROJECT_NAME}_test_error_run ${PROJECT_NAME}_test_error)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_error ${PROJECT_NAME})
+    add_executable(json_test_error ${PROJECT_SOURCE_DIR}/tests/test_error.cpp)
+    add_test(json_test_error_run json_test_error)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_error PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_error json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_json5 ${PROJECT_SOURCE_DIR}/tests/test_json5.cpp)
-    add_test(${PROJECT_NAME}_test_json5_run ${PROJECT_NAME}_test_json5)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_json5 ${PROJECT_NAME})
+    add_executable(json_test_json5 ${PROJECT_SOURCE_DIR}/tests/test_json5.cpp)
+    add_test(json_test_json5_run json_test_json5)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_json5 PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_json5 json)
 
     # Add the test.
-    add_executable(${PROJECT_NAME}_test_pointer ${PROJECT_SOURCE_DIR}/tests/test_pointer.cpp)
-    add_test(${PROJECT_NAME}_test_pointer_run ${PROJECT_NAME}_test_pointer)
-    # Liking for the test.
-    target_link_libraries(${PROJECT_NAME}_test_pointer ${PROJECT_NAME})
+    add_executable(json_test_pointer ${PROJECT_SOURCE_DIR}/tests/test_pointer.cpp)
+    add_test(json_test_pointer_run json_test_pointer)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_pointer PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_pointer json)
 
 endif(BUILD_TESTS)
 
@@ -220,7 +238,7 @@ if(DOXYGEN_FOUND)
 
     # = CUSTOMIZATION =========================================================
     set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
-    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
+    set(DOXYGEN_PROJECT_NAME json)
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW YES)
@@ -232,7 +250,7 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
     doxygen_add_docs(
-        ${PROJECT_NAME}_documentation
+        json_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
         ${PROJECT_SOURCE_DIR}/src/json.cpp

@@ -7,133 +7,330 @@
 ///
 
 #include <json/json.hpp>
+
+#include <unordered_map>
 #include <iostream>
 #include <sstream>
 #include <array>
+#include <deque>
 
-struct Person {
-    std::string name;
-    unsigned age;
-
-    Person() = default;
-
-    Person(std::string _name, unsigned _age)
-        : name(_name),
-          age(_age)
-    {
-    }
-
-    inline bool operator==(const Person &rhs)
-    {
-        if (name != rhs.name) {
-            return false;
-        }
-        if (age != rhs.age) {
-            return false;
-        }
-        return true;
-    }
-
-    inline bool operator!=(const Person &rhs)
-    {
-        if (name != rhs.name) {
-            return true;
-        }
-        if (age != rhs.age) {
-            return true;
-        }
-        return false;
-    }
-
-    friend inline std::ostream &operator<<(std::ostream &lhs, const Person &rhs)
-    {
-        lhs << "[" << rhs.name << ", " << rhs.age << "]";
-        return lhs;
-    }
-
-    friend json::jnode_t &operator<<(json::jnode_t &lhs, const Person &rhs)
-    {
-        lhs.set_type(json::JTYPE_OBJECT);
-        lhs["name"] << rhs.name;
-        lhs["age"] << rhs.age;
-        return lhs;
-    }
-
-    friend const json::jnode_t &operator>>(const json::jnode_t &lhs, Person &rhs)
-    {
-        lhs["name"] >> rhs.name;
-        lhs["age"] >> rhs.age;
-        return lhs;
-    }
+enum Color {
+    RED,
+    GREEN,
+    BLUE
 };
+
+// Functions to convert between Color and string
+static inline std::string color_to_string(Color color)
+{
+    switch (color) {
+    case Color::RED:
+        return "RED";
+    case Color::GREEN:
+        return "GREEN";
+    case Color::BLUE:
+        return "BLUE";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static inline Color string_to_color(const std::string &color_str)
+{
+    if (color_str == "RED")
+        return Color::RED;
+    if (color_str == "GREEN")
+        return Color::GREEN;
+    if (color_str == "BLUE")
+        return Color::BLUE;
+    throw std::invalid_argument("Unknown color: " + color_str);
+}
 
 int test_vector()
 {
-    // Define the values.
-    std::vector<Person> out;
-    out.push_back(Person("Json", 47));
-    out.push_back(Person("Terry", 23));
-    // Prepare the recipients.
-    std::vector<Person> in;
-    // Prepare the output json tree.
-    json::jnode_t out_root(json::JTYPE_OBJECT);
-    // Write the values.
-    out_root["people"] << out;
-    // Create the json string.
-    std::string json = out_root.to_string(false, 0);
-    // Parse the json string.
-    json::jnode_t in_root = json::parser::parse(json);
-    // Extract the values.
-    in_root["people"] >> in;
-    // Check equivalence.
-    if (in.size() != out.size()) {
-        std::cerr << "size : " << in.size() << " != " << out.size() << "\n";
-        return 1;
+    json::jnode_t json_node;
+    std::vector<int> original = { 1, 2, 3, 4, 5 };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to vector
+    std::vector<int> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Vector test failed. Expected: ";
+        for (const auto &item : original) std::cerr << item << " ";
+        std::cerr << "but got: ";
+        for (const auto &item : deserialized) std::cerr << item << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
     }
-    for (unsigned i = 0; i < in.size(); ++i) {
-        if (in[i] != out[i]) {
-            std::cerr << "p[" << i << "] : " << in[i] << " != " << out[i] << "\n";
-            return 1;
+    return 0; // Success
+}
+
+int test_list()
+{
+    json::jnode_t json_node;
+    std::list<std::string> original = { "apple", "banana", "cherry" };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to list
+    std::list<std::string> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "List test failed. Expected: ";
+        for (const auto &item : original) std::cerr << item << " ";
+        std::cerr << "but got: ";
+        for (const auto &item : deserialized) std::cerr << item << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_set()
+{
+    json::jnode_t json_node;
+    std::set<std::string> original = { "one", "two", "three" };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to set
+    std::set<std::string> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Set test failed. Expected: ";
+        for (const auto &item : original) std::cerr << item << " ";
+        std::cerr << "but got: ";
+        for (const auto &item : deserialized) std::cerr << item << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_map_string()
+{
+    json::jnode_t json_node;
+    std::map<std::string, int> original = { { "Alice", 30 }, { "Bob", 25 }, { "Charlie", 35 } };
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to map
+    std::map<std::string, int> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Map test failed. Expected: ";
+        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << "but got: ";
+        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_map_enum()
+{
+    json::jnode_t json_node;
+    std::map<Color, int> original = { { Color::RED, 30 }, { Color::GREEN, 25 }, { Color::BLUE, 35 } }, deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to map
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Map test failed. Expected: ";
+        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << "but got: ";
+        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+// Test function for std::map with enum keys
+int test_enum_map()
+{
+    json::jnode_t json_node;
+    std::map<Color, int> original = {
+        { Color::RED, 30 },
+        { Color::GREEN, 25 },
+        { Color::BLUE, 35 }
+    };
+
+    // Serialize to JSON.
+    json_node << original;
+
+    // Deserialize back to map.
+    std::map<Color, int> deserialized;
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Enum Map test failed. Expected: ";
+        for (const auto &pair : original) {
+            std::cerr << color_to_string(pair.first) << ": " << pair.second << " ";
         }
+        std::cerr << "but got: ";
+        for (const auto &pair : deserialized) {
+            std::cerr << color_to_string(pair.first) << ": " << pair.second << " ";
+        }
+        std::cerr << std::endl;
+        return 1; // Failure
     }
-    return 0;
+    return 0; // Success
 }
 
 int test_array()
 {
-    // Define the values.
-    std::array<Person, 2UL> out;
-    out[0] = Person("Json", 47);
-    out[1] = Person("Terry", 23);
-    // Prepare the recipients.
-    std::array<Person, 2UL> in;
-    // Prepare the output json tree.
-    json::jnode_t out_root(json::JTYPE_OBJECT);
-    // Write the values.
-    out_root["people"] << out;
-    // Create the json string.
-    std::string json = out_root.to_string(false, 0);
-    // Parse the json string.
-    json::jnode_t in_root = json::parser::parse(json);
-    // Extract the values.
-    in_root["people"] >> in;
-    // Check equivalence.
-    for (unsigned i = 0; i < in.size(); ++i) {
-        if (in[i] != out[i]) {
-            std::cerr << "p[" << i << "] : " << in[i] << " != " << out[i] << "\n";
-            return 1;
-        }
+    json::jnode_t json_node;
+    std::array<int, 3> original = { 10, 20, 30 }, deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to array
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Array test failed. Expected: ";
+        for (const auto &item : original) std::cerr << item << " ";
+        std::cerr << "but got: ";
+        for (const auto &item : deserialized) std::cerr << item << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
     }
-    return 0;
+    return 0; // Success
+}
+
+int test_deque()
+{
+    json::jnode_t json_node;
+    std::deque<int> original = { 1, 2, 3, 4, 5 }, deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to deque
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Deque test failed. Expected: ";
+        for (const auto &item : original) std::cerr << item << " ";
+        std::cerr << "but got: ";
+        for (const auto &item : deserialized) std::cerr << item << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_unordered_map_string()
+{
+    json::jnode_t json_node;
+    std::unordered_map<std::string, int> original = { { "Alice", 30 }, { "Bob", 25 }, { "Charlie", 35 } }, deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to unordered_map
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Unordered map test failed. Expected: ";
+        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << "but got: ";
+        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_unordered_map_enum()
+{
+    json::jnode_t json_node;
+    std::unordered_map<Color, int> original = { { Color::RED, 1 }, { Color::GREEN, 2 } }, deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to unordered_map
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Unordered map test failed. Expected: ";
+        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << "but got: ";
+        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        std::cerr << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
+}
+
+int test_bitset()
+{
+    json::jnode_t json_node;
+    std::bitset<8> original(0b10101010), deserialized;
+
+    // Serialize to JSON
+    json_node << original;
+
+    // Deserialize back to bitset
+    json_node >> deserialized;
+
+    // Check for equality
+    if (original != deserialized) {
+        std::cerr << "Bitset test failed. Expected: " << original.to_string()
+                  << " but got: " << deserialized.to_string() << std::endl;
+        return 1; // Failure
+    }
+    return 0; // Success
 }
 
 int main(int, char *[])
 {
-    if (test_vector()) {
-        return 1;
+    int result = 0;
+
+    result += test_vector();
+    result += test_list();
+    result += test_set();
+    result += test_array();
+    result += test_deque();
+    result += test_map_string();
+    result += test_map_enum();
+    result += test_unordered_map_string();
+    result += test_unordered_map_enum();
+    result += test_bitset();
+
+    if (result == 0) {
+        std::cout << "All tests passed!" << std::endl;
+    } else {
+        std::cout << result << " test(s) failed." << std::endl;
     }
-    if (test_array()) {
-        return 1;
-    }
-    return 0;
+
+    // Return the number of failed tests.
+    return result;
 }
