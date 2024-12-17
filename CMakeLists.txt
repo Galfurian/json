@@ -252,6 +252,7 @@ if(DOXYGEN_FOUND)
     doxygen_add_docs(
         json_documentation
         ${PROJECT_SOURCE_DIR}/README.md
+        ${PROJECT_SOURCE_DIR}/LICENSE.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
         ${PROJECT_SOURCE_DIR}/src/json.cpp
     )
