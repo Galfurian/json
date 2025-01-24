@@ -34,57 +34,22 @@ jobs:
     name: Build and Test (Windows)
     runs-on: windows-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          [
-            { cc: cl, cxx: cl, label: "MSVC" }, # MSVC Compiler
-            { cc: gcc, cxx: g++, label: "MinGW GCC" } # MinGW GCC Compiler
-          ]
-
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-
     steps:
+    # Step: Clone the project.
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # Step: Install MinGW for GCC support
-    - name: Install MinGW (For GCC Support)
-      if: matrix.cc == 'gcc'
-      shell: cmd
-      run: |
-        choco install mingw -y
-        echo C:\ProgramData\chocolatey\bin >> %GITHUB_PATH%
-
-    # Step: Configure Project (Use Visual Studio generator for MSVC)
+    # Step: Configure Project.
     - name: Configure Project
-      shell: cmd
       run: |
-        mkdir build
-        cd build
-        if "%CC%" == "cl" (
-          cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_C_COMPILER=%CC% -DCMAKE_CXX_COMPILER=%CXX% -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON ..
-        ) else (
-          cmake -DCMAKE_C_COMPILER=%CC% -DCMAKE_CXX_COMPILER=%CXX% -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON ..
-        )
+        cmake -B build -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON -DSTRICT_WARNINGS=ON
 
-    # Step: Build Project
+    # Step: Build Project.
     - name: Build Project
-      shell: cmd
       run: |
-        cd build
-        if "%CC%" == "cl" (
-          cmake --build . --config Debug --parallel 2
-        ) else (
-          cmake --build . --parallel 2
-        )
+        cmake --build build --config Debug --parallel 2
 
-    # Step: Run Tests
+    # Step: Run Tests.
     - name: Run Tests
-      shell: cmd
       run: |
-        cd build
-        ctest -C Debug --verbose
+          ctest --test-dir build --build-config Debug --verbose
