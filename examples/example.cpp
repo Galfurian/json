@@ -68,7 +68,7 @@ struct Person {
     }
 };
 
-template <typename Type, unsigned N, unsigned Last>
+template <typename Type, std::size_t N, std::size_t Last>
 struct tuple_printer {
     static void print(std::ostream &out, const Type &value)
     {
@@ -77,7 +77,7 @@ struct tuple_printer {
     }
 };
 
-template <typename Type, unsigned N>
+template <typename Type, std::size_t N>
 struct tuple_printer<Type, N, N> {
     static void print(std::ostream &out, const Type &value)
     {
