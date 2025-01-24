@@ -207,12 +207,10 @@ public:
     }
 
     /// @brief Turns the value to BOOL.
-    /// @param check_type If true, check the correspondence of types.
-    /// @return The extracted value
+    /// @return The extracted value.
     bool as_bool() const;
 
     /// @brief Turns the value to STRING.
-    /// @param check_type If true, check the correspondence of types.
     /// @return The extracted value
     std::string as_string() const;
 
