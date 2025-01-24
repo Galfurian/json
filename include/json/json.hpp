@@ -31,9 +31,9 @@
 
 #include "ordered_map/ordered_map.hpp"
 
-#define JSON_MAJOR_VERSION 1 ///< Major version of the library.
-#define JSON_MINOR_VERSION 0 ///< Minor version of the library.
-#define JSON_MICRO_VERSION 0 ///< Micro version of the library.
+#define JSON_MAJOR_VERSION 2 ///< Major version of the library.
+#define JSON_MINOR_VERSION 5 ///< Minor version of the library.
+#define JSON_MICRO_VERSION 1 ///< Micro version of the library.
 
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json

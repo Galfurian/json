@@ -314,6 +314,6 @@ if(DOXYGEN_FOUND)
         ${PROJECT_SOURCE_DIR}/LICENSE.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
         ${PROJECT_SOURCE_DIR}/src/json.cpp
-        COMMENT "Generating Doxygen documentation for the JSON library"
+        COMMENT "Generating Doxygen documentation for the library"
     )
 endif()
