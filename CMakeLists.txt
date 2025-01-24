@@ -251,26 +251,42 @@ endif(BUILD_TESTS)
 # -----------------------------------------------------------------------------
 
 if(DOXYGEN_FOUND)
-    
-    # Record the options that describe how to populate the specified content.
+
+    # FetchContent: Doxygen Awesome CSS
     FetchContent_Declare(doxygenawesome
         GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
         GIT_TAG main
     )
-    # Retrieve the properties related to the content.
     FetchContent_MakeAvailable(doxygenawesome)
-    # Hide fetchcontent variables, otherwise with ccmake it's a mess.
+
+    # Hide FetchContent variables to avoid clutter in ccmake.
     mark_as_advanced(FORCE
         FETCHCONTENT_UPDATES_DISCONNECTED_DOXYGENAWESOME
         FETCHCONTENT_SOURCE_DIR_DOXYGENAWESOME
     )
 
-    # = CUSTOMIZATION =========================================================
+    # Read the file with the version.
+    file(READ ${PROJECT_SOURCE_DIR}/include/json/json.hpp version_file)
+    # Extract the version.
+    string(REGEX MATCH "JSON_MAJOR_VERSION ([0-9]*)" _ ${version_file})
+    set(JSON_MAJOR_VERSION ${CMAKE_MATCH_1})
+    string(REGEX MATCH "JSON_MINOR_VERSION ([0-9]*)" _ ${version_file})
+    set(JSON_MINOR_VERSION ${CMAKE_MATCH_1})
+    string(REGEX MATCH "JSON_MICRO_VERSION ([0-9]*)" _ ${version_file})
+    set(JSON_MICRO_VERSION ${CMAKE_MATCH_1})
+
+    # Customization: Doxygen Configuration
     set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
     set(DOXYGEN_PROJECT_NAME json)
+    set(DOXYGEN_PROJECT_BRIEF "A modern JSON library for C++")
+    set(DOXYGEN_PROJECT_NUMBER "${JSON_MAJOR_VERSION}.${JSON_MINOR_VERSION}.${JSON_MICRO_VERSION}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW YES)
+    set(DOXYGEN_GENERATE_LATEX NO) # Disable LaTeX if not needed
+    set(DOXYGEN_GENERATE_MAN NO)   # Disable man pages if not needed
+
+    # Styling and UX enhancements using Doxygen Awesome
     set(DOXYGEN_HTML_HEADER ${doxygenawesome_SOURCE_DIR}/doxygen-custom/header.html)
     set(DOXYGEN_HTML_EXTRA_STYLESHEET ${doxygenawesome_SOURCE_DIR}/doxygen-awesome.css)
     set(DOXYGEN_HTML_EXTRA_FILES
@@ -278,11 +294,26 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-paragraph-link.js
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
+
+    # Set stricter warnings for better documentation quality
+    set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
+    set(DOXYGEN_WARN_IF_DOC_ERROR YES)
+    set(DOXYGEN_WARN_NO_PARAMDOC YES)
+    set(DOXYGEN_WARN_AS_ERROR YES) # Treat warnings as errors for CI
+
+    # Exclude certain files or directories from documentation (if needed)
+    set(DOXYGEN_EXCLUDE_PATTERNS
+        "${PROJECT_SOURCE_DIR}/tests/*"
+        "${PROJECT_SOURCE_DIR}/examples/*"
+    )
+
+    # Add Doxygen documentation target
     doxygen_add_docs(
         json_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
         ${PROJECT_SOURCE_DIR}/include/json/json.hpp
         ${PROJECT_SOURCE_DIR}/src/json.cpp
+        COMMENT "Generating Doxygen documentation for the JSON library"
     )
 endif()
