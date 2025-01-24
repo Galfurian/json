@@ -35,17 +35,6 @@ static inline std::string color_to_string(Color color)
     }
 }
 
-static inline Color string_to_color(const std::string &color_str)
-{
-    if (color_str == "RED")
-        return Color::RED;
-    if (color_str == "GREEN")
-        return Color::GREEN;
-    if (color_str == "BLUE")
-        return Color::BLUE;
-    throw std::invalid_argument("Unknown color: " + color_str);
-}
-
 int test_vector()
 {
     json::jnode_t json_node;
@@ -293,7 +282,7 @@ int test_unordered_map_enum()
 int test_bitset()
 {
     json::jnode_t json_node;
-    std::bitset<8> original(0b10101010), deserialized;
+    std::bitset<8> original("10101010"), deserialized;
 
     // Serialize to JSON
     json_node << original;

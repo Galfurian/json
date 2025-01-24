@@ -85,34 +85,63 @@ add_library(json::json ALIAS json)
 # Include header directories, and link libraries.
 target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(json PUBLIC ${ordered_map_SOURCE_DIR}/include)
-
 target_compile_options(json PRIVATE -fPIC)
+# Set the library to use c++-11
+target_compile_features(json PUBLIC cxx_std_11)
 
 # =====================================
 # COMPILATION FLAGS
 # =====================================
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(json PRIVATE _CRT_SECURE_NO_WARNINGS)
+    # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
+    # which are not portable and may clutter warning logs.
+    target_compile_definitions(json PUBLIC _CRT_SECURE_NO_WARNINGS)
+
+    # Disable warning C4702: unreachable code.
+    add_compile_options(/wd4702)
+
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(json PRIVATE /WX)
+        # Treat all warnings as errors to enforce stricter code quality.
+        target_compile_options(json PUBLIC /WX)
     endif()
+
     if(STRICT_WARNINGS)
-        # Mark system headers as external for MSVC explicitly
-        # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(json PRIVATE /experimental:external)
-        target_compile_options(json PRIVATE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json PRIVATE /external:anglebrackets)
-        target_compile_options(json PRIVATE /external:W0)
-        target_compile_options(json PRIVATE /W4)
+        # Enable external header management to suppress warnings in system and
+        # external headers, making it easier to focus on project-specific issues.
+        target_compile_options(json PUBLIC /experimental:external)
+        target_compile_options(json PUBLIC /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(json PUBLIC /external:anglebrackets)
+        target_compile_options(json PUBLIC /external:W0)
+
+        # Use a high warning level to catch as many potential issues as possible.
+        target_compile_options(json PUBLIC /W4)
+
+        # Enforce standards-compliant behavior to avoid relying on MSVC-specific extensions.
+        target_compile_options(json PUBLIC /permissive-)
     endif()
+
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(json PRIVATE -Werror)
+        # Treat all warnings as errors to enforce stricter code quality.
+        target_compile_options(json PUBLIC -Werror)
     endif()
+
     if(STRICT_WARNINGS)
-        target_compile_options(json PRIVATE -Wall -Wextra -Wconversion -pedantic)
+        # Enable a broad set of warnings to catch common and subtle issues:
+        target_compile_options(json PUBLIC
+            -Wall                # Enable most general-purpose warnings.
+            -Wextra              # Enable extra warnings not included in -Wall.
+            -Wconversion         # Warn about implicit type conversions that may lose data.
+            -pedantic            # Enforce strict compliance with the C++ standard.
+            -Wshadow             # Warn about variable shadowing, which can cause subtle bugs.
+            -Wnon-virtual-dtor   # Warn when a class with virtual functions lacks a virtual destructor.
+            -Wnull-dereference   # Warn about potential null pointer dereferences.
+            -Wformat=2           # Enable strict checks for printf/scanf format strings.
+            -Woverloaded-virtual # Warn when a derived class function hides a base class virtual function.
+            -Wfloat-equal        # Warn about direct comparisons of floating-point values, which can be imprecise.
+        )
+
     endif()
 endif()
 

@@ -70,13 +70,13 @@ int test_long_long()
 {
 #if __cplusplus >= 201103L
     json::jnode_t json_node;
-    long long original = 9876543210123456789ULL;
+    unsigned long long original = 9876543210123456789ULL;
 
     // Serialize to JSON
     json_node << original;
 
     // Deserialize back to long long
-    long long deserialized;
+    unsigned long long deserialized;
     json_node >> deserialized;
 
     // Check for equality
@@ -143,7 +143,7 @@ int test_float()
     json_node >> deserialized;
 
     // Check for equality
-    if (original != deserialized) {
+    if (std::abs(original - deserialized) > 1e-06) {
         std::cerr << "Float test failed. Expected: " << original << " but got: " << deserialized << std::endl;
         return 1; // Failure
     }
@@ -163,7 +163,7 @@ int test_double()
     json_node >> deserialized;
 
     // Check for equality
-    if (original != deserialized) {
+    if (std::abs(original - deserialized) > 1e-09) {
         std::cerr << "Double test failed. Expected: " << original << " but got: " << deserialized << std::endl;
         return 1; // Failure
     }
