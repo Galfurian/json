@@ -425,7 +425,7 @@ jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t
 /// @tparam Type The type of the std::tuple.
 /// @tparam N The index of the current element being transformed.
 /// @tparam Last The index of the last element in the tuple.
-template <typename Type, unsigned N, unsigned Last>
+template <typename Type, std::size_t N, std::size_t Last>
 struct tuple_to_json {
     /// @brief Transform an element of a the std::tuple into a json::jnode_t.
     /// @details
@@ -448,7 +448,7 @@ struct tuple_to_json {
 /// of the std::tuple into a json::jnode_t object.
 /// @tparam Type The type of the std::tuple.
 /// @tparam N The index of the current element being transformed.
-template <typename Type, unsigned N>
+template <typename Type, std::size_t N>
 struct tuple_to_json<Type, N, N> {
     /// @brief Transform the last element of the std::tuple into a json::jnode_t.
     /// @details
@@ -471,7 +471,7 @@ struct tuple_to_json<Type, N, N> {
 /// @tparam Type The type of the std::tuple.
 /// @tparam N The index of the current element being transformed.
 /// @tparam Last The index of the last element in the tuple.
-template <typename Type, unsigned N, unsigned Last>
+template <typename Type, std::size_t N, std::size_t Last>
 struct json_to_tuple {
     /// @brief Transform the json::jnode_t into a std::tuple.
     /// @details
@@ -494,7 +494,7 @@ struct json_to_tuple {
 /// of the json::jnode_t object into the corresponding element of the std::tuple.
 /// @tparam Type The type of the std::tuple.
 /// @tparam N The index of the current element being transformed.
-template <typename Type, unsigned N>
+template <typename Type, std::size_t N>
 struct json_to_tuple<Type, N, N> {
     /// @brief Transform the last element of the json::jnode_t into the std::tuple.
     /// @details
