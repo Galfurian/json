@@ -369,6 +369,15 @@ footer {
   bottom: 20px;
   text-align: right;
   line-height: 16px;
+
+  p {
+    color: #AAA;
+  }
+
+  a {
+    color: #39C;
+  }
+
 }
 
 @media print,
