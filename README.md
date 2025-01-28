@@ -25,7 +25,7 @@ The library supports parsing and serializing JSON objects, arrays, strings, numb
 Clone the repository and include the necessary header files in your C++ project.
 
 ```bash
-git clone https://github.com/yourusername/json-parser.git
+git clone https://github.com/Galfurian/json.git
 ```
 
 You can then include the `json.hpp` header in your C++ project:
