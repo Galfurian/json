@@ -276,7 +276,7 @@ if(DOXYGEN_FOUND)
     set(JSON_MICRO_VERSION ${CMAKE_MATCH_1})
 
     # Customization: Doxygen Configuration
-    set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
+    set(DOXYGEN_WARN_FORMAT "$file:$line:1: $text")
     set(DOXYGEN_PROJECT_NAME json)
     set(DOXYGEN_PROJECT_BRIEF "A modern JSON library for C++")
     set(DOXYGEN_PROJECT_NUMBER "${JSON_MAJOR_VERSION}.${JSON_MINOR_VERSION}.${JSON_MICRO_VERSION}")
