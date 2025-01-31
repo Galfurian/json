@@ -302,18 +302,17 @@ if(DOXYGEN_FOUND)
     set(DOXYGEN_WARN_AS_ERROR YES) # Treat warnings as errors for CI
 
     # Exclude certain files or directories from documentation (if needed)
-    set(DOXYGEN_EXCLUDE_PATTERNS
-        "${PROJECT_SOURCE_DIR}/tests/*"
-        "${PROJECT_SOURCE_DIR}/examples/*"
-    )
+    set(DOXYGEN_EXCLUDE_PATTERNS "${PROJECT_SOURCE_DIR}/tests/*" "${PROJECT_SOURCE_DIR}/examples/*")
 
-    # Add Doxygen documentation target
+    # Add Doxygen documentation target.
+    file(GLOB_RECURSE PROJECT_HEADERS "${PROJECT_SOURCE_DIR}/include/**/*.hpp")
+    file(GLOB_RECURSE PROJECT_SOURCES "${PROJECT_SOURCE_DIR}/src/**/*.cpp")
     doxygen_add_docs(
         json_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
-        ${PROJECT_SOURCE_DIR}/include/json/json.hpp
-        ${PROJECT_SOURCE_DIR}/src/json.cpp
+        ${PROJECT_HEADERS}
+        ${PROJECT_SOURCES}
         COMMENT "Generating Doxygen documentation for the library"
     )
 endif()
