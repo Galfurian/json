@@ -9,21 +9,21 @@
 #pragma once
 
 #include <algorithm>
+#include <bitset>
 #include <cassert>
+#include <complex>
 #include <cstring>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
-#include <vector>
-#include <memory>
-#include <complex>
-#include <deque>
 #include <unordered_map>
-#include <bitset>
+#include <vector>
 
 #ifdef __cpp_lib_span
 #include <span>
@@ -56,7 +56,8 @@ enum jtype_t {
 std::string jtype_to_string(jtype_t type);
 
 /// @brief Represents a type error.
-class parser_error : public std::runtime_error {
+class parser_error : public std::runtime_error
+{
 public:
     /// @brief The line where the error is located.
     const std::size_t line;
@@ -68,7 +69,8 @@ public:
 };
 
 /// @brief Represents a type error.
-class type_error : public json::parser_error {
+class type_error : public json::parser_error
+{
 public:
     /// @brief The expected type.
     const json::jtype_t expected;
@@ -90,7 +92,8 @@ private:
 };
 
 /// @brief Represents an out-of-bound error.
-class range_error : public json::parser_error {
+class range_error : public json::parser_error
+{
 public:
     /// @brief The index we tried to access.
     const std::size_t index;
@@ -128,7 +131,8 @@ extern char string_delimiter_character;
 } // namespace config
 
 /// @brief Represent a json node.
-class jnode_t {
+class jnode_t
+{
 public:
     /// The internal map of properties for JTYPE_OBJECT nodes.
     typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
@@ -396,9 +400,9 @@ typedef struct token_t {
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
     explicit token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
-        : value(_value),
-          type(_type),
-          line_number(_line_number)
+        : value(_value)
+        , type(_type)
+        , line_number(_line_number)
     {
         // Nothing to do.
     }
@@ -458,10 +462,7 @@ struct tuple_to_json<Type, N, N> {
     /// corresponding element in the std::tuple.
     /// @param lhs The json::jnode_t object where the transformation result will be stored.
     /// @param rhs The std::tuple to be transformed.
-    static void transform(json::jnode_t &lhs, const Type &rhs)
-    {
-        lhs[N] << std::get<N>(rhs);
-    }
+    static void transform(json::jnode_t &lhs, const Type &rhs) { lhs[N] << std::get<N>(rhs); }
 };
 
 /// @brief Struct for transforming a json::jnode_t into a std::tuple.
@@ -504,10 +505,7 @@ struct json_to_tuple<Type, N, N> {
     /// corresponding element in the std::tuple to the value of the json::jnode_t at index N.
     /// @param lhs The json::jnode_t object to be transformed.
     /// @param rhs The std::tuple where the transformation result will be stored.
-    static void transform(const json::jnode_t &lhs, Type &rhs)
-    {
-        lhs[N] >> std::get<N>(rhs);
-    }
+    static void transform(const json::jnode_t &lhs, Type &rhs) { lhs[N] >> std::get<N>(rhs); }
 };
 
 } // namespace detail
@@ -1156,7 +1154,8 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::bitset<N> 
         // Get the string value.
         std::string value = lhs.get_value();
         if (value.size() != N) {
-            throw std::invalid_argument("Bitset size mismatch. Expected: " + std::to_string(N) + ", but got: " + std::to_string(value.size()));
+            throw std::invalid_argument(
+                "Bitset size mismatch. Expected: " + std::to_string(N) + ", but got: " + std::to_string(value.size()));
         }
         // Convert string to bitset
         rhs = std::bitset<N>(value);

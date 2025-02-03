@@ -8,22 +8,18 @@
 
 #include <json/json.hpp>
 
-#include <iostream>
-#include <vector>
-#include <list>
-#include <set>
-#include <map>
 #include <array>
-#include <utility> // For std::pair
-#include <tuple>   // For std::tuple
+#include <iostream>
+#include <list>
+#include <map>
+#include <set>
 #include <string>
+#include <tuple>   // For std::tuple
+#include <utility> // For std::pair
+#include <vector>
 
 // Enum for testing
-enum Color {
-    RED,
-    GREEN,
-    BLUE
-};
+enum Color { RED, GREEN, BLUE };
 
 // Test functions for basic data types
 int test_int()
@@ -123,7 +119,8 @@ int test_unsigned_long_long()
 
     // Check for equality
     if (original != deserialized) {
-        std::cerr << "Unsigned long long test failed. Expected: " << original << " but got: " << deserialized << std::endl;
+        std::cerr << "Unsigned long long test failed. Expected: " << original << " but got: " << deserialized
+                  << std::endl;
         return 1; // Failure
     }
 #endif
@@ -257,7 +254,7 @@ int test_enum()
 int test_pair()
 {
     json::jnode_t json_node;
-    std::pair<int, std::string> original = { 42, "Answer" };
+    std::pair<int, std::string> original = {42, "Answer"};
 
     // Serialize to JSON
     json_node << original;
@@ -278,7 +275,7 @@ int test_pair()
 int test_tuple()
 {
     json::jnode_t json_node;
-    std::tuple<int, float, std::string> original = { 1, 2.5f, "Tuple" };
+    std::tuple<int, float, std::string> original = {1, 2.5f, "Tuple"};
 
     // Serialize to JSON
     json_node << original;
@@ -289,10 +286,10 @@ int test_tuple()
 
     // Check for equality
     if (original != deserialized) {
-        std::cerr << "Tuple test failed. Expected: (" << std::get<0>(original) << ", "
-                  << std::get<1>(original) << ", " << std::get<2>(original) << ")"
-                  << " but got: (" << std::get<0>(deserialized) << ", "
-                  << std::get<1>(deserialized) << ", " << std::get<2>(deserialized) << ")" << std::endl;
+        std::cerr << "Tuple test failed. Expected: (" << std::get<0>(original) << ", " << std::get<1>(original) << ", "
+                  << std::get<2>(original) << ")"
+                  << " but got: (" << std::get<0>(deserialized) << ", " << std::get<1>(deserialized) << ", "
+                  << std::get<2>(deserialized) << ")" << std::endl;
         return 1; // Failure
     }
     return 0; // Success

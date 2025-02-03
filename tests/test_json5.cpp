@@ -12,16 +12,15 @@
 
 int test_comments_in_ojbect(void)
 {
-    const char example[] =
-        "{ /* Comment */\n"
-        "   // This is a comment.\n"
-        "   a: 1, /* Comment */\n"
-        "   // This is another comment.\n"
-        "   /* Comment */ 'b': 2 /* Comment */, /* Comment */ // This is an inline comment.\n"
-        "   // This is the final comment.\n"
-        "/* Comment */ }\n";
+    const char example[] = "{ /* Comment */\n"
+                           "   // This is a comment.\n"
+                           "   a: 1, /* Comment */\n"
+                           "   // This is another comment.\n"
+                           "   /* Comment */ 'b': 2 /* Comment */, /* Comment */ // This is an inline comment.\n"
+                           "   // This is the final comment.\n"
+                           "/* Comment */ }\n";
     // Parse the json string.
-    json::jnode_t root = json::parser::parse(example);
+    json::jnode_t root   = json::parser::parse(example);
     // Check correctness.
     if (root.to_string(false) != "{'a': 1,'b': 2}") {
         std::cerr << "Different!\n"
@@ -35,18 +34,17 @@ int test_comments_in_ojbect(void)
 
 int test_comments_in_array(void)
 {
-    const char example[] =
-        "{\n"
-        "   'a': 1,\n"
-        "    b : 'Hello there!',\n"
-        "   'c': [\n"
-        "       1,// This is an inline comment.\n"
-        "       2, /* Comment */\n"
-        "       3,\n"
-        "   ]\n"
-        "}\n";
+    const char example[] = "{\n"
+                           "   'a': 1,\n"
+                           "    b : 'Hello there!',\n"
+                           "   'c': [\n"
+                           "       1,// This is an inline comment.\n"
+                           "       2, /* Comment */\n"
+                           "       3,\n"
+                           "   ]\n"
+                           "}\n";
     // Parse the json string.
-    json::jnode_t root = json::parser::parse(example);
+    json::jnode_t root   = json::parser::parse(example);
     // Check correctness.
     if (root.to_string(false) != "{'a': 1,'b': 'Hello there!','c': [1, 2, 3]}") {
         std::cerr << "Different!\n"
@@ -63,7 +61,7 @@ int test_comments_in_inline_json(void)
     {
         const char example[] = "{a: 1, b: 'Hello there!', c: [1, 2, 3]}";
         // Parse the json string.
-        json::jnode_t root = json::parser::parse(example);
+        json::jnode_t root   = json::parser::parse(example);
         // Check correctness.
         if (root.to_string(false) != "{'a': 1,'b': 'Hello there!','c': [1, 2, 3]}") {
             std::cerr << "Different!\n"
@@ -76,7 +74,7 @@ int test_comments_in_inline_json(void)
     {
         const char example[] = "{a: 1, b: 'Hello there!', c: /* TEST */ [1, 2, 3]}";
         // Parse the json string.
-        json::jnode_t root = json::parser::parse(example);
+        json::jnode_t root   = json::parser::parse(example);
         // Check correctness.
         if (root.to_string(false) != "{'a': 1,'b': 'Hello there!','c': [1, 2, 3]}") {
             std::cerr << "Different!\n"
@@ -91,15 +89,14 @@ int test_comments_in_inline_json(void)
 
 int test_line_break(void)
 {
-    const char example[] =
-        "{\n"
-        "   'a': 1,\n"
-        "    b : 2,\n"
-        "   'c': 'Lorem ipsum dolor sit amet, \
+    const char example[] = "{\n"
+                           "   'a': 1,\n"
+                           "    b : 2,\n"
+                           "   'c': 'Lorem ipsum dolor sit amet, \
 consectetur adipiscing elit.'\n"
-        "}\n";
+                           "}\n";
     // Parse the json string.
-    json::jnode_t root = json::parser::parse(example);
+    json::jnode_t root   = json::parser::parse(example);
     // Check correctness.
     if (root.to_string(false) != "{'a': 1,'b': 2,'c': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'}") {
         std::cerr << "Different!\n"

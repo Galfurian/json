@@ -1,10 +1,10 @@
 /// @file test_struct.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Tests the ability of the json library to parse structures.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include <iostream>
 #include <json/json.hpp>
@@ -17,8 +17,8 @@ struct Person {
     Person() = default;
 
     Person(std::string _name, unsigned _age)
-        : name(_name),
-          age(_age)
+        : name(_name)
+        , age(_age)
     {
     }
 
@@ -77,7 +77,7 @@ int main(int, char *[])
     // Write the values.
     out_root["person"] << out_p;
     // Create the json string.
-    std::string json = out_root.to_string(false, 0);
+    std::string json      = out_root.to_string(false, 0);
     // Parse the json string.
     json::jnode_t in_root = json::parser::parse(json);
     // Extract the values.

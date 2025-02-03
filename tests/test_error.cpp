@@ -1,10 +1,10 @@
 /// @file test_error.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Tests the error reporting capability of the json library.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include <iostream>
 #include <json/json.hpp>
@@ -12,12 +12,11 @@
 
 bool test_error_format()
 {
-    const char input[] =
-        "{\n"               // 1
-        "   'v0': 1,\n"     // 2
-        "   'v1': false,\n" // 3
-        "   'v2': 1.5,\n"   // 4
-        "\n";               // 5
+    const char input[] = "{\n"               // 1
+                         "   'v0': 1,\n"     // 2
+                         "   'v1': false,\n" // 3
+                         "   'v2': 1.5,\n"   // 4
+                         "\n";               // 5
     try {
         json::jnode_t root = json::parser::parse(input);
     } catch (json::parser_error &e) {
@@ -30,12 +29,11 @@ bool test_error_format()
 
 bool test_error_type()
 {
-    const char input[] =
-        "{\n"              // 1
-        "   'v0': 1,\n"    // 2
-        "   'v1': true,\n" // 3
-        "   'v2': 1.5,\n"  // 4
-        "}\n";             // 5
+    const char input[] = "{\n"              // 1
+                         "   'v0': 1,\n"    // 2
+                         "   'v1': true,\n" // 3
+                         "   'v2': 1.5,\n"  // 4
+                         "}\n";             // 5
     try {
         json::jnode_t root = json::parser::parse(input);
         float v1;
@@ -50,12 +48,11 @@ bool test_error_type()
 
 bool test_error_out_of_bound()
 {
-    const char input[] =
-        "{\n"               // 1
-        "   'v0': 1,\n"     // 2
-        "   'v1': false,\n" // 3
-        "   'v2': 1.5,\n"   // 4
-        "}\n";              // 5
+    const char input[] = "{\n"               // 1
+                         "   'v0': 1,\n"     // 2
+                         "   'v1': false,\n" // 3
+                         "   'v2': 1.5,\n"   // 4
+                         "}\n";              // 5
     try {
         json::jnode_t root = json::parser::parse(input);
         float v1;
@@ -71,12 +68,11 @@ bool test_error_out_of_bound()
 
 bool test_error_parser()
 {
-    const char input[] =
-        "{\n"             // 1
-        "   'v0': 1,\n"   // 2
-        "   'v1': ,\n"    // 3
-        "   'v2': 1.5,\n" // 4
-        "}\n";            // 5
+    const char input[] = "{\n"             // 1
+                         "   'v0': 1,\n"   // 2
+                         "   'v1': ,\n"    // 3
+                         "   'v2': 1.5,\n" // 4
+                         "}\n";            // 5
     try {
         json::jnode_t root = json::parser::parse(input);
         float v1;
@@ -92,12 +88,11 @@ bool test_error_parser()
 
 bool test_error_no_entry()
 {
-    const char input[] =
-        "{\n"               // 1
-        "   'v0': 1,\n"     // 2
-        "   'v1': false,\n" // 3
-        "   'v2': 1.5,\n"   // 4
-        "}\n";              // 5
+    const char input[] = "{\n"               // 1
+                         "   'v0': 1,\n"     // 2
+                         "   'v1': false,\n" // 3
+                         "   'v2': 1.5,\n"   // 4
+                         "}\n";              // 5
     try {
         json::jnode_t root = json::parser::parse(input);
         float v3;

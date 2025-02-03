@@ -17,8 +17,8 @@ struct Person {
     Person() = default;
 
     Person(std::string _name, unsigned _age)
-        : name(_name),
-          age(_age)
+        : name(_name)
+        , age(_age)
     {
     }
 
@@ -95,7 +95,7 @@ int test_pointer()
     // Write the values.
     out_root["people"] << out;
     // Create the json string.
-    std::string json = out_root.to_string(false, 0);
+    std::string json      = out_root.to_string(false, 0);
     // Parse the json string.
     json::jnode_t in_root = json::parser::parse(json);
     // Extract the values.
@@ -127,7 +127,7 @@ int test_smart_pointer()
     // Write the values.
     out_root["people"] << out;
     // Create the json string.
-    std::string json = out_root.to_string(false, 0);
+    std::string json      = out_root.to_string(false, 0);
     // Parse the json string.
     json::jnode_t in_root = json::parser::parse(json);
     // Extract the values.
