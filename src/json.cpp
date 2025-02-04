@@ -344,7 +344,7 @@ static inline auto find_next_whitespace(const std::string &source, std::size_t i
 /// @return The converted character.
 static auto extract_unicode_escape(const std::string &source, std::size_t index) -> char
 {
-    char value = 0;
+    int value = 0;
     for (std::size_t j = 0; j < 4; j++) {
         value *= 16;
         if (source[index + j] >= '0' && source[index + j] <= '9') {
@@ -353,7 +353,7 @@ static auto extract_unicode_escape(const std::string &source, std::size_t index)
             value += source[index + j] - 'a' + 10;
         }
     }
-    return value;
+    return static_cast<char>(value);
 }
 
 /// @brief Decodes an escape sequence.
@@ -366,7 +366,6 @@ static auto extract_escape_sequence(const std::string &source, std::size_t index
     offset = 2;
     switch (source[index + 1]) {
     case '\"':
-        [[fallthrough]];
     case '\'':
         return config::string_delimiter_character;
     case '\\':
