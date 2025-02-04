@@ -1,5 +1,31 @@
 ---
-Checks: 'clang-diagnostic-*, clang-analyzer-*, misc-braces-around-statements, readability-braces-around-statements'
+Checks:
+- clang-diagnostic-*
+- clang-analyzer-*
+- altera-*
+- boost-*
+- bugprone-*
+- cert-*
+- cppcoreguidelines-*
+- google-*
+- llvm-*
+- modernize-*
+- performance-*
+- portability-*
+- readability-*
+- misc-braces-around-statements
+- -llvm-header-guard
+- -modernize-return-braced-init-list
+- -modernize-use-nodiscard
+- -modernize-type-traits
+- -bugprone-return-const-ref-from-parameter
+- -altera-unroll-loops
+- -altera-struct-pack-align
+- -altera-id-dependent-backward-branch
+- -readability-non-const-parameter
+- -google-runtime-int
+- -cppcoreguidelines-avoid-non-const-global-variables
+
 WarningsAsErrors: ''
 HeaderFileExtensions:
 - ''
@@ -12,9 +38,10 @@ ImplementationFileExtensions:
 - cc
 - cpp
 - cxx
+FormatStyle: none
+SystemHeaders: false
 HeaderFilterRegex: ''
 ExcludeHeaderFilterRegex: ''
-FormatStyle: none
 User: enrico
 CheckOptions:
   cert-dcl16-c.NewSuffixes: 'L;LL;LU;LLU'
@@ -30,5 +57,4 @@ CheckOptions:
   llvm-else-after-return.WarnOnConditionVariables: 'false'
   llvm-else-after-return.WarnOnUnfixable: 'false'
   llvm-qualified-auto.AddConstToQualified: 'false'
-SystemHeaders: false
 ...

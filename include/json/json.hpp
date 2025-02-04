@@ -23,6 +23,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #ifdef __cpp_lib_span
@@ -31,16 +32,18 @@
 
 #include "ordered_map/ordered_map.hpp"
 
-#define JSON_MAJOR_VERSION 2 ///< Major version of the library.
-#define JSON_MINOR_VERSION 5 ///< Minor version of the library.
-#define JSON_MICRO_VERSION 1 ///< Micro version of the library.
+enum : unsigned char {
+    JSON_MAJOR_VERSION = 2, ///< Major version of the library.
+    JSON_MINOR_VERSION = 5, ///< Minor version of the library.
+    JSON_MICRO_VERSION = 1  ///< Micro version of the library.
+};
 
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json
 {
 
 /// @brief JSON types.
-enum jtype_t {
+enum jtype_t : unsigned char {
     JTYPE_STRING,  ///< A string.
     JTYPE_OBJECT,  ///< An object.
     JTYPE_ARRAY,   ///< An array.
@@ -53,19 +56,19 @@ enum jtype_t {
 /// @brief Transforms the given JSON type to string.
 /// @param type the JSON type to transform to string.
 /// @return the string representing the JSON type.
-std::string jtype_to_string(jtype_t type);
+auto jtype_to_string(jtype_t type) -> std::string;
 
 /// @brief Represents a type error.
 class parser_error : public std::runtime_error
 {
 public:
     /// @brief The line where the error is located.
-    const std::size_t line;
+    std::size_t line;
 
     /// @brief Construct a new type error.
     /// @param _line the line where the error was found.
     /// @param _message the error message.
-    parser_error(std::size_t _line, std::string _message);
+    parser_error(std::size_t _line, const std::string &_message);
 };
 
 /// @brief Represents a type error.
@@ -73,9 +76,9 @@ class type_error : public json::parser_error
 {
 public:
     /// @brief The expected type.
-    const json::jtype_t expected;
+    json::jtype_t expected;
     /// @brief The type we found.
-    const json::jtype_t found;
+    json::jtype_t found;
 
     /// @brief Construct a new type error.
     /// @param _line the line where the error was found.
@@ -88,7 +91,7 @@ private:
     /// @param _expected the expected type.
     /// @param _found the type we found.
     /// @return the message.
-    static std::string build_message(json::jtype_t _expected, json::jtype_t _found);
+    static auto build_message(json::jtype_t _expected, json::jtype_t _found) -> std::string;
 };
 
 /// @brief Represents an out-of-bound error.
@@ -96,9 +99,9 @@ class range_error : public json::parser_error
 {
 public:
     /// @brief The index we tried to access.
-    const std::size_t index;
+    std::size_t index;
     /// @brief The size of the container.
-    const std::size_t size;
+    std::size_t size;
 
     /// @brief Construct a new range error.
     /// @param _line the line where the error was found.
@@ -111,7 +114,7 @@ private:
     /// @param _index the index we tried to access.
     /// @param _size the size of the container.
     /// @return the message.
-    static std::string build_message(std::size_t _index, std::size_t _size);
+    static auto build_message(std::size_t _index, std::size_t _size) -> std::string;
 };
 
 /// @brief JSON parser configuration.
@@ -135,15 +138,15 @@ class jnode_t
 {
 public:
     /// The internal map of properties for JTYPE_OBJECT nodes.
-    typedef ordered_map::ordered_map_t<std::string, jnode_t> property_map_t;
+    using property_map_t         = ordered_map::ordered_map_t<std::string, jnode_t>;
     /// How properties are stored inside the internal map.
-    typedef ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t property_t;
+    using property_t             = ordered_map::ordered_map_t<std::string, jnode_t>::list_entry_t;
     /// The internal array of objects for JTYPE_ARRAY nodes.
-    typedef std::vector<jnode_t> array_data_t;
+    using array_data_t           = std::vector<jnode_t>;
     /// Sorting function for JTYPE_ARRAY.
-    typedef bool (*sort_function_array_t)(const jnode_t &, const jnode_t &);
+    using sort_function_array_t  = bool (*)(const jnode_t &, const jnode_t &);
     /// Sorting function for JTYPE_OBJECT.
-    typedef bool (*sort_function_object_t)(const property_t &, const property_t &);
+    using sort_function_object_t = bool (*)(const property_t &, const property_t &);
 
     /// @brief Constructor.
     jnode_t();
@@ -154,59 +157,59 @@ public:
 
     /// @brief Returns the value of the json node.
     /// @return the unprocessed string contained in the node.
-    std::string get_value() const;
+    auto get_value() const -> std::string;
 
     /// @brief Returns the type of the json node.
     /// @return the jtype_t of this node.
-    jtype_t get_type() const;
+    auto get_type() const -> jtype_t;
 
     /// @brief Checks wheter the node is a JTYPE_STRING.
     /// @return true if the internal value is a string, false otherwise.
-    bool is_string() const;
+    auto is_string() const -> bool;
 
     /// @brief Checks wheter the node is a JTYPE_BOOLEAN.
     /// @return true if the internal value is a bool, false otherwise.
-    bool is_bool() const;
+    auto is_bool() const -> bool;
 
     /// @brief Checks wheter the node is a JTYPE_ARRAY.
     /// @return true if the node is an array of elements, false otherwise.
-    bool is_array() const;
+    auto is_array() const -> bool;
 
     /// @brief Checks wheter the node is a JTYPE_OBJECT.
     /// @return true if the node is an object, false otherwise.
-    bool is_object() const;
+    auto is_object() const -> bool;
 
     /// @brief Checks wheter the node is a JTYPE_NUMBER.
     /// @return true if the internal value is a number, false otherwise.
-    bool is_number() const;
+    auto is_number() const -> bool;
 
     /// @brief Checks wheter the node is a JTYPE_NULL.
     /// @return true if the node contains is invalid, false otherwise.
-    bool is_null() const;
+    auto is_null() const -> bool;
 
     /// @brief Returns the line number where the object resides in the original code.
     /// @return the line number if the object was created by parsing a file, -1 otherwise.
-    std::size_t get_line_number() const;
+    auto get_line_number() const -> std::size_t;
 
     /// @brief Returns the size of the internal array or the number of properties of the object.
     /// @return the size of the internal array or the number of properties of the object.
-    std::size_t size() const;
+    auto size() const -> std::size_t;
 
     /// @brief Checks if the current object has the given property.
     /// @param key The key of the property.
     /// @return true if the object has the property, false otherwise.
-    bool has_property(const std::string &key) const;
+    auto has_property(const std::string &key) const -> bool;
 
     /// @brief Turns the value to INT.
     /// @return The extracted value
     template <typename T>
-    T as_number() const
+    auto as_number() const -> T
     {
         T output = 0;
         if (type == JTYPE_NUMBER) {
-            std::stringstream ss;
-            ss << value;
-            ss >> output;
+            std::stringstream stream;
+            stream << value;
+            stream >> output;
         } else if (json::config::strict_type_check) {
             throw json::type_error(line_number, JTYPE_NUMBER, type);
         }
@@ -215,37 +218,37 @@ public:
 
     /// @brief Turns the value to BOOL.
     /// @return The extracted value.
-    bool as_bool() const;
+    auto as_bool() const -> bool;
 
     /// @brief Turns the value to STRING.
     /// @return The extracted value
-    std::string as_string() const;
+    auto as_string() const -> std::string;
 
     /// @brief Sets the type.
     /// @param _type The type to set.
     /// @return a reference to this object.
-    jnode_t &set_type(jtype_t _type);
+    auto set_type(jtype_t _type) -> jnode_t &;
 
     /// @brief Sets the internal value.
     /// @param _value The value to set.
     /// @return a reference to this object.
-    jnode_t &set_value(const std::string &_value);
+    auto set_value(const std::string &_value) -> jnode_t &;
 
     /// @brief Sets the line number.
     /// @param _line_number The line number to set.
     /// @return a reference to this object.
-    jnode_t &set_line_number(std::size_t _line_number);
+    auto set_line_number(std::size_t _line_number) -> jnode_t &;
 
     /// @brief Adds a new property with the given key.
     /// @param key The key of the property.
     /// @return A reference to the newly created property.
-    jnode_t &add_property(const std::string &key);
+    auto add_property(const std::string &key) -> jnode_t &;
 
     /// @brief Ads a given property with the given key.
     /// @param key  The key of the property.
     /// @param node The property to set.
     /// @return A reference to the newly created property.
-    jnode_t &add_property(const std::string &key, const jnode_t &node);
+    auto add_property(const std::string &key, const jnode_t &node) -> jnode_t &;
 
     /// @brief Remove the property with the given key.
     /// @param key The key of the property.
@@ -254,7 +257,7 @@ public:
     /// @brief Adds the element to the array.
     /// @param node The node to add.
     /// @return a reference to the added object.
-    jnode_t &add_element(const jnode_t &node = jnode_t());
+    auto add_element(const jnode_t &node = jnode_t()) -> jnode_t &;
 
     /// @brief Removes an element from the array.
     /// @param index position of the element.
@@ -286,66 +289,66 @@ public:
     }
 
     /// @brief Provides access to an internal node.
-    /// @param i The index of the node.
+    /// @param index The index of the node.
     /// @return A const reference to the node. If this node is not
     ///          an array, or an object, returns a node of type JTYPE_NULL.
-    const jnode_t &operator[](std::size_t i) const;
+    auto operator[](std::size_t index) const -> const jnode_t &;
 
     /// @brief Provides access to an internal node (THIS=Object/Array).
-    /// @param i The index of the node.
+    /// @param index The index of the node.
     /// @return A reference to the node. If this node is not an array,
     ///          or an object, returns a node of type JTYPE_NULL.
-    jnode_t &operator[](std::size_t i);
+    auto operator[](std::size_t index) -> jnode_t &;
 
     /// @brief Provides access to an internal node.
     /// @param key The key of the internal node.
     /// @return A const reference to the node. If this node is not
     ///          an array, or an object, returns a node of type JTYPE_NULL.
-    const jnode_t &operator[](const std::string &key) const;
+    auto operator[](const std::string &key) const -> const jnode_t &;
 
     /// @brief Provides access to an internal node.
     /// @param key The key of the internal node.
     /// @return A reference to the node. If this node is not
     ///          an array, or an object, returns a node of type JTYPE_NULL.
-    jnode_t &operator[](const std::string &key);
+    auto operator[](const std::string &key) -> jnode_t &;
 
     /// @brief Turns the json object to a formatted string.
     /// @param pretty   Enable/Disable pretty print of json.
     /// @param tabsize	The dimension of tabulation (if pretto == true).
     /// @return the string representation of the node.
-    std::string to_string(bool pretty = true, unsigned tabsize = 4) const;
+    auto to_string(bool pretty = true, unsigned tabsize = 4) const -> std::string;
 
     /// @brief Returns a constant iterator pointing to the **beginning** of the **property map**.
     /// @return the iterator.
-    property_map_t::const_iterator pbegin() const;
+    auto pbegin() const -> property_map_t::const_iterator;
 
     /// @brief Returns an iterator pointing to the **beginning** of the **property map**.
     /// @return the iterator.
-    property_map_t::iterator pbegin();
+    auto pbegin() -> property_map_t::iterator;
 
     /// @brief Returns a constant iterator pointing to the **end** of the **property map**.
     /// @return the iterator.
-    property_map_t::const_iterator pend() const;
+    auto pend() const -> property_map_t::const_iterator;
 
     /// @brief Returns an iterator pointing to the **end** of the **property map**.
     /// @return the iterator.
-    property_map_t::iterator pend();
+    auto pend() -> property_map_t::iterator;
 
     /// @brief Returns a constant iterator pointing to the **beginning** of the **array**.
     /// @return the iterator.
-    array_data_t::const_iterator abegin() const;
+    auto abegin() const -> array_data_t::const_iterator;
 
     /// @brief Returns an iterator pointing to the **beginning** of the **array**.
     /// @return the iterator.
-    array_data_t::iterator abegin();
+    auto abegin() -> array_data_t::iterator;
 
     /// @brief Returns a constant iterator pointing to the **end** of the **array**.
     /// @return the iterator.
-    array_data_t::const_iterator aend() const;
+    auto aend() const -> array_data_t::const_iterator;
 
     /// @brief Returns an iterator pointing to the **end** of the **array**.
     /// @return the iterator.
-    array_data_t::iterator aend();
+    auto aend() -> array_data_t::iterator;
 
 private:
     /// @brief Turns the json object to a formatted string.
@@ -353,7 +356,7 @@ private:
     /// @param pretty   Enable/Disable pretty print of json.
     /// @param tabsize	The dimension of tabulation (if pretty == true).
     /// @return the generated string.
-    std::string to_string_d(unsigned depth, bool pretty = true, unsigned tabsize = 4) const;
+    auto to_string_d(unsigned depth, bool pretty = true, unsigned tabsize = 4) const -> std::string;
 
     /// The type of the node.
     jtype_t type;
@@ -372,7 +375,7 @@ namespace detail
 {
 
 /// @brief The type of tokens we use to control parsing.
-enum token_type_t {
+enum token_type_t : unsigned char {
     JTOKEN_UNKNOWN,       ///< An unknown token.
     JTOKEN_STRING,        ///< We are parsing a string.
     JTOKEN_NUMBER,        ///< We are parsing a number.
@@ -383,11 +386,12 @@ enum token_type_t {
     JTOKEN_COMMA,         ///< We found a comma.
     JTOKEN_COLON,         ///< We found a colon.
     JTOKEN_BOOLEAN,       ///< We found a boolean.
+    JTOKEN_COMMENT,       ///< We found a comment.
     JTOKEN_NULL           ///< We found a NULL value.
 };
 
 /// @brief A token use for parsing.
-typedef struct token_t {
+struct token_t {
     /// The value.
     std::string value;
     /// The type.
@@ -399,20 +403,20 @@ typedef struct token_t {
     /// @param _value the value contained in the token.
     /// @param _type the type of token.
     /// @param _line_number the line where the token was extracted from.
-    explicit token_t(const std::string &_value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
-        : value(_value)
+    explicit token_t(std::string _value = "", token_type_t _type = JTOKEN_UNKNOWN, std::size_t _line_number = 0)
+        : value(std::move(_value))
         , type(_type)
         , line_number(_line_number)
     {
         // Nothing to do.
     }
-} token_t;
+};
 
 /// @brief Parse the SOURCE string and extracts all of its tokens.
 /// @param source the input string.
 /// @param tokens a vector where we store the parsed tokens.
 /// @return a reference to the token vector.
-std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &tokens);
+auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::vector<token_t> &;
 
 /// @brief Parse the list of tokens into a JSON tree.
 /// @param tokens the list of tokens.
@@ -420,7 +424,8 @@ std::vector<token_t> &tokenize(const std::string &source, std::vector<token_t> &
 /// @param output_index the index we are currently dealing with.
 /// @param current the current node we are building.
 /// @return the generated json sub-tree.
-jnode_t &json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current);
+auto json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
+    -> jnode_t &;
 
 /// @brief Struct for transforming a std::tuple into a json::jnode_t.
 /// @details
@@ -517,18 +522,18 @@ namespace parser
 /// @brief Parse the json formatted string.
 /// @param json_string The json formatted string.
 /// @return the root of the generated json tree.
-jnode_t parse(const std::string &json_string);
+auto parse(const std::string &json_string) -> jnode_t;
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
 /// @param content where we need to place the content of the file.
 /// @return the root of the generated json tree.
-bool read_file(const std::string &filename, std::string &content);
+auto read_file(const std::string &filename, std::string &content) -> bool;
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
-jnode_t parse_file(const std::string &filename);
+auto parse_file(const std::string &filename) -> jnode_t;
 
 /// @brief Write the json node on file.
 /// @param filename Path to the json file.
@@ -536,7 +541,7 @@ jnode_t parse_file(const std::string &filename);
 /// @param pretty   Enable/Disable pretty print of json.
 /// @param tabsize	The dimension of tabulation (if pretto == true).
 /// @return if the operation is a success.
-bool write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4);
+auto write_file(const std::string &filename, const jnode_t &node, bool pretty = true, unsigned tabsize = 4) -> bool;
 
 } // namespace parser
 
@@ -545,14 +550,14 @@ bool write_file(const std::string &filename, const jnode_t &node, bool pretty = 
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T, typename std::enable_if<!std::is_enum<T>::value, int>::type = 0>
-json::jnode_t &operator<<(json::jnode_t &lhs, T const &rhs);
+auto operator<<(json::jnode_t &lhs, T const &rhs) -> json::jnode_t &;
 
 /// @brief Genering output writer.
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T, typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
-json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
+auto operator<<(json::jnode_t &lhs, T rhs) -> json::jnode_t &
 {
     return lhs << static_cast<int>(rhs);
 }
@@ -562,7 +567,7 @@ json::jnode_t &operator<<(json::jnode_t &lhs, T rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
+inline auto operator<<(json::jnode_t &lhs, T *const &rhs) -> json::jnode_t &
 {
     return lhs << (*rhs);
 }
@@ -572,7 +577,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, T *const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::shared_ptr<T> const &rhs)
+inline auto operator<<(json::jnode_t &lhs, std::shared_ptr<T> const &rhs) -> json::jnode_t &
 {
     return lhs << (*rhs);
 }
@@ -581,7 +586,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::shared_ptr<T> const &r
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-inline json::jnode_t &operator<<(json::jnode_t &lhs, char const *rhs)
+inline auto operator<<(json::jnode_t &lhs, char const *rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_STRING);
     lhs.set_value(rhs);
@@ -592,7 +597,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, char const *rhs)
 /// @param lhs the JSON node we are writing into.
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
-inline json::jnode_t &operator<<(json::jnode_t &lhs, char *rhs)
+inline auto operator<<(json::jnode_t &lhs, char *rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_STRING);
     lhs.set_value(rhs);
@@ -604,7 +609,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, char *rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::complex<T> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::complex<T> &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_OBJECT);
     lhs["real"] << rhs.real();
@@ -617,7 +622,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::complex<T> &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::pair<T1, T2> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::pair<T1, T2> &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_OBJECT);
     lhs["first"] << rhs.first;
@@ -636,7 +641,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::pair<T1, T2> &rh
 /// @param rhs The std::tuple to be streamed into the json::jnode_t.
 /// @return A reference to the json::jnode_t object after streaming the tuple.
 template <typename... Types>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::tuple<Types...> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::tuple<Types...> &rhs) -> json::jnode_t &
 {
     constexpr std::size_t tuple_size = sizeof...(Types);
     if (tuple_size > 0) {
@@ -652,13 +657,13 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::tuple<Types...> 
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::vector<T> const &rhs)
+inline auto operator<<(json::jnode_t &lhs, std::vector<T> const &rhs) -> json::jnode_t &
 {
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    for (std::size_t i = 0; i < rhs.size(); ++i) {
-        lhs[i] << rhs[i];
+    for (std::size_t index = 0; index < rhs.size(); ++index) {
+        lhs[index] << rhs[index];
     }
     return lhs;
 }
@@ -674,8 +679,8 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    for (std::size_t i = 0; i < rhs.size(); ++i) {
-        lhs[i] << rhs[i];
+    for (std::size_t index = 0; index < rhs.size(); ++index) {
+        lhs[index] << rhs[index];
     }
     return lhs;
 }
@@ -686,14 +691,14 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::span<T> rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
+inline auto operator<<(json::jnode_t &lhs, std::list<T> const &rhs) -> json::jnode_t &
 {
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    std::size_t i = 0;
+    std::size_t index = 0;
     for (typename std::list<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
-        lhs[i++] << (*it);
+        lhs[index++] << (*it);
     }
     return lhs;
 }
@@ -703,13 +708,13 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::list<T> const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T, std::size_t N>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::array<T, N> const &rhs)
+inline auto operator<<(json::jnode_t &lhs, std::array<T, N> const &rhs) -> json::jnode_t &
 {
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    for (std::size_t i = 0; i < N; ++i) {
-        lhs[i] << rhs[i];
+    for (std::size_t index = 0; index < N; ++index) {
+        lhs[index] << rhs[index];
     }
     return lhs;
 }
@@ -719,14 +724,14 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::array<T, N> const &rhs
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
+inline auto operator<<(json::jnode_t &lhs, std::set<T> const &rhs) -> json::jnode_t &
 {
     lhs.clear();
     lhs.set_type(json::JTYPE_ARRAY);
     lhs.resize(rhs.size());
-    std::size_t i = 0;
-    for (typename std::set<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it) {
-        lhs[i++] << (*it);
+    std::size_t index = 0;
+    for (typename std::set<T>::const_iterator it = rhs.begin(); it != rhs.end(); ++it, ++index) {
+        lhs[index] << (*it);
     }
     return lhs;
 }
@@ -736,18 +741,18 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, std::set<T> const &rhs)
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs) -> json::jnode_t &
 {
     // Clear the current contents of the JSON node.
     lhs.clear();
     // Set the type to object.
     lhs.set_type(json::JTYPE_OBJECT);
     for (const auto &pair : rhs) {
-        std::stringstream ss;
+        std::stringstream stream;
         // Convert the key to string.
-        ss << pair.first;
+        stream << pair.first;
         // Serialize the value.
-        lhs.add_property(ss.str()) << pair.second;
+        lhs.add_property(stream.str()) << pair.second;
     }
     return lhs; // Return the updated JSON node
 }
@@ -757,18 +762,18 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs) -> json::jnode_t &
 {
     // Clear the current contents of the JSON node.
     lhs.clear();
     // Set the type to object.
     lhs.set_type(json::JTYPE_OBJECT);
     for (const auto &pair : rhs) {
-        std::stringstream ss;
+        std::stringstream stream;
         // Convert the key to string.
-        ss << static_cast<int>(pair.first);
+        stream << static_cast<int>(pair.first);
         // Serialize the value.
-        lhs.add_property(ss.str()) << pair.second;
+        lhs.add_property(stream.str()) << pair.second;
     }
     // Return the updated JSON node.
     return lhs;
@@ -779,18 +784,18 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::map<T1, T2> &rhs
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs) -> json::jnode_t &
 {
     // Clear the current contents of the JSON node.
     lhs.clear();
     // Set the type to object.
     lhs.set_type(json::JTYPE_OBJECT);
     for (const auto &pair : rhs) {
-        std::stringstream ss;
+        std::stringstream stream;
         // Convert the key to string.
-        ss << pair.first;
+        stream << pair.first;
         // Serialize the value.
-        lhs.add_property(ss.str()) << pair.second;
+        lhs.add_property(stream.str()) << pair.second;
     }
     // Return the updated JSON node.
     return lhs;
@@ -801,18 +806,18 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1
 /// @param rhs the value we are writing into the JSON node.
 /// @return a reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::unordered_map<T1, T2> &rhs) -> json::jnode_t &
 {
     // Clear the current contents of the JSON node.
     lhs.clear();
     // Set the type to object.
     lhs.set_type(json::JTYPE_OBJECT);
     for (const auto &pair : rhs) {
-        std::stringstream ss;
+        std::stringstream stream;
         // Convert the key to string.
-        ss << static_cast<int>(pair.first);
+        stream << static_cast<int>(pair.first);
         // Serialize the value.
-        lhs.add_property(ss.str()) << pair.second;
+        lhs.add_property(stream.str()) << pair.second;
     }
     // Return the updated JSON node.
     return lhs;
@@ -823,7 +828,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::unordered_map<T1
 /// @param rhs The std::deque to be streamed into the json::jnode_t.
 /// @return A reference to the json::jnode_t object after streaming the deque.
 template <typename T>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::deque<T> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::deque<T> &rhs) -> json::jnode_t &
 {
     // Clear the node.
     lhs.clear();
@@ -832,8 +837,8 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::deque<T> &rhs)
     // Resize the JSON node to match the size of the deque.
     lhs.resize(rhs.size());
     // Serialize each element of the deque into the JSON node.
-    for (std::size_t i = 0; i < rhs.size(); ++i) {
-        lhs[i] << rhs[i];
+    for (std::size_t index = 0; index < rhs.size(); ++index) {
+        lhs[index] << rhs[index];
     }
     // Return the updated JSON node.
     return lhs;
@@ -844,7 +849,7 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::deque<T> &rhs)
 /// @param rhs the std::bitset to be written into the JSON node.
 /// @return a reference to the JSON node.
 template <std::size_t N>
-inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::bitset<N> &rhs)
+inline auto operator<<(json::jnode_t &lhs, const std::bitset<N> &rhs) -> json::jnode_t &
 {
     // Set the type to string.
     lhs.set_type(json::JTYPE_STRING);
@@ -859,14 +864,14 @@ inline json::jnode_t &operator<<(json::jnode_t &lhs, const std::bitset<N> &rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T, typename std::enable_if<!std::is_enum<T>::value, int>::type = 0>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs);
+auto operator>>(const json::jnode_t &lhs, T &rhs) -> const json::jnode_t &;
 
 /// @brief Genering input reader.
 /// @param lhs the JSON node we are reading from.
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T, typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
-const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
+auto operator>>(const json::jnode_t &lhs, T &rhs) -> const json::jnode_t &
 {
     // Convert the JSON node's integer representation to the enum type
     rhs = static_cast<T>(lhs.as_number<int>());
@@ -878,7 +883,7 @@ const json::jnode_t &operator>>(const json::jnode_t &lhs, T &rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
+inline auto operator>>(const json::jnode_t &lhs, T *&rhs) -> const json::jnode_t &
 {
     return lhs >> (*rhs);
 }
@@ -888,10 +893,11 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, T *&rhs)
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::complex<T> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::complex<T> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_OBJECT) {
-        T real, imag;
+        T real;
+        T imag;
         lhs["real"] >> real;
         lhs["imag"] >> imag;
         rhs.real(real);
@@ -905,7 +911,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::complex<T>
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::pair<T1, T2> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::pair<T1, T2> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         lhs["first"] >> rhs.first;
@@ -926,7 +932,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::pair<T1, T
 /// @param rhs The std::tuple where the json::jnode_t elements will be stored.
 /// @return A reference to the json::jnode_t object after reading into the tuple.
 template <typename... Types>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::tuple<Types...> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::tuple<Types...> &rhs) -> const json::jnode_t &
 {
     constexpr std::size_t tuple_size = sizeof...(Types);
     if ((lhs.get_type() == json::JTYPE_ARRAY) && (lhs.size() == tuple_size) && (tuple_size > 0)) {
@@ -940,7 +946,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::tuple<Type
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::vector<T> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_ARRAY) {
         // Clear the vector.
@@ -948,8 +954,8 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::vector<T> 
         // Resize the vector.
         rhs.resize(lhs.size());
         // Load its elements.
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-            lhs[i] >> rhs[i];
+        for (std::size_t index = 0; index < lhs.size(); ++index) {
+            lhs[index] >> rhs[index];
         }
     }
     return lhs;
@@ -968,8 +974,8 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rh
         assert(lhs.size() <= rhs.size());
         // NOTE: This should not be necessary (see assert above) but for safety reasons, ensure there is no out of bounds acces
         const std::size_t elem_count = lhs.size() < rhs.size() ? lhs.size() : rhs.size();
-        for (std::size_t i = 0; i < elem_count; ++i) {
-            lhs[i] >> rhs[i];
+        for (std::size_t index = 0; index < elem_count; ++index) {
+            lhs[index] >> rhs[index];
         }
     }
     return lhs;
@@ -981,14 +987,14 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::span<T> rh
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::list<T> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_ARRAY) {
         rhs.clear();
         rhs.resize(lhs.size());
-        std::size_t i = 0;
+        std::size_t index = 0;
         for (typename std::list<T>::iterator it = rhs.begin(); it != rhs.end(); ++it) {
-            lhs[i++] >> (*it);
+            lhs[index++] >> (*it);
         }
     }
     return lhs;
@@ -999,11 +1005,11 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::list<T> &r
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T, std::size_t N>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::array<T, N> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::array<T, N> &rhs) -> const json::jnode_t &
 {
     if ((lhs.get_type() == json::JTYPE_ARRAY) && (lhs.size() == N)) {
-        for (std::size_t i = 0; i < N; ++i) {
-            lhs[i] >> rhs[i];
+        for (std::size_t index = 0; index < N; ++index) {
+            lhs[index] >> rhs[index];
         }
     }
     return lhs;
@@ -1014,14 +1020,14 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::array<T, N
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::set<T> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_ARRAY) {
         rhs.clear();
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-            T t;
-            lhs[i] >> t;
-            rhs.insert(t);
+        for (std::size_t index = 0; index < lhs.size(); ++index) {
+            T value;
+            lhs[index] >> value;
+            rhs.insert(value);
         }
     }
     return lhs;
@@ -1032,18 +1038,18 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::set<T> &rh
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs) -> const json::jnode_t &
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         rhs.clear();
-        json::jnode_t::property_map_t::const_iterator it;
-        for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
-            std::stringstream ss;
-            ss << it->first;
+        json::jnode_t::property_map_t::const_iterator itr;
+        for (itr = lhs.pbegin(); itr != lhs.pend(); ++itr) {
+            std::stringstream stream;
+            stream << itr->first;
             T1 key;
-            ss >> key;
-            it->second >> rhs[key];
+            stream >> key;
+            itr->second >> rhs[key];
         }
     }
     return lhs;
@@ -1054,18 +1060,18 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::map<T1, T2> &rhs) -> const json::jnode_t &
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         rhs.clear();
-        json::jnode_t::property_map_t::const_iterator it;
-        for (it = lhs.pbegin(); it != lhs.pend(); ++it) {
-            std::stringstream ss;
-            ss << it->first;
-            int key;
-            ss >> key;
-            it->second >> rhs[T1(key)];
+        json::jnode_t::property_map_t::const_iterator itr;
+        for (itr = lhs.pbegin(); itr != lhs.pend(); ++itr) {
+            std::stringstream stream;
+            stream << itr->first;
+            int key = 0;
+            stream >> key;
+            itr->second >> rhs[T1(key)];
         }
     }
     return lhs;
@@ -1076,20 +1082,20 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::map<T1, T2
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<!std::is_enum<T1>::value, int>::type = 0>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs) -> const json::jnode_t &
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         rhs.clear();
-        for (auto it = lhs.pbegin(); it != lhs.pend(); ++it) {
-            std::stringstream ss;
+        for (auto itr = lhs.pbegin(); itr != lhs.pend(); ++itr) {
+            std::stringstream stream;
             // Convert key to string.
-            ss << it->first;
+            stream << itr->first;
             T1 key;
             // Convert string back to key type.
-            ss >> key;
+            stream >> key;
             // Deserialize the corresponding value.
-            it->second >> rhs[key];
+            itr->second >> rhs[key];
         }
     }
     // Return the original JSON node.
@@ -1101,20 +1107,20 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_
 /// @param rhs the value we are storing the JSON node content.
 /// @return a const reference to the JSON node.
 template <typename T1, typename T2, typename std::enable_if<std::is_enum<T1>::value, int>::type = 0>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::unordered_map<T1, T2> &rhs) -> const json::jnode_t &
 {
     // Check the type.
     if (lhs.get_type() == json::JTYPE_OBJECT) {
         rhs.clear();
-        for (auto it = lhs.pbegin(); it != lhs.pend(); ++it) {
-            std::stringstream ss;
+        for (auto itr = lhs.pbegin(); itr != lhs.pend(); ++itr) {
+            std::stringstream stream;
             // Convert key to string.
-            ss << it->first;
-            int key;
+            stream << itr->first;
+            int key = 0;
             // Convert string back to key type.
-            ss >> key;
+            stream >> key;
             // Deserialize the corresponding value.
-            it->second >> rhs[T1(key)];
+            itr->second >> rhs[T1(key)];
         }
     }
     // Return the original JSON node.
@@ -1126,7 +1132,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::unordered_
 /// @param rhs The std::deque where the json::jnode_t elements will be stored.
 /// @return A const reference to the json::jnode_t object after reading into the deque.
 template <typename T>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::deque<T> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::deque<T> &rhs) -> const json::jnode_t &
 {
     if (lhs.get_type() == json::JTYPE_ARRAY) {
         // Clear the existing elements in the deque.
@@ -1134,8 +1140,8 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::deque<T> &
         // Resize the deque to match the size of the JSON array.
         rhs.resize(lhs.size());
         // Deserialize each element from the JSON node into the deque.
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-            lhs[i] >> rhs[i];
+        for (std::size_t index = 0; index < lhs.size(); ++index) {
+            lhs[index] >> rhs[index];
         }
     }
     // Return the original JSON node.
@@ -1147,7 +1153,7 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::deque<T> &
 /// @param rhs the std::bitset where the value will be stored.
 /// @return a const reference to the JSON node.
 template <std::size_t N>
-inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::bitset<N> &rhs)
+inline auto operator>>(const json::jnode_t &lhs, std::bitset<N> &rhs) -> const json::jnode_t &
 {
     // Check if the type is string.
     if (lhs.get_type() == json::JTYPE_STRING) {
@@ -1164,16 +1170,28 @@ inline const json::jnode_t &operator>>(const json::jnode_t &lhs, std::bitset<N> 
     return lhs;
 }
 
-} // namespace json
-
 /// @brief Sends the JSON node to the output stream.
 /// @param lhs the stream we are writing the content of the JSON node.
 /// @param rhs the JSON node.
 /// @return a reference to the output stream.
-std::ostream &operator<<(std::ostream &lhs, const json::jnode_t &rhs);
+auto operator<<(std::ostream &lhs, const json::jnode_t &rhs) -> std::ostream &;
 
 /// @brief Sends the JSON node to the output file stream.
 /// @param lhs the stream we are writing the content of the JSON node.
 /// @param rhs the JSON node.
 /// @return a reference to the output file stream.
-std::ofstream &operator<<(std::ofstream &lhs, const json::jnode_t &rhs);
+auto operator<<(std::ofstream &lhs, const json::jnode_t &rhs) -> std::ofstream &;
+
+/// @brief Overloads the output stream operator for token_t.
+/// @param lhs The output stream.
+/// @param rhs The token to print.
+/// @return The modified output stream.
+auto operator<<(std::ostream &lhs, const detail::token_t &rhs) -> std::ostream &;
+
+/// @brief Overloads the output stream operator for token_t.
+/// @param lhs The output stream.
+/// @param rhs The token to print.
+/// @return The modified output stream.
+auto operator<<(std::ofstream &lhs, const detail::token_t &rhs) -> std::ofstream &;
+
+} // namespace json

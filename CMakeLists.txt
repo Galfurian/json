@@ -21,8 +21,8 @@ endif()
 
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_EXAMPLES "Build examples" ON)
+option(BUILD_TESTS "Build tests" ON)
 
 # -----------------------------------------------------------------------------
 # ENABLE FETCH CONTENT
@@ -43,6 +43,8 @@ mark_as_advanced(FORCE
 # -----------------------------------------------------------------------------
 
 find_package(Doxygen)
+
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 
 # -----------------------------------------------------------------------------
 # DIPENDENCIES (REPOSITORIES)
@@ -245,6 +247,35 @@ if(BUILD_TESTS)
     target_link_libraries(json_test_pointer json)
 
 endif(BUILD_TESTS)
+
+# -----------------------------------------------------------------------------
+# CODE ANALYSIS
+# -----------------------------------------------------------------------------
+
+if(CLANG_TIDY_EXE)
+    file(GLOB_RECURSE ALL_PROJECT_FILES
+        "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp")
+    add_custom_target(
+        json_clang_tidy
+        COMMAND ${CLANG_TIDY_EXE}
+        --p=${CMAKE_BINARY_DIR}
+        ${ALL_PROJECT_FILES}
+        COMMENT "Running clang-tidy"
+        VERBATIM
+    )
+    add_custom_target(
+        json_clang_tidy_fix
+        COMMAND ${CLANG_TIDY_EXE}
+        --fix
+        --p=${CMAKE_BINARY_DIR}
+        ${ALL_PROJECT_FILES}
+        COMMENT "Running clang-tidy-fix"
+        VERBATIM
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # DOCUMENTATION
