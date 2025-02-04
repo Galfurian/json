@@ -18,6 +18,7 @@ The library supports parsing and serializing JSON objects, arrays, strings, numb
 - Serialize C++ types back into JSON format.
 - Supports custom types via operator overloads for `<<` and `>>`.
 - Handles both arrays and objects, and supports serialization of complex types such as `std::tuple`, `std::vector`, and `std::map`.
+- Supports `//` and `/* ... */` comments in JSON.
 - Error handling with detailed exception types such as `parser_error`, `type_error`, and `range_error`.
 
 ## Installation
@@ -45,9 +46,13 @@ You can then include the `json.hpp` header in your C++ project:
 int main() {
     const char* json_string = R"(
     {
+        // Single-line comment
         "name": "John",
+
+        /* Multi-line comment */
         "age": 30,
-        "city": "New York"
+
+        "city": "New York" // Inline comment
     })";
 
     json::jnode_t root = json::parser::parse(json_string);

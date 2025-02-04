@@ -1,10 +1,10 @@
 /// @file run_on_file.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Shows an example of how to use the json library on file.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include <json/json.hpp>
 #include <timelib/stopwatch.hpp>

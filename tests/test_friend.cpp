@@ -1,16 +1,17 @@
 /// @file test_friend.cpp
 /// @author Enrico Fraccaroli (enry.frak@gmail.com)
 /// @brief Tests if friends streaming functions work.
-/// 
+///
 /// @copyright (c) 2024 This file is distributed under the MIT License.
 /// See LICENSE.md for details.
-/// 
+///
 
 #include <iostream>
 #include <json/json.hpp>
 #include <sstream>
 
-class Animal {
+class Animal
+{
 private:
     std::string name;
 
@@ -22,15 +23,9 @@ public:
     {
     }
 
-    friend inline bool operator==(const Animal &lhs, const Animal &rhs)
-    {
-        return lhs.name == rhs.name;
-    }
+    friend inline bool operator==(const Animal &lhs, const Animal &rhs) { return lhs.name == rhs.name; }
 
-    friend inline bool operator!=(const Animal &lhs, const Animal &rhs)
-    {
-        return lhs.name != rhs.name;
-    }
+    friend inline bool operator!=(const Animal &lhs, const Animal &rhs) { return lhs.name != rhs.name; }
 
     friend inline std::ostream &operator<<(std::ostream &lhs, const Animal &rhs)
     {
@@ -63,7 +58,7 @@ int main(int, char *[])
     // Write the values.
     out_root["Animal"] << cat_out;
     // Create the json string.
-    std::string json = out_root.to_string(false, 0);
+    std::string json      = out_root.to_string(false, 0);
     // Parse the json string.
     json::jnode_t in_root = json::parser::parse(json);
     // Extract the values.

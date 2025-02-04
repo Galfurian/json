@@ -8,17 +8,13 @@
 
 #include <json/json.hpp>
 
-#include <unordered_map>
-#include <iostream>
-#include <sstream>
 #include <array>
 #include <deque>
+#include <iostream>
+#include <sstream>
+#include <unordered_map>
 
-enum Color {
-    RED,
-    GREEN,
-    BLUE
-};
+enum Color { RED, GREEN, BLUE };
 
 // Functions to convert between Color and string
 static inline std::string color_to_string(Color color)
@@ -38,7 +34,7 @@ static inline std::string color_to_string(Color color)
 int test_vector()
 {
     json::jnode_t json_node;
-    std::vector<int> original = { 1, 2, 3, 4, 5 };
+    std::vector<int> original = {1, 2, 3, 4, 5};
 
     // Serialize to JSON
     json_node << original;
@@ -50,9 +46,13 @@ int test_vector()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Vector test failed. Expected: ";
-        for (const auto &item : original) std::cerr << item << " ";
+        for (const auto &item : original) {
+            std::cerr << item << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &item : deserialized) std::cerr << item << " ";
+        for (const auto &item : deserialized) {
+            std::cerr << item << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -62,7 +62,7 @@ int test_vector()
 int test_list()
 {
     json::jnode_t json_node;
-    std::list<std::string> original = { "apple", "banana", "cherry" };
+    std::list<std::string> original = {"apple", "banana", "cherry"};
 
     // Serialize to JSON
     json_node << original;
@@ -74,9 +74,13 @@ int test_list()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "List test failed. Expected: ";
-        for (const auto &item : original) std::cerr << item << " ";
+        for (const auto &item : original) {
+            std::cerr << item << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &item : deserialized) std::cerr << item << " ";
+        for (const auto &item : deserialized) {
+            std::cerr << item << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -86,7 +90,7 @@ int test_list()
 int test_set()
 {
     json::jnode_t json_node;
-    std::set<std::string> original = { "one", "two", "three" };
+    std::set<std::string> original = {"one", "two", "three"};
 
     // Serialize to JSON
     json_node << original;
@@ -98,9 +102,13 @@ int test_set()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Set test failed. Expected: ";
-        for (const auto &item : original) std::cerr << item << " ";
+        for (const auto &item : original) {
+            std::cerr << item << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &item : deserialized) std::cerr << item << " ";
+        for (const auto &item : deserialized) {
+            std::cerr << item << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -110,7 +118,7 @@ int test_set()
 int test_map_string()
 {
     json::jnode_t json_node;
-    std::map<std::string, int> original = { { "Alice", 30 }, { "Bob", 25 }, { "Charlie", 35 } };
+    std::map<std::string, int> original = {{"Alice", 30}, {"Bob", 25}, {"Charlie", 35}};
 
     // Serialize to JSON
     json_node << original;
@@ -122,9 +130,13 @@ int test_map_string()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Map test failed. Expected: ";
-        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : original) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : deserialized) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -134,7 +146,7 @@ int test_map_string()
 int test_map_enum()
 {
     json::jnode_t json_node;
-    std::map<Color, int> original = { { Color::RED, 30 }, { Color::GREEN, 25 }, { Color::BLUE, 35 } }, deserialized;
+    std::map<Color, int> original = {{Color::RED, 30}, {Color::GREEN, 25}, {Color::BLUE, 35}}, deserialized;
 
     // Serialize to JSON
     json_node << original;
@@ -145,9 +157,13 @@ int test_map_enum()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Map test failed. Expected: ";
-        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : original) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : deserialized) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -158,11 +174,7 @@ int test_map_enum()
 int test_enum_map()
 {
     json::jnode_t json_node;
-    std::map<Color, int> original = {
-        { Color::RED, 30 },
-        { Color::GREEN, 25 },
-        { Color::BLUE, 35 }
-    };
+    std::map<Color, int> original = {{Color::RED, 30}, {Color::GREEN, 25}, {Color::BLUE, 35}};
 
     // Serialize to JSON.
     json_node << original;
@@ -190,7 +202,7 @@ int test_enum_map()
 int test_array()
 {
     json::jnode_t json_node;
-    std::array<int, 3> original = { 10, 20, 30 }, deserialized;
+    std::array<int, 3> original = {10, 20, 30}, deserialized;
 
     // Serialize to JSON
     json_node << original;
@@ -201,9 +213,13 @@ int test_array()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Array test failed. Expected: ";
-        for (const auto &item : original) std::cerr << item << " ";
+        for (const auto &item : original) {
+            std::cerr << item << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &item : deserialized) std::cerr << item << " ";
+        for (const auto &item : deserialized) {
+            std::cerr << item << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -213,7 +229,7 @@ int test_array()
 int test_deque()
 {
     json::jnode_t json_node;
-    std::deque<int> original = { 1, 2, 3, 4, 5 }, deserialized;
+    std::deque<int> original = {1, 2, 3, 4, 5}, deserialized;
 
     // Serialize to JSON
     json_node << original;
@@ -224,9 +240,13 @@ int test_deque()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Deque test failed. Expected: ";
-        for (const auto &item : original) std::cerr << item << " ";
+        for (const auto &item : original) {
+            std::cerr << item << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &item : deserialized) std::cerr << item << " ";
+        for (const auto &item : deserialized) {
+            std::cerr << item << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -236,7 +256,7 @@ int test_deque()
 int test_unordered_map_string()
 {
     json::jnode_t json_node;
-    std::unordered_map<std::string, int> original = { { "Alice", 30 }, { "Bob", 25 }, { "Charlie", 35 } }, deserialized;
+    std::unordered_map<std::string, int> original = {{"Alice", 30}, {"Bob", 25}, {"Charlie", 35}}, deserialized;
 
     // Serialize to JSON
     json_node << original;
@@ -247,9 +267,13 @@ int test_unordered_map_string()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Unordered map test failed. Expected: ";
-        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : original) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : deserialized) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }
@@ -259,7 +283,7 @@ int test_unordered_map_string()
 int test_unordered_map_enum()
 {
     json::jnode_t json_node;
-    std::unordered_map<Color, int> original = { { Color::RED, 1 }, { Color::GREEN, 2 } }, deserialized;
+    std::unordered_map<Color, int> original = {{Color::RED, 1}, {Color::GREEN, 2}}, deserialized;
 
     // Serialize to JSON
     json_node << original;
@@ -270,9 +294,13 @@ int test_unordered_map_enum()
     // Check for equality
     if (original != deserialized) {
         std::cerr << "Unordered map test failed. Expected: ";
-        for (const auto &pair : original) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : original) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << "but got: ";
-        for (const auto &pair : deserialized) std::cerr << pair.first << ": " << pair.second << " ";
+        for (const auto &pair : deserialized) {
+            std::cerr << pair.first << ": " << pair.second << " ";
+        }
         std::cerr << std::endl;
         return 1; // Failure
     }

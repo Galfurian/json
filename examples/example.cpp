@@ -19,8 +19,8 @@ struct Person {
     Person() = default;
 
     Person(std::string _name, unsigned _age)
-        : name(_name),
-          age(_age)
+        : name(_name)
+        , age(_age)
     {
     }
 
@@ -79,10 +79,7 @@ struct tuple_printer {
 
 template <typename Type, std::size_t N>
 struct tuple_printer<Type, N, N> {
-    static void print(std::ostream &out, const Type &value)
-    {
-        out << std::get<N>(value);
-    }
+    static void print(std::ostream &out, const Type &value) { out << std::get<N>(value); }
 };
 
 template <typename... Types>
@@ -96,27 +93,29 @@ std::ostream &operator<<(std::ostream &out, const std::tuple<Types...> &value)
 
 int main(int, char *[])
 {
-    const char example[] =
-        "{"
-        "   'p0': {"
-        "       'age': 24,"
-        "       'name': 'Alfred'"
-        "   }, 'p1': {"
-        "       'age': 45,"
-        "       'name': 'Juhan'"
-        "   },"
-        "   'v0': 1,"
-        "   'v1': false,"
-        "   'v2': 1.5,"
-        "   'v3': 1e+06,"
-        "   'v4': 1e-06,"
-        "   'v5': 'Hello world!',"
-        "   'v6': 97,"
-        "   'v7': 5,"
-        "   'v8': 7,"
-        "   'v9': {'real':0.75, 'imag':0.25},"
-        "   'v10': [-1, 1, 0.5]"
-        "}";
+    const char example[] = "{\n"
+                           "    // This is a comment.\n"
+                           "   'p0': {\n"
+                           "       'age': 24,\n"
+                           "       'name': 'Alfred'\n"
+                           "   }, 'p1': {\n"
+                           "       'age': 45,\n"
+                           "       'name': 'Juhan'\n"
+                           "   },\n"
+                           "   'v0': 1,\n"
+                           "   'v1': false,\n"
+                           "   'v2': 1.5,\n"
+                           "   'v3': 1e+06,\n"
+                           "   'v4': 1e-06,\n"
+                           "   'v5': 'Hello world!',\n"
+                           "   'v6': 97,\n"
+                           "   'v7': 5,\n"
+                           "   /* This is a multi-line\n"
+                           "      comment. */\n"
+                           "   v8: 7,\n"
+                           "   'v9': {'real':0.75, 'imag':0.25},\n"
+                           "   'v10': [-1, 1, 0.5]\n"
+                           "}";
     // Prepare the recipients.
     Person p0;
     Person p1;

@@ -21,8 +21,8 @@ endif()
 
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_EXAMPLES "Build examples" ON)
+option(BUILD_TESTS "Build tests" ON)
 
 # -----------------------------------------------------------------------------
 # ENABLE FETCH CONTENT
@@ -43,6 +43,8 @@ mark_as_advanced(FORCE
 # -----------------------------------------------------------------------------
 
 find_package(Doxygen)
+
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 
 # -----------------------------------------------------------------------------
 # DIPENDENCIES (REPOSITORIES)
@@ -247,6 +249,35 @@ if(BUILD_TESTS)
 endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------
+# CODE ANALYSIS
+# -----------------------------------------------------------------------------
+
+if(CLANG_TIDY_EXE)
+    file(GLOB_RECURSE ALL_PROJECT_FILES
+        "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp")
+    add_custom_target(
+        json_clang_tidy
+        COMMAND ${CLANG_TIDY_EXE}
+        --p=${CMAKE_BINARY_DIR}
+        ${ALL_PROJECT_FILES}
+        COMMENT "Running clang-tidy"
+        VERBATIM
+    )
+    add_custom_target(
+        json_clang_tidy_fix
+        COMMAND ${CLANG_TIDY_EXE}
+        --fix
+        --p=${CMAKE_BINARY_DIR}
+        ${ALL_PROJECT_FILES}
+        COMMENT "Running clang-tidy-fix"
+        VERBATIM
+    )
+endif()
+
+# -----------------------------------------------------------------------------
 # DOCUMENTATION
 # -----------------------------------------------------------------------------
 
@@ -276,7 +307,7 @@ if(DOXYGEN_FOUND)
     set(JSON_MICRO_VERSION ${CMAKE_MATCH_1})
 
     # Customization: Doxygen Configuration
-    set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
+    set(DOXYGEN_WARN_FORMAT "$file:$line:1: $text")
     set(DOXYGEN_PROJECT_NAME json)
     set(DOXYGEN_PROJECT_BRIEF "A modern JSON library for C++")
     set(DOXYGEN_PROJECT_NUMBER "${JSON_MAJOR_VERSION}.${JSON_MINOR_VERSION}.${JSON_MICRO_VERSION}")
@@ -302,18 +333,17 @@ if(DOXYGEN_FOUND)
     set(DOXYGEN_WARN_AS_ERROR YES) # Treat warnings as errors for CI
 
     # Exclude certain files or directories from documentation (if needed)
-    set(DOXYGEN_EXCLUDE_PATTERNS
-        "${PROJECT_SOURCE_DIR}/tests/*"
-        "${PROJECT_SOURCE_DIR}/examples/*"
-    )
+    set(DOXYGEN_EXCLUDE_PATTERNS "${PROJECT_SOURCE_DIR}/tests/*" "${PROJECT_SOURCE_DIR}/examples/*")
 
-    # Add Doxygen documentation target
+    # Add Doxygen documentation target.
+    file(GLOB_RECURSE PROJECT_HEADERS "${PROJECT_SOURCE_DIR}/include/**/*.hpp")
+    file(GLOB_RECURSE PROJECT_SOURCES "${PROJECT_SOURCE_DIR}/src/**/*.cpp")
     doxygen_add_docs(
         json_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
-        ${PROJECT_SOURCE_DIR}/include/json/json.hpp
-        ${PROJECT_SOURCE_DIR}/src/json.cpp
+        ${PROJECT_HEADERS}
+        ${PROJECT_SOURCES}
         COMMENT "Generating Doxygen documentation for the library"
     )
 endif()
