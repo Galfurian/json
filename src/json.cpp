@@ -1179,7 +1179,7 @@ auto json::operator>>(const json::jnode_t &lhs, unsigned char &rhs) -> const jso
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::int16_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const short &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1187,10 +1187,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::int16_t &rhs) -> json::jnod
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::int16_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, short &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::int16_t>();
+        rhs = lhs.as_number<short>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
@@ -1198,7 +1198,7 @@ auto json::operator>>(const json::jnode_t &lhs, std::int16_t &rhs) -> const json
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::uint16_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const unsigned short &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1206,10 +1206,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::uint16_t &rhs) -> json::jno
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::uint16_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, unsigned short &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::uint16_t>();
+        rhs = lhs.as_number<unsigned short>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
@@ -1217,7 +1217,7 @@ auto json::operator>>(const json::jnode_t &lhs, std::uint16_t &rhs) -> const jso
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::int32_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const int &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1225,10 +1225,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::int32_t &rhs) -> json::jnod
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::int32_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, int &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::int32_t>();
+        rhs = lhs.as_number<int>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
@@ -1236,7 +1236,7 @@ auto json::operator>>(const json::jnode_t &lhs, std::int32_t &rhs) -> const json
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::uint32_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const unsigned int &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1244,10 +1244,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::uint32_t &rhs) -> json::jno
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::uint32_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, unsigned int &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::uint32_t>();
+        rhs = lhs.as_number<unsigned int>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
@@ -1255,7 +1255,7 @@ auto json::operator>>(const json::jnode_t &lhs, std::uint32_t &rhs) -> const jso
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::int64_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const long &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1263,10 +1263,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::int64_t &rhs) -> json::jnod
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::int64_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, long &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::int64_t>();
+        rhs = lhs.as_number<long>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
@@ -1274,7 +1274,7 @@ auto json::operator>>(const json::jnode_t &lhs, std::int64_t &rhs) -> const json
 }
 
 template <>
-auto json::operator<<(json::jnode_t &lhs, const std::uint64_t &rhs) -> json::jnode_t &
+auto json::operator<<(json::jnode_t &lhs, const unsigned long &rhs) -> json::jnode_t &
 {
     lhs.set_type(json::JTYPE_NUMBER);
     lhs.set_value(json::detail::number_to_string(rhs));
@@ -1282,10 +1282,10 @@ auto json::operator<<(json::jnode_t &lhs, const std::uint64_t &rhs) -> json::jno
 }
 
 template <>
-auto json::operator>>(const json::jnode_t &lhs, std::uint64_t &rhs) -> const json::jnode_t &
+auto json::operator>>(const json::jnode_t &lhs, unsigned long &rhs) -> const json::jnode_t &
 {
     if (json::JTYPE_NUMBER == lhs.get_type()) {
-        rhs = lhs.as_number<std::uint64_t>();
+        rhs = lhs.as_number<unsigned long>();
     } else if (json::config::strict_type_check) {
         throw json::type_error(lhs.get_line_number(), json::JTYPE_NUMBER, lhs.get_type());
     }
