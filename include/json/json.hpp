@@ -358,6 +358,32 @@ private:
     /// @return the generated string.
     auto to_string_d(unsigned depth, bool pretty = true, unsigned tabsize = 4) const -> std::string;
 
+    /// @brief Converts a string node to its JSON representation.
+    /// @return The formatted JSON string with escape characters handled.
+    auto to_string_d_string() const -> std::string;
+
+    /// @brief Converts a number node to its JSON representation.
+    /// @return The number as a string.
+    auto to_string_d_number() const -> std::string;
+
+    /// @brief Converts a boolean node to its JSON representation.
+    /// @return The boolean value as a string.
+    auto to_string_d_boolean() const -> std::string;
+
+    /// @brief Converts an object node to its JSON representation.
+    /// @param depth The current indentation depth.
+    /// @param pretty Whether to format the output with indentation and newlines.
+    /// @param tabsize The number of spaces per indentation level.
+    /// @return The formatted JSON object as a string.
+    auto to_string_d_object(unsigned depth, bool pretty, unsigned tabsize) const -> std::string;
+
+    /// @brief Converts an array node to its JSON representation.
+    /// @param depth The current indentation depth.
+    /// @param pretty Whether to format the output with indentation and newlines.
+    /// @param tabsize The number of spaces per indentation level.
+    /// @return The formatted JSON array as a string.
+    auto to_string_d_array(unsigned depth, bool pretty, unsigned tabsize) const -> std::string;
+
     /// The type of the node.
     jtype_t type;
     /// The value contained inside the node.
@@ -418,12 +444,16 @@ struct token_t {
 /// @return a reference to the token vector.
 auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::vector<token_t> &;
 
-/// @brief Parse the list of tokens into a JSON tree.
-/// @param tokens the list of tokens.
-/// @param index the internal index we use to handle tokens.
-/// @param output_index the index we are currently dealing with.
-/// @param current the current node we are building.
-/// @return the generated json sub-tree.
+/// @brief Parses JSON tokens into a JSON node structure.
+///
+/// @details This function recursively parses a list of JSON tokens to build a
+/// hierarchical JSON node structure representing objects, arrays, and values.
+///
+/// @param tokens The list of tokens to parse.
+/// @param index The current index in the token list.
+/// @param output_index The index to continue parsing from after this function returns.
+/// @param current The current JSON node being built.
+/// @return jnode_t& The constructed JSON node.
 auto json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
     -> jnode_t &;
 
