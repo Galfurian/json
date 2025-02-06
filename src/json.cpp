@@ -408,12 +408,10 @@ static auto extract_number(const std::string &source, std::size_t index) -> std:
     }
     // Skip the integer part.
     while (index < slength) {
-        if (std::isdigit(source[index]) || source[index] == '.') {
+        if ((std::isdigit(source[index]) != 0) || (source[index] == '.')) {
             ++index;
         } else if ((source[index] == 'e' || source[index] == 'E') && index + 1 < slength) {
-            if (source[index + 1] == '+' || source[index + 1] == '-') {
-                index += 2;
-            } else if (std::isdigit(source[index + 1])) {
+            if ((source[index + 1] == '+') || (source[index + 1] == '-') || (std::isdigit(source[index + 1]) != 0)) {
                 index += 2;
             } else {
                 break;
@@ -525,7 +523,7 @@ static void process_token(const std::string &source, std::vector<token_t> &token
         } else if (source[index] == ' ') {
             // Skip the whitespace.
             ++index;
-        } else if (source[index] == '-' || std::isdigit(source[index])) {
+        } else if (source[index] == '-' || (std::isdigit(source[index]) != 0)) {
             // Extract the number.
             std::size_t end = extract_number(source, index);
             // Add the number to the tokens.
@@ -539,7 +537,6 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             if (end == std::string::npos) {
                 end = slength;
             }
-            std::cout << "Extract : `" << source.substr(index, end - index) << "`\n";
             // Add the string to the tokens.
             tokens.emplace_back(source.substr(index, end - index), JTOKEN_STRING, line_number);
             // Update the index.
@@ -568,7 +565,6 @@ auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::v
         if (next == index) {
             break;
         }
-        std::cout << "Process |" << source.substr(index, next - index) << "|\n";
         // Process the token.
         process_token(source.substr(index, next - index), tokens, line_number);
         // Skip the whitespaces.
@@ -577,151 +573,155 @@ auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::v
     return tokens;
 }
 
+/// @brief Skips comment tokens in the token list.
+///
+/// @details Iterates through the token list starting from the current index,
+/// skipping any tokens of type `JTOKEN_COMMENT`. Throws an error if the index
+/// exceeds the bounds of the token list.
+///
+/// @param tokens The list of tokens to parse.
+/// @param index The current index in the token list, which will be updated.
+auto skip_comments(const std::vector<token_t> &tokens, std::size_t &index) -> void
+{
+    while (index < tokens.size()) {
+        // Check if index is out of bounds.
+        if (index >= tokens.size()) {
+            throw json::parser_error(0, "Error: Index out of bounds while skipping comments.");
+        }
+        // Break the loop if the current token is not a comment.
+        if (tokens[index].type != JTOKEN_COMMENT) {
+            break;
+        }
+        // Move to the next token.
+        ++index;
+    }
+}
+
+/// @brief Skips a specified number of tokens, ensuring bounds are not exceeded.
+///
+/// @details Advances the index by the specified count. If this would exceed
+/// the number of tokens, throws an error.
+///
+/// @param tokens The list of tokens to parse.
+/// @param index The current index in the token list, which will be updated.
+/// @param count The number of tokens to skip.
+/// @param current The current JSON node being parsed, used for error reporting.
+auto skip_tokens(const std::vector<token_t> &tokens, std::size_t &index, std::size_t count, jnode_t &current) -> void
+{
+    // Check if skipping the tokens would exceed the token list size.
+    if ((index + count) >= tokens.size()) {
+        throw json::parser_error(
+            current.get_line_number(),
+            "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
+    }
+    // Advance the index by the specified count.
+    index += count;
+}
+
+/// @brief Parses JSON tokens into a JSON node structure.
+///
+/// @details This function recursively parses a list of JSON tokens to build a
+/// hierarchical JSON node structure representing objects, arrays, and values.
+///
+/// @param tokens The list of tokens to parse.
+/// @param index The current index in the token list.
+/// @param output_index The index to continue parsing from after this function returns.
+/// @param current The current JSON node being built.
+/// @return jnode_t& The constructed JSON node.
 auto json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
     -> jnode_t &
 {
-    // Let us keep track a previous index.
+    // Track the next index for recursive parsing.
     std::size_t next_index = 0;
-    // A pointer to the key.
+    // Pointer to the key in key-value pairs.
     const char *key        = nullptr;
-    //
-    // Set line number.
+    // Set the line number for error reporting.
     current.set_line_number(tokens[index].line_number + 1);
-    // Skip comments.
-    while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-        ++index;
-    }
-    // Parse the element.
+    // Skip any comment tokens before parsing.
+    skip_comments(tokens, index);
+    // Parse JSON object if the token is an opening curly brace.
     if (tokens[index].type == JTOKEN_CURLY_OPEN) {
-        // We need to skip the braket, and check if we ran out of tokens.
-        if ((++index) >= tokens.size()) {
-            throw json::parser_error(
-                current.get_line_number(),
-                "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-        }
-        // Set type.
+        // Skip the opening curly brace.
+        skip_tokens(tokens, index, 1, current);
+        // Set the current node type to object.
         current.set_type(JTYPE_OBJECT);
-        // Iterate until we find the end of the object, index.e., the closing braket.
+        // Parse key-value pairs until the closing curly brace is found.
         while (tokens[index].type != JTOKEN_CURLY_CLOSE) {
-#if 1
-            // Skip comments.
-            while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-                ++index;
-            }
-#endif
-            // Set the key.
+            // Skip comments before the key.
+            skip_comments(tokens, index);
+            // Set the key from the current token value.
             key = tokens[index].value.c_str();
-            // We need to skip the key, and check if we ran out of tokens.
-            if ((++index) >= tokens.size()) {
-                throw json::parser_error(
-                    current.get_line_number(),
-                    "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-            }
-            // We should find a COLON ':'.
+            // Skip the key token.
+            skip_tokens(tokens, index, 1, current);
+            // Ensure the next token is a colon separating the key and value.
             if (tokens[index].type != JTOKEN_COLON) {
                 throw json::parser_error(
                     current.get_line_number(),
                     "Error at line " + std::to_string(current.get_line_number()) + ": We did not find a COLON.");
             }
-            // We need to skip the COLON, and check if we ran out of tokens.
-            if ((++index) >= tokens.size()) {
-                throw json::parser_error(
-                    current.get_line_number(),
-                    "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-            }
-            // Skip comments.
-            while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-                ++index;
-            }
-            // Set the next_index.
+            // Skip the colon token.
+            skip_tokens(tokens, index, 1, current);
+            // Skip any comments before the value.
+            skip_comments(tokens, index);
+            // Track the index before parsing the value.
             next_index        = index;
-            // Add the property.
+            // Add a new property to the current object using the key.
             jnode_t &property = current.add_property(key);
-            // Build the property.
+            // Recursively parse the value.
             json_parse(tokens, index, next_index, property);
-            // Update the index.
+            // Update the index after parsing the value.
             index = next_index;
-            // Skip comments.
-            while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-                ++index;
-            }
-            // If the next token is a comma, we need to parse another property,
-            // but we also need to skip that comma.
-            index += static_cast<std::size_t>(tokens[index].type == JTOKEN_COMMA);
-            // Now, if the index goes outside the number of tokens we need to stop.
-            if (index >= tokens.size()) {
-                throw json::parser_error(
-                    current.get_line_number(),
-                    "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-            }
-#if 1
-            // Skip comments.
-            while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-                ++index;
-            }
-#endif
+            // Skip any comments after the value.
+            skip_comments(tokens, index);
+            // If a comma is found, skip it to parse the next key-value pair.
+            skip_tokens(tokens, index, static_cast<std::size_t>(tokens[index].type == JTOKEN_COMMA), current);
+            // Skip any comments after the comma.
+            skip_comments(tokens, index);
         }
-    } else if (tokens[index].type == JTOKEN_BRACKET_OPEN) {
-        // We need to skip the braket, and check if we ran out of tokens.
-        if ((++index) >= tokens.size()) {
-            throw json::parser_error(
-                current.get_line_number(),
-                "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-        }
-        // Set type.
+    }
+    // Parse JSON array if the token is an opening bracket.
+    else if (tokens[index].type == JTOKEN_BRACKET_OPEN) {
+        // Skip the opening bracket.
+        skip_tokens(tokens, index, 1, current);
+        // Set the current node type to array.
         current.set_type(JTYPE_ARRAY);
-        // Iterate until we find the end of the array, index.e., the closing braket.
+        // Parse array elements until the closing bracket is found.
         while (tokens[index].type != JTOKEN_BRACKET_CLOSE) {
-            // Skip comments.
-            while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-                ++index;
-            }
-            // Set the next_index.
+            // Skip comments before the element.
+            skip_comments(tokens, index);
+            // Track the index before parsing the element.
             next_index       = index;
-            // Add the element.
+            // Add a new element to the current array.
             jnode_t &element = current.add_element();
-            // Build the element.
+            // Recursively parse the array element.
             json_parse(tokens, index, next_index, element);
-            // Update the index.
+            // Update the index after parsing the element.
             index = next_index;
-            // If the next token is a comma, we need to parse another property,
-            // but we also need to skip that comma.
-            index += static_cast<std::size_t>(tokens[index].type == JTOKEN_COMMA);
-            // Now, if the index goes outside the number of tokens we need to stop.
-            if (index >= tokens.size()) {
-                throw json::parser_error(
-                    current.get_line_number(),
-                    "Error at line " + std::to_string(current.get_line_number()) + ": We ran out of tokens.");
-            }
+            // If a comma is found, skip it to parse the next element.
+            skip_tokens(tokens, index, static_cast<std::size_t>(tokens[index].type == JTOKEN_COMMA), current);
         }
-    } else if (tokens[index].type == JTOKEN_NUMBER) {
-        // Set type.
+    }
+    // Parse JSON primitive values (number, string, boolean, null).
+    else if (tokens[index].type == JTOKEN_NUMBER) {
         current.set_type(JTYPE_NUMBER);
-        // Set the value.
         current.set_value(tokens[index].value);
     } else if (tokens[index].type == JTOKEN_STRING) {
-        // Set type.
         current.set_type(JTYPE_STRING);
-        // Set the value.
+        // Replace escaped newlines in the string value.
         current.set_value(std::regex_replace(tokens[index].value, std::regex("\\\\[ \t]*\n"), "\n"));
     } else if (tokens[index].type == JTOKEN_BOOLEAN) {
-        // Set type.
         current.set_type(JTYPE_BOOLEAN);
-        // Set the value.
         current.set_value(tokens[index].value);
     } else if (tokens[index].type == JTOKEN_NULL) {
-        // Set type.
         current.set_type(JTYPE_NULL);
-        // Set the value.
         current.set_value("null");
     } else {
+        // Throw an error if the token type is unrecognized.
         throw json::parser_error(current.get_line_number(), "Cannot type the entry.");
     }
-    // Skip comments.
-    while ((tokens[index].type == JTOKEN_COMMENT) && (index < tokens.size())) {
-        ++index;
-    }
-    // Move to the next token.
+    // Skip any comments after parsing the element.
+    skip_comments(tokens, index);
+    // Move to the next token and update the output index.
     output_index = index + 1;
     return current;
 }
@@ -738,9 +738,6 @@ auto parse(const std::string &json_string) -> jnode_t
     std::vector<detail::token_t> tokens;
     // Extract the tokens.
     detail::tokenize(json_string, tokens);
-    for (const auto &token : tokens) {
-        std::cout << "    " << token << std::endl;
-    }
     // Prepare the root.
     jnode_t root;
     // Parse the tokens.
@@ -1054,69 +1051,103 @@ auto jnode_t::aend() -> jnode_t::array_data_t::iterator { return arr.end(); }
 
 auto jnode_t::to_string_d(unsigned depth, bool pretty, unsigned tabsize) const -> std::string
 {
+    switch (type) {
+    case JTYPE_STRING:
+        return this->to_string_d_string();
+    case JTYPE_NUMBER:
+        return this->to_string_d_number();
+    case JTYPE_BOOLEAN:
+        return this->to_string_d_boolean();
+    case JTYPE_OBJECT:
+        return this->to_string_d_object(depth, pretty, tabsize);
+    case JTYPE_ARRAY:
+        return this->to_string_d_array(depth, pretty, tabsize);
+    default:
+        return "null";
+    }
+}
+
+auto jnode_t::to_string_d_string() const -> std::string
+{
+    std::string string_delimiter(1, config::string_delimiter_character);
+    std::string str = value;
+    // Replace special characters with escaped equivalents.
+    if (json::config::replace_escape_characters) {
+        detail::replace_all(str, '\\', "\\\\");
+        detail::replace_all(str, '\"', "\\\"");
+        detail::replace_all(str, '\t', "\\t");
+        detail::replace_all(str, "\r\n", "\\r\\n");
+        detail::replace_all(str, '\r', "\\r");
+        detail::replace_all(str, '\n', "\\n");
+    }
+    return string_delimiter + str + string_delimiter;
+}
+
+auto jnode_t::to_string_d_number() const -> std::string { return value; }
+
+auto jnode_t::to_string_d_boolean() const -> std::string { return value; }
+
+auto jnode_t::to_string_d_object(unsigned depth, bool pretty, unsigned tabsize) const -> std::string
+{
     std::stringstream stream;
-    if (type == JTYPE_STRING) {
-        std::string string_delimiter(1, config::string_delimiter_character);
-        if (json::config::replace_escape_characters) {
-            // Replace special characters, with UTF-8 supported ones.
-            std::string str = value;
-            detail::replace_all(str, '\\', "\\\\");
-            detail::replace_all(str, '\"', "\\\"");
-            detail::replace_all(str, '\t', "\\t");
-            detail::replace_all(str, "\r\n", "\\r\\n");
-            detail::replace_all(str, '\r', "\\r");
-            detail::replace_all(str, '\n', "\\n");
-            return string_delimiter + str + string_delimiter;
+    stream << "{";
+
+    if (pretty) {
+        stream << "\n";
+    }
+
+    auto itr = properties.begin();
+    for (; itr != properties.end(); ++itr) {
+        if (pretty) {
+            stream << detail::make_indentation(depth, tabsize);
         }
-        return string_delimiter + value + string_delimiter;
-    }
-    if (type == JTYPE_NUMBER) {
-        return value;
-    }
-    if (type == JTYPE_BOOLEAN) {
-        return value;
-    }
-    if (type == JTYPE_OBJECT) {
-        stream << "{";
+
+        // Serialize the key-value pair.
+        stream << config::string_delimiter_character << itr->first << config::string_delimiter_character << ": "
+               << itr->second.to_string_d(depth + 1, pretty, tabsize);
+
+        // Add a comma if it's not the last property.
+        if (std::next(itr) != properties.end()) {
+            stream << ",";
+        }
+
         if (pretty) {
             stream << "\n";
         }
-        auto itr = properties.begin();
-        for (itr = properties.begin(); itr != properties.end(); ++itr) {
-            if (pretty) {
-                stream << detail::make_indentation(depth, tabsize);
-            }
-            stream << config::string_delimiter_character << itr->first << config::string_delimiter_character << ": "
-                   << itr->second.to_string_d(depth + 1, pretty, tabsize)
-                   << ((std::distance(itr, properties.end()) == 1) ? "" : ",");
-            if (pretty) {
-                stream << "\n";
-            }
-        }
-        if (pretty) {
-            stream << detail::make_indentation(depth - 1, tabsize);
-        }
-        stream << "}";
-        return stream.str();
     }
-    if (type == JTYPE_ARRAY) {
-        stream << "[";
-        for (std::size_t index = 0; index < arr.size(); ++index) {
-            if (index != 0U) {
-                stream << ", ";
-            }
-            if (pretty && ((arr[index].type == JTYPE_ARRAY) || (arr[index].type == JTYPE_OBJECT))) {
-                stream << "\n" << detail::make_indentation(depth, tabsize);
-            }
-            stream << arr[index].to_string_d(depth + 1, pretty, tabsize);
-        }
-        if (pretty && !arr.empty() && ((arr[0].type == JTYPE_ARRAY) || (arr[0].type == JTYPE_OBJECT))) {
-            stream << "\n" << detail::make_indentation(depth - 1, tabsize);
-        }
-        stream << "]";
-        return stream.str();
+
+    if (pretty) {
+        stream << detail::make_indentation(depth - 1, tabsize);
     }
-    return "null";
+
+    stream << "}";
+    return stream.str();
+}
+
+auto jnode_t::to_string_d_array(unsigned depth, bool pretty, unsigned tabsize) const -> std::string
+{
+    std::stringstream stream;
+    stream << "[";
+
+    for (std::size_t index = 0; index < arr.size(); ++index) {
+        if (index != 0) {
+            stream << ", ";
+        }
+
+        if (pretty && (arr[index].type == JTYPE_ARRAY || arr[index].type == JTYPE_OBJECT)) {
+            stream << "\n" << detail::make_indentation(depth, tabsize);
+        }
+
+        // Serialize each array element.
+        stream << arr[index].to_string_d(depth + 1, pretty, tabsize);
+    }
+
+    if (pretty && !arr.empty() && (arr[0].type == JTYPE_ARRAY || arr[0].type == JTYPE_OBJECT)) {
+        stream << "\n" << detail::make_indentation(depth - 1, tabsize);
+    }
+
+    stream << "]";
+    return stream.str();
 }
 
 } // namespace json
