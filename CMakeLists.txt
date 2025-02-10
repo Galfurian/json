@@ -255,9 +255,18 @@ endif(BUILD_TESTS)
 if(CLANG_TIDY_EXE)
     file(GLOB_RECURSE ALL_PROJECT_FILES
         "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/**/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/**/*.h"
         "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/*.h"
         "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
-        "${PROJECT_SOURCE_DIR}/src/*.cpp")
+        "${PROJECT_SOURCE_DIR}/src/**/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/**/*.c"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/*.c"
+    )
     add_custom_target(
         json_clang_tidy
         COMMAND ${CLANG_TIDY_EXE}
@@ -308,7 +317,7 @@ if(DOXYGEN_FOUND)
 
     # Customization: Doxygen Configuration
     set(DOXYGEN_WARN_FORMAT "$file:$line:1: $text")
-    set(DOXYGEN_PROJECT_NAME json)
+    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
     set(DOXYGEN_PROJECT_BRIEF "A modern JSON library for C++")
     set(DOXYGEN_PROJECT_NUMBER "${JSON_MAJOR_VERSION}.${JSON_MINOR_VERSION}.${JSON_MICRO_VERSION}")
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
@@ -335,11 +344,24 @@ if(DOXYGEN_FOUND)
     # Exclude certain files or directories from documentation (if needed)
     set(DOXYGEN_EXCLUDE_PATTERNS "${PROJECT_SOURCE_DIR}/tests/*" "${PROJECT_SOURCE_DIR}/examples/*")
 
+    file(GLOB_RECURSE ALL_PROJECT_FILES
+        "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/**/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/**/*.h"
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/*.hh"
+        "${PROJECT_SOURCE_DIR}/include/*.h"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/**/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/**/*.c"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cc"
+        "${PROJECT_SOURCE_DIR}/src/*.c"
+    )
+
     # Add Doxygen documentation target.
-    file(GLOB_RECURSE PROJECT_HEADERS "${PROJECT_SOURCE_DIR}/include/**/*.hpp")
-    file(GLOB_RECURSE PROJECT_SOURCES "${PROJECT_SOURCE_DIR}/src/**/*.cpp")
     doxygen_add_docs(
-        json_documentation
+        ${PROJECT_NAME}_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/LICENSE.md
         ${PROJECT_HEADERS}
