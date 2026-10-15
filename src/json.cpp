@@ -9,7 +9,6 @@
 #include "json/json.hpp"
 
 #include <cstdint>
-#include <regex>
 
 /// @brief This namespace contains the main json_t class and stream functions.
 namespace json
@@ -534,6 +533,42 @@ static inline auto deserialize(const std::string &source) -> std::string
     return deserialize(source, valid);
 }
 
+/// @brief Replaces each escaped line break (a backslash, optional blanks and a
+/// line break) with a single newline.
+/// @param input The raw string value.
+/// @return The string with the line continuations replaced.
+static auto replace_line_continuations(const std::string &input) -> std::string
+{
+    std::string output;
+    output.reserve(input.size());
+    for (std::size_t index = 0; index < input.size(); ++index) {
+        if (input[index] != '\\') {
+            output.push_back(input[index]);
+            continue;
+        }
+        // Look for optional blanks followed by a line break.
+        std::size_t next = index + 1;
+        while ((next < input.size()) && ((input[next] == ' ') || (input[next] == '\t'))) {
+            ++next;
+        }
+        if ((next < input.size()) && (input[next] == '\r') && (next + 1 < input.size()) && (input[next + 1] == '\n')) {
+            ++next;
+        }
+        if ((next < input.size()) && (input[next] == '\n')) {
+            output.push_back('\n');
+            index = next;
+        } else {
+            // Keep the escape sequence untouched, including the escaped character,
+            // so that an escaped backslash is never mistaken for a continuation.
+            output.push_back('\\');
+            if (index + 1 < input.size()) {
+                output.push_back(input[++index]);
+            }
+        }
+    }
+    return output;
+}
+
 /// @brief Checks if the given character can be part of an unquoted identifier.
 /// @param chr the input character.
 /// @return true if the character can be part of an identifier.
@@ -942,8 +977,7 @@ auto json_parse(
                 "Error at line " + std::to_string(current.get_line_number()) + ": Invalid escape sequence.");
         }
         // Replace escaped newlines in the string value.
-        current.set_value(std::regex_replace(
-            peek(tokens, index, current.get_line_number()).value, std::regex("\\\\[ \t]*\n"), "\n"));
+        current.set_value(replace_line_continuations(peek(tokens, index, current.get_line_number()).value));
     } else if (peek(tokens, index, current.get_line_number()).type == JTOKEN_BOOLEAN) {
         current.set_type(JTYPE_BOOLEAN);
         current.set_value(peek(tokens, index, current.get_line_number()).value);
