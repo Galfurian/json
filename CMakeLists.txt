@@ -142,10 +142,13 @@ if(MSVC)
     if(STRICT_WARNINGS)
         # Enable external header management to suppress warnings in system and
         # external headers, making it easier to focus on project-specific issues.
-        target_compile_options(json_warnings INTERFACE /experimental:external)
-        target_compile_options(json_warnings INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json_warnings INTERFACE /external:anglebrackets)
-        target_compile_options(json_warnings INTERFACE /external:W0)
+        # The real cl.exe only, clang-cl does not know these options.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            target_compile_options(json_warnings INTERFACE /experimental:external)
+            target_compile_options(json_warnings INTERFACE /external:I ${CMAKE_BINARY_DIR})
+            target_compile_options(json_warnings INTERFACE /external:anglebrackets)
+            target_compile_options(json_warnings INTERFACE /external:W0)
+        endif()
 
         # Use a high warning level to catch as many potential issues as possible.
         target_compile_options(json_warnings INTERFACE /W4)
