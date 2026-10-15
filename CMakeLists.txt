@@ -4,7 +4,8 @@
 # -----------------------------------------------------------------------------
 
 # Set the minimum CMake version, the project name and default build type.
-cmake_minimum_required(VERSION 3.1...3.18)
+# FetchContent_MakeAvailable requires CMake 3.14.
+cmake_minimum_required(VERSION 3.14...3.28)
 
 # Set the project name.
 project(json CXX)
@@ -51,10 +52,19 @@ find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 # DIPENDENCIES (REPOSITORIES)
 # -----------------------------------------------------------------------------
 
+# Doxygen Awesome CSS. This must be declared before the dependencies below,
+# because they declare it too and the first declaration wins. Pinned: newer
+# releases require a newer Doxygen than the CI provides.
+FetchContent_Declare(doxygenawesome
+    GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
+    GIT_TAG v2.3.4
+)
+
 # Retrieve the source.
 FetchContent_Declare(ordered_map
     GIT_REPOSITORY "https://github.com/Galfurian/ordered_map.git"
-    GIT_TAG main
+    # Pinned for reproducible builds.
+    GIT_TAG d012533e79bd4eec04eafaafa33674857edde928
 )
 # Retrieve the properties related to the content.
 FetchContent_MakeAvailable(ordered_map)
@@ -67,7 +77,8 @@ mark_as_advanced(FORCE
 # Retrieve the source.
 FetchContent_Declare(timelib
     GIT_REPOSITORY "https://github.com/Galfurian/timelib.git"
-    GIT_TAG main
+    # Pinned for reproducible builds.
+    GIT_TAG d25e054c9f8e6f42bb2a18bbc8a77444cc141f8f
 )
 # Retrieve the properties related to the content.
 FetchContent_MakeAvailable(timelib)
@@ -301,11 +312,7 @@ endif()
 
 if(DOXYGEN_FOUND)
 
-    # FetchContent: Doxygen Awesome CSS
-    FetchContent_Declare(doxygenawesome
-        GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
-        GIT_TAG main
-    )
+    # FetchContent: Doxygen Awesome CSS (declared above).
     FetchContent_MakeAvailable(doxygenawesome)
 
     # Hide FetchContent variables to avoid clutter in ccmake.
