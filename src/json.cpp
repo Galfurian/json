@@ -196,6 +196,18 @@ static inline auto make_indentation(unsigned depth, unsigned tabsize = 4) -> std
     return std::string(static_cast<std::string::size_type>(depth * tabsize), ' ');
 }
 
+/// @brief Checks if the given character is a whitespace.
+/// @details The cast avoids undefined behavior: the <cctype> functions only
+/// accept values representable as unsigned char, while char may be negative.
+/// @param chr the input character.
+/// @return if the character is a whitespace.
+static inline auto is_space(char chr) -> bool { return std::isspace(static_cast<unsigned char>(chr)) != 0; }
+
+/// @brief Checks if the given character is a decimal digit.
+/// @param chr the input character.
+/// @return if the character is a decimal digit.
+static inline auto is_digit(char chr) -> bool { return std::isdigit(static_cast<unsigned char>(chr)) != 0; }
+
 /// @brief Checks if the given character is a newline.
 /// @param c the input character.
 /// @return if the character is a newline.
@@ -271,7 +283,7 @@ static inline auto skip_whitespaces(const std::string &source, std::size_t index
             ++line_number;
         }
         // Check if we've reached a whitespace.
-        if (std::isspace(source[index]) == 0) {
+        if (!detail::is_space(source[index])) {
             return index;
         }
     }
@@ -295,7 +307,7 @@ static inline auto find_next_whitespace(const std::string &source, std::size_t i
             index = skip_single_line_comment(source, index + 2);
         } else if ((index + 1 < slength) && (source[index] == '/') && (source[index + 1] == '*')) {
             index = skip_multi_line_comment(source, index + 2);
-        } else if (std::isspace(source[index]) > 0) {
+        } else if (detail::is_space(source[index])) {
             return index;
         } else {
             ++index;
@@ -455,10 +467,10 @@ static auto extract_number(const std::string &source, std::size_t index) -> std:
     }
     // Skip the integer part.
     while (index < slength) {
-        if ((std::isdigit(source[index]) != 0) || (source[index] == '.')) {
+        if (detail::is_digit(source[index]) || (source[index] == '.')) {
             ++index;
         } else if ((source[index] == 'e' || source[index] == 'E') && index + 1 < slength) {
-            if ((source[index + 1] == '+') || (source[index + 1] == '-') || (std::isdigit(source[index + 1]) != 0)) {
+            if ((source[index + 1] == '+') || (source[index + 1] == '-') || detail::is_digit(source[index + 1])) {
                 index += 2;
             } else {
                 break;
@@ -571,7 +583,7 @@ static auto is_valid_number(const std::string &number) -> bool
     std::size_t size  = number.size();
     auto digits       = [&]() {
         std::size_t start = index;
-        while ((index < size) && (std::isdigit(static_cast<unsigned char>(number[index])) != 0)) {
+        while ((index < size) && detail::is_digit(number[index])) {
             ++index;
         }
         return index - start;
@@ -694,7 +706,7 @@ static void process_token(const std::string &source, std::vector<token_t> &token
         } else if (source[index] == ' ') {
             // Skip the whitespace.
             ++index;
-        } else if (source[index] == '-' || (std::isdigit(source[index]) != 0)) {
+        } else if (source[index] == '-' || detail::is_digit(source[index])) {
             // Extract the number.
             std::size_t end    = extract_number(source, index);
             std::string number = source.substr(index, end - index);

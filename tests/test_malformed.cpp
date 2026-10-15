@@ -112,6 +112,15 @@ static bool test_invalid_literals()
     return expect_ok("[true,false,null]") && expect_ok("{true: 1, null: 2, a_b$1: 3}");
 }
 
+static bool test_non_ascii_bytes()
+{
+    // Bytes above 0x7F are negative when char is signed. They must not reach the
+    // <cctype> functions unconverted, that is undefined behavior and it aborts
+    // the debug runtime of MSVC.
+    return expect_error("\xff") && expect_error("[\x80]") && expect_error("\xe9\xe8") &&
+           expect_ok("[\"\xc3\xa9\"]") && expect_ok("{\xc3\xa9: 1}") && expect_error("[1\xff]");
+}
+
 static bool test_invalid_structure()
 {
     const char *bad[] = { "[1 2]",        "[1,,2]",    "[,]",          "{,}",         "{\"a\":1,,}", "{\"a\" 1}",
@@ -145,6 +154,9 @@ int main(int, char *[])
         return 1;
     }
     if (!test_invalid_literals()) {
+        return 1;
+    }
+    if (!test_non_ascii_bytes()) {
         return 1;
     }
     if (!test_invalid_structure()) {
