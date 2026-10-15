@@ -48,8 +48,7 @@ static bool test_simple_escapes()
 static bool test_line_continuations()
 {
     // A line continuation produces nothing, as in JSON5.
-    return expect_decoded("a\\\nb", "ab") && expect_decoded("a\\ \t\nb", "ab") &&
-           expect_decoded("a\\\r\nb", "ab") &&
+    return expect_decoded("a\\\nb", "ab") && expect_decoded("a\\ \t\nb", "ab") && expect_decoded("a\\\r\nb", "ab") &&
            // An escaped backslash followed by a line break is not a continuation.
            expect_decoded("a\\\\\nb", "a\\\nb");
 }
@@ -64,8 +63,8 @@ static bool test_unicode_escapes()
 
 static bool test_invalid_unicode_escapes()
 {
-    const char *bad[] = { "\\u", "\\u1", "\\u12", "\\u123", "\\uZZZZ", "\\u12G4", "\\uD83D", "\\uD83Dx", "\\uDE00",
-                          "\\uD83D\\u0041" };
+    const char *bad[] = {
+        "\\u", "\\u1", "\\u12", "\\u123", "\\uZZZZ", "\\u12G4", "\\uD83D", "\\uD83Dx", "\\uDE00", "\\uD83D\\u0041"};
     for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         if (!expect_invalid(bad[i])) {
             return false;

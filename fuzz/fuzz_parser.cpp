@@ -45,7 +45,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data, std::size_t size
     std::string input(reinterpret_cast<const char *>(data), size);
     try {
         json::parse_options options;
-        options.max_depth = 64;
+        options.max_depth  = 64;
         json::jnode_t root = json::parser::parse(input, options);
         visit(root);
         // What we print must be parsed back.

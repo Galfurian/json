@@ -60,12 +60,12 @@ static bool test_parse_file()
         std::ofstream out(filename.c_str());
         out << "{ a: [1, 2, 3] }";
     }
-    bool ok = true;
+    bool ok            = true;
     json::jnode_t root = json::parser::parse_file(filename);
     ok                 = ok && (root["a"].size() == 3);
     json::parse_options options;
     options.max_input_size = 4;
-    ok = ok && throws_parser_error([&]() { json::parser::parse_file(filename, options); });
+    ok                     = ok && throws_parser_error([&]() { json::parser::parse_file(filename, options); });
     std::remove(filename.c_str());
     // A missing file is an error, not a null node.
     ok = ok && throws_parser_error([&]() { json::parser::parse_file(filename); });

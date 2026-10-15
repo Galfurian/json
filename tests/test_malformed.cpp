@@ -37,9 +37,23 @@ static bool expect_ok(const std::string &input)
 
 static bool test_truncated_input()
 {
-    const char *inputs[] = { "",       "   ",     "\n",    "/*",    "//",         "/* unterminated",
-                             "[",      "{",       "[1,",   "{\"a\"", "{\"a\":",    "{\"a\":1,",
-                             "[[[[",   "{\"a\":[", "// only a comment", "/* only a comment */" };
+    const char *inputs[] = {
+        "",
+        "   ",
+        "\n",
+        "/*",
+        "//",
+        "/* unterminated",
+        "[",
+        "{",
+        "[1,",
+        "{\"a\"",
+        "{\"a\":",
+        "{\"a\":1,",
+        "[[[[",
+        "{\"a\":[",
+        "// only a comment",
+        "/* only a comment */"};
     for (std::size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
         if (!expect_error(inputs[i])) {
             return false;
@@ -50,7 +64,7 @@ static bool test_truncated_input()
 
 static bool test_unterminated_strings()
 {
-    const char *inputs[] = { "\"abc", "'abc", "\"", "\"\\", "\"abc\\\"", "[\"abc]", "{\"a\": \"b}" };
+    const char *inputs[] = {"\"abc", "'abc", "\"", "\"\\", "\"abc\\\"", "[\"abc]", "{\"a\": \"b}"};
     for (std::size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
         if (!expect_error(inputs[i])) {
             return false;
@@ -69,7 +83,7 @@ static bool test_depth_limit()
 {
     const std::size_t limit = json::config::max_depth;
     // Right at the limit.
-    std::string ok = std::string(limit, '[') + std::string(limit, ']');
+    std::string ok          = std::string(limit, '[') + std::string(limit, ']');
     if (!expect_ok(ok)) {
         return false;
     }
@@ -84,19 +98,19 @@ static bool test_depth_limit()
 
 static bool test_invalid_numbers()
 {
-    const char *bad[] = { "-", "+", ".", "1e", "1e+", "1.2.3", "01", "-01", "--1", "+-1", "0x", "0xG", "0x1G",
-                          "0x11111111111111111", "[.e5]", "[1.5.]", "Infinit", "-NaNa", "[- 1]" };
+    const char *bad[] = {"-",     "+",      ".",       "1e",    "1e+",  "1.2.3", "01",
+                         "-01",   "--1",    "+-1",     "0x",    "0xG",  "0x1G",  "0x11111111111111111",
+                         "[.e5]", "[1.5.]", "Infinit", "-NaNa", "[- 1]"};
     for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         if (!expect_error(bad[i])) {
             return false;
         }
     }
-    const char *good[] = { "0",      "-0",     "10",       "-1.5",       "0.5",
-                           "1e5",    "1E+5",   "1e-5",     "-1.5e10",    "[1, -2, 3.5]",
-                           // The extra forms of JSON5.
-                           "+1",     ".5",     "-.5",      "5.",         "[1.e5]",
-                           "0x10",   "-0xFF",  "0Xab",     "Infinity",   "-Infinity",
-                           "+NaN",   "NaN",    "[1,2,3.]", "{Infinity: NaN, NaN: -Infinity}" };
+    const char *good[] = {
+        "0", "-0", "10", "-1.5", "0.5", "1e5", "1E+5", "1e-5", "-1.5e10", "[1, -2, 3.5]",
+        // The extra forms of JSON5.
+        "+1", ".5", "-.5", "5.", "[1.e5]", "0x10", "-0xFF", "0Xab", "Infinity", "-Infinity", "+NaN", "NaN", "[1,2,3.]",
+        "{Infinity: NaN, NaN: -Infinity}"};
     for (std::size_t i = 0; i < sizeof(good) / sizeof(good[0]); ++i) {
         if (!expect_ok(good[i])) {
             return false;
@@ -108,8 +122,7 @@ static bool test_invalid_numbers()
 static bool test_invalid_literals()
 {
     // Bare words are only valid as object keys.
-    const char *bad[] = { "nul",    "tru",        "fals", "truee", "nulll",
-                          "[nope]", "{a: hello}", "@",    "[#]",   "[1, undefined]" };
+    const char *bad[] = {"nul", "tru", "fals", "truee", "nulll", "[nope]", "{a: hello}", "@", "[#]", "[1, undefined]"};
     for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         if (!expect_error(bad[i])) {
             return false;
@@ -123,15 +136,15 @@ static bool test_non_ascii_bytes()
     // Bytes above 0x7F are negative when char is signed. They must not reach the
     // <cctype> functions unconverted, that is undefined behavior and it aborts
     // the debug runtime of MSVC.
-    return expect_error("\xff") && expect_error("[\x80]") && expect_error("\xe9\xe8") &&
-           expect_ok("[\"\xc3\xa9\"]") && expect_ok("{\xc3\xa9: 1}") && expect_error("[1\xff]");
+    return expect_error("\xff") && expect_error("[\x80]") && expect_error("\xe9\xe8") && expect_ok("[\"\xc3\xa9\"]") &&
+           expect_ok("{\xc3\xa9: 1}") && expect_error("[1\xff]");
 }
 
 static bool test_invalid_structure()
 {
-    const char *bad[] = { "[1 2]",        "[1,,2]",    "[,]",          "{,}",         "{\"a\":1,,}", "{\"a\" 1}",
-                          "{\"a\":1 \"b\":2}", "{1:2}", "{[1]: 2}",    "{\"a\"}",     "{\"a\":}",    "[}",
-                          "{]",           "[1}",       "{\"a\":1]",    "{\"a\":1,\"b\"" };
+    const char *bad[] = {
+        "[1 2]",    "[1,,2]",  "[,]",      "{,}", "{\"a\":1,,}", "{\"a\" 1}", "{\"a\":1 \"b\":2}", "{1:2}",
+        "{[1]: 2}", "{\"a\"}", "{\"a\":}", "[}",  "{]",          "[1}",       "{\"a\":1]",         "{\"a\":1,\"b\""};
     for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         if (!expect_error(bad[i])) {
             return false;

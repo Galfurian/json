@@ -28,9 +28,9 @@ static std::string make_document(std::size_t records)
         if (i != 0) {
             text += ",";
         }
-        text += "{\"id\":" + std::to_string(i) + ",\"name\":\"user-" + std::to_string(i) +
-                "\",\"email\":\"user" + std::to_string(i) + "@example.com\",\"score\":" +
-                std::to_string(static_cast<double>(i) * 1.5) + ",\"active\":" + ((i % 2) != 0 ? "true" : "false") +
+        text += "{\"id\":" + std::to_string(i) + ",\"name\":\"user-" + std::to_string(i) + "\",\"email\":\"user" +
+                std::to_string(i) + "@example.com\",\"score\":" + std::to_string(static_cast<double>(i) * 1.5) +
+                ",\"active\":" + ((i % 2) != 0 ? "true" : "false") +
                 ",\"tags\":[\"a\",\"b\",\"c\"],\"address\":{\"city\":\"Verona\",\"zip\":\"37129\"},\"note\":null}";
     }
     return text + "]";

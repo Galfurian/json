@@ -740,8 +740,7 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             std::size_t end = skip_multi_line_comment(source, index + 2);
             if (end == std::string::npos) {
                 throw json::parser_error(
-                    line_number + 1,
-                    "Error at line " + std::to_string(line_number + 1) + ": Unterminated comment.");
+                    line_number + 1, "Error at line " + std::to_string(line_number + 1) + ": Unterminated comment.");
             }
             // Add the comment to the tokens.
             tokens.emplace_back(source.substr(index, end - index), JTOKEN_COMMENT, line_number);
@@ -752,8 +751,7 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             std::size_t end = skip_quoted_string(source, index);
             if (end == std::string::npos) {
                 throw json::parser_error(
-                    line_number + 1,
-                    "Error at line " + std::to_string(line_number + 1) + ": Unterminated string.");
+                    line_number + 1, "Error at line " + std::to_string(line_number + 1) + ": Unterminated string.");
             }
             // Add the string to the tokens.
             tokens.emplace_back(source.substr(index + 1, end - index - 2), JTOKEN_STRING, line_number);
@@ -846,9 +844,8 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             // Anything else is not valid in a JSON document.
             if (end == index) {
                 throw json::parser_error(
-                    line_number + 1,
-                    "Error at line " + std::to_string(line_number + 1) + ": Unexpected character `" +
-                        std::string(1, source[index]) + "`.");
+                    line_number + 1, "Error at line " + std::to_string(line_number + 1) + ": Unexpected character `" +
+                                         std::string(1, source[index]) + "`.");
             }
             // Add the identifier to the tokens.
             tokens.emplace_back(source.substr(index, end - index), JTOKEN_IDENTIFIER, line_number);
@@ -1096,9 +1093,8 @@ auto json_parse(
     } else {
         // Throw an error if the token type is unrecognized.
         throw json::parser_error(
-            current.get_line_number(),
-            "Error at line " + std::to_string(current.get_line_number()) + ": Cannot type the entry `" +
-                tokens[index].value + "`.");
+            current.get_line_number(), "Error at line " + std::to_string(current.get_line_number()) +
+                                           ": Cannot type the entry `" + tokens[index].value + "`.");
     }
     // Move to the next token and update the output index.
     output_index = index + 1;
@@ -1132,9 +1128,8 @@ auto parse(const std::string &json_string, const parse_options &options) -> jnod
     detail::skip_comments(tokens, index);
     if (index < tokens.size()) {
         throw json::parser_error(
-            tokens[index].line_number + 1,
-            "Error at line " + std::to_string(tokens[index].line_number + 1) +
-                ": Unexpected data after the root value.");
+            tokens[index].line_number + 1, "Error at line " + std::to_string(tokens[index].line_number + 1) +
+                                               ": Unexpected data after the root value.");
     }
     return root;
 }
