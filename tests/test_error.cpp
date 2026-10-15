@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <json/json.hpp>
+#include <limits>
 #include <sstream>
 
 bool test_error_format()
@@ -105,6 +106,39 @@ bool test_error_no_entry()
     return false;
 }
 
+bool test_error_number_overflow()
+{
+    json::jnode_t root = json::parser::parse("[300, 99999999999, 1e400, 12]");
+    // These fit.
+    if (root[0].as_number<int>() != 300 || root[3].as_number<int>() != 12) {
+        std::cout << "Valid numbers were not read correctly.\n";
+        return false;
+    }
+    // These do not.
+    try {
+        (void)root[1].as_number<int>();
+        std::cout << "We did not detect an int overflow.\n";
+        return false;
+    } catch (json::parser_error &e) {
+        std::cout << "L" << e.line << " : " << e.what() << "\n";
+    }
+    try {
+        (void)root[2].as_number<double>();
+        std::cout << "We did not detect a double overflow.\n";
+        return false;
+    } catch (json::parser_error &e) {
+        std::cout << "L" << e.line << " : " << e.what() << "\n";
+    }
+    // Without the strict check we get the closest value.
+    json::config::strict_type_check = false;
+    bool saturated                  = root[1].as_number<int>() == std::numeric_limits<int>::max();
+    json::config::strict_type_check = true;
+    if (!saturated) {
+        std::cout << "The overflowing value was not saturated.\n";
+    }
+    return saturated;
+}
+
 int main(int, char *[])
 {
     json::config::strict_type_check      = true;
@@ -123,6 +157,9 @@ int main(int, char *[])
         return 1;
     }
     if (!test_error_no_entry()) {
+        return 1;
+    }
+    if (!test_error_number_overflow()) {
         return 1;
     }
     return 0;

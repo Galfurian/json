@@ -203,7 +203,10 @@ public:
     /// @return true if the object has the property, false otherwise.
     auto has_property(const std::string &key) const -> bool;
 
-    /// @brief Turns the value to INT.
+    /// @brief Turns the value to a number of type T.
+    /// @details If the value cannot be represented by T, the result is the
+    /// closest value T can hold, unless config::strict_type_check is set: in
+    /// that case a parser_error is thrown.
     /// @return The extracted value
     template <typename T>
     auto as_number() const -> T
@@ -213,6 +216,10 @@ public:
             std::stringstream stream;
             stream << value;
             stream >> output;
+            if (stream.fail() && json::config::strict_type_check) {
+                throw json::parser_error(
+                    line_number, "The number `" + value + "` cannot be represented by the requested type.");
+            }
         } else if (json::config::strict_type_check) {
             throw json::type_error(line_number, JTYPE_NUMBER, type);
         }
