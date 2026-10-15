@@ -3,6 +3,7 @@
 [![Ubuntu](https://github.com/Galfurian/json/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/ubuntu.yml)
 [![Windows](https://github.com/Galfurian/json/actions/workflows/windows.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/windows.yml)
 [![MacOS](https://github.com/Galfurian/json/actions/workflows/macos.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/macos.yml)
+[![Sanitizers](https://github.com/Galfurian/json/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/sanitizers.yml)
 [![Documentation](https://github.com/Galfurian/json/actions/workflows/documentation.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/documentation.yml)
 
 ## Overview
@@ -18,18 +19,40 @@ The library supports parsing and serializing JSON objects, arrays, strings, numb
 - Serialize C++ types back into JSON format.
 - Supports custom types via operator overloads for `<<` and `>>`.
 - Handles both arrays and objects, and supports serialization of complex types such as `std::tuple`, `std::vector`, and `std::map`.
-- Supports `//` and `/* ... */` comments in JSON.
+- Accepts a JSON5-style superset of JSON, see [Accepted syntax](#accepted-syntax).
 - Error handling with detailed exception types such as `parser_error`, `type_error`, and `range_error`.
 
 ## Installation
 
-Clone the repository and include the necessary header files in your C++ project.
+The library needs a C++11 compiler and CMake 3.14 or newer. It is made of one header and one source file, so it must be compiled and linked, it is not header-only.
+
+### With CMake (recommended)
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/Galfurian/json.git
+    # Use the first release after v2.5.3, or a commit, to get the behavior described here.
+    GIT_TAG develop
+)
+FetchContent_MakeAvailable(json)
+
+target_link_libraries(my_target PRIVATE json::json)
+```
+
+When the library is consumed this way, its tests, examples and documentation are not built, and its warning flags are not applied to your code.
+
+`json::json` also brings the include path of `ordered_map`, a header-only dependency fetched at a pinned commit.
+
+### Without CMake
+
+Clone the repository, add `include/` and the `include/` directory of [ordered_map](https://github.com/Galfurian/ordered_map) to your include path, and compile `src/json.cpp` together with your sources.
 
 ```bash
 git clone https://github.com/Galfurian/json.git
 ```
 
-You can then include the `json.hpp` header in your C++ project:
+Then include the header:
 
 ```c++
 #include <json/json.hpp>
@@ -202,13 +225,44 @@ This library supports the following types for serialization and deserialization:
 - `std::tuple`, `std::vector`, `std::list`, `std::set`, `std::map`, `std::unordered_map`
 - Custom types (via operator overloads)
 
+## Accepted syntax
+
+The parser accepts standard JSON plus these JSON5 conveniences:
+
+- `//` and `/* ... */` comments
+- single-quoted strings
+- unquoted object keys (identifiers made of letters, digits, `_` and `$`)
+- trailing commas in objects and arrays
+
+Everything else that is not valid JSON is rejected with a `parser_error`: invalid numbers (`01`, `1.`, `-`), bare words used as values, missing commas, unterminated strings and comments, invalid escape sequences, and any data after the root value.
+
+Strings may contain `\uXXXX` escapes, including surrogate pairs. They are decoded to UTF-8.
+
+## Limits and configuration
+
+Global options live in the `json::config` namespace:
+
+| Option                      | Default | Meaning                                                                              |
+|-----------------------------|---------|--------------------------------------------------------------------------------------|
+| `max_depth`                 | `256`   | Maximum nesting of objects and arrays. Deeper documents raise a `parser_error`.      |
+| `strict_type_check`         | `false` | Throw `type_error` instead of returning a default when a value has a different type. Also reports numbers that do not fit the requested C++ type. |
+| `strict_existance_check`    | `false` | Throw instead of returning a null node when a key does not exist.                    |
+| `replace_escape_characters` | `false` | Escape special characters when serializing strings.                                  |
+| `string_delimiter_character`| `'`     | Quote used when serializing strings.                                                 |
+
+These options are global variables: set them once at startup, before using the library from several threads. Parsing and reading a tree that is not modified are otherwise safe to do from different threads on different objects.
+
+When you parse untrusted input, keep `max_depth` low and limit the size of the input you hand to the parser.
+
 ## Error Handling
 
 The library uses exceptions to handle errors:
 
-- `parser_error`: General parsing error.
-- `type_error`: Type mismatch error.
-- `range_error`: Accessing an out-of-bound element.
+- `parser_error`: General parsing error. It carries the `line` where the problem was found.
+- `type_error`: Type mismatch error, derived from `parser_error`.
+- `range_error`: Accessing an out-of-bound element, derived from `parser_error`.
+
+On malformed input the parser either returns a tree or throws `parser_error`. This is checked by the test suite, which includes a seeded mutation fuzz test, and by a CI job that runs all the tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 
 ## License
 
