@@ -34,6 +34,7 @@ option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 
 option(BUILD_EXAMPLES "Build examples" ${JSON_IS_TOP_LEVEL})
 option(BUILD_TESTS "Build tests" ${JSON_IS_TOP_LEVEL})
+option(BUILD_FUZZER "Build the libFuzzer target (needs Clang)" OFF)
 
 # -----------------------------------------------------------------------------
 # ENABLE FETCH CONTENT
@@ -328,6 +329,40 @@ if(BUILD_TESTS)
     target_link_libraries(json_test_number PRIVATE json json_warnings)
 
 endif(BUILD_TESTS)
+
+# -----------------------------------------------------------------------------
+# FUZZING
+# -----------------------------------------------------------------------------
+
+if(BUILD_TESTS)
+
+    # Runs the fuzz target on the corpus, with any compiler. It also replays the
+    # inputs that made the fuzzer fail, when they are added to the corpus.
+    file(GLOB JSON_FUZZ_CORPUS "${PROJECT_SOURCE_DIR}/fuzz/corpus/*")
+    add_executable(json_fuzz_replay
+        ${PROJECT_SOURCE_DIR}/fuzz/fuzz_parser.cpp
+        ${PROJECT_SOURCE_DIR}/fuzz/replay.cpp
+    )
+    set_target_properties(json_fuzz_replay PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    target_link_libraries(json_fuzz_replay PRIVATE json json_warnings)
+    add_test(NAME json_fuzz_corpus COMMAND json_fuzz_replay ${JSON_FUZZ_CORPUS})
+
+endif(BUILD_TESTS)
+
+if(BUILD_FUZZER)
+
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "BUILD_FUZZER needs Clang.")
+    endif()
+
+    # The library must be instrumented too.
+    target_compile_options(json PRIVATE -fsanitize=fuzzer-no-link,address,undefined)
+    add_executable(json_fuzz_parser ${PROJECT_SOURCE_DIR}/fuzz/fuzz_parser.cpp)
+    set_target_properties(json_fuzz_parser PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    target_compile_options(json_fuzz_parser PRIVATE -fsanitize=fuzzer-no-link,address,undefined)
+    target_link_libraries(json_fuzz_parser PRIVATE json -fsanitize=fuzzer,address,undefined)
+
+endif(BUILD_FUZZER)
 
 # -----------------------------------------------------------------------------
 # CODE ANALYSIS

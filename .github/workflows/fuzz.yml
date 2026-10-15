@@ -1,0 +1,67 @@
+name: Fuzzing
+
+# Run libFuzzer on the parser for a short time. A failing input is uploaded as
+# an artifact: add it to fuzz/corpus to replay it with the normal tests.
+on:
+  push:
+    branches:
+    - main
+    - develop
+    paths:
+    - 'src/**'
+    - 'include/**'
+    - 'fuzz/**'
+    - '**/CMakeLists.txt'
+    - '.github/workflows/fuzz.yml'
+  pull_request:
+    branches:
+    - main
+    - develop
+    paths:
+    - 'src/**'
+    - 'include/**'
+    - 'fuzz/**'
+    - '**/CMakeLists.txt'
+    - '.github/workflows/fuzz.yml'
+  schedule:
+  - cron: '0 3 * * 1'
+
+jobs:
+  fuzz:
+    name: libFuzzer
+    runs-on: ubuntu-latest
+    env:
+      CC: clang-18
+      CXX: clang++-18
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Clang
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-18
+
+    - name: Configure Project
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_FUZZER=ON -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
+
+    - name: Build Fuzzer
+      run: cmake --build build --target json_fuzz_parser --parallel 2
+
+    # The working corpus is a copy: the fuzzer adds the inputs it finds to it.
+    - name: Fuzz
+      run: |
+        mkdir -p work-corpus
+        cp fuzz/corpus/* work-corpus/
+        ./build/json_fuzz_parser work-corpus -max_total_time=60 -timeout=10 -rss_limit_mb=2048
+
+    - name: Upload Crashes
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-crashes
+        path: |
+          crash-*
+          timeout-*
+          oom-*
