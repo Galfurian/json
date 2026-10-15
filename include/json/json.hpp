@@ -245,8 +245,10 @@ public:
                 return special_number<T>(std::numeric_limits<T>::infinity(), std::numeric_limits<T>::has_infinity);
             }
             if (value == "-Infinity") {
+                // Binary minus: the unary one is a warning for unsigned types.
                 return special_number<T>(
-                    static_cast<T>(-std::numeric_limits<T>::infinity()), std::numeric_limits<T>::has_infinity);
+                    static_cast<T>(static_cast<T>(0) - std::numeric_limits<T>::infinity()),
+                    std::numeric_limits<T>::has_infinity);
             }
             // Integer types cannot read an exponent or a fraction from a stream,
             // `1e3` would be read as 1. Read those numbers as long double.
