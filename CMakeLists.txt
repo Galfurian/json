@@ -7,8 +7,20 @@
 # FetchContent_MakeAvailable requires CMake 3.14.
 cmake_minimum_required(VERSION 3.14...3.28)
 
+# Read the version from the header, there is one source of truth.
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/json/json.hpp JSON_VERSION_HEADER)
+string(REGEX MATCH "JSON_MAJOR_VERSION = ([0-9]+)" _ "${JSON_VERSION_HEADER}")
+set(JSON_VERSION_MAJOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "JSON_MINOR_VERSION = ([0-9]+)" _ "${JSON_VERSION_HEADER}")
+set(JSON_VERSION_MINOR ${CMAKE_MATCH_1})
+string(REGEX MATCH "JSON_MICRO_VERSION = ([0-9]+)" _ "${JSON_VERSION_HEADER}")
+set(JSON_VERSION_MICRO ${CMAKE_MATCH_1})
+
 # Set the project name.
-project(json CXX)
+project(json
+    VERSION ${JSON_VERSION_MAJOR}.${JSON_VERSION_MINOR}.${JSON_VERSION_MICRO}
+    LANGUAGES CXX
+)
 
 # Set the default build type to Debug.
 if(NOT CMAKE_BUILD_TYPE)
@@ -34,6 +46,7 @@ option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 
 option(BUILD_EXAMPLES "Build examples" ${JSON_IS_TOP_LEVEL})
 option(BUILD_TESTS "Build tests" ${JSON_IS_TOP_LEVEL})
+option(JSON_INSTALL "Generate the install rules" ${JSON_IS_TOP_LEVEL})
 option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
 option(BENCHMARK_NLOHMANN "Also measure nlohmann/json in the benchmarks" OFF)
 option(BUILD_FUZZER "Build the libFuzzer target (needs Clang)" OFF)
@@ -112,8 +125,11 @@ add_library(json ${PROJECT_SOURCE_DIR}/src/json.cpp)
 add_library(json::json ALIAS json)
 
 # Include header directories, and link libraries.
-target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_include_directories(json PUBLIC ${ordered_map_SOURCE_DIR}/include)
+target_include_directories(json PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${ordered_map_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 if(NOT MSVC)
     target_compile_options(json PRIVATE -fPIC)
 endif()
@@ -184,8 +200,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Cl
     endif()
 endif()
 
-# The library itself is built with the same warnings.
-target_link_libraries(json PRIVATE json_warnings)
+# The library itself is built with the same warnings. They are copied, not
+# linked, so that json_warnings does not become a dependency of the installed
+# target.
+target_compile_options(json PRIVATE $<TARGET_PROPERTY:json_warnings,INTERFACE_COMPILE_OPTIONS>)
 
 # -----------------------------------------------------------------------------
 # EXAMPLES
@@ -365,6 +383,49 @@ if(BUILD_FUZZER)
     target_link_libraries(json_fuzz_parser PRIVATE json -fsanitize=fuzzer,address,undefined)
 
 endif(BUILD_FUZZER)
+
+# -----------------------------------------------------------------------------
+# INSTALL
+# -----------------------------------------------------------------------------
+
+if(JSON_INSTALL)
+
+    include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
+
+    install(TARGETS json
+        EXPORT jsonTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/json DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    # json.hpp includes it, so the installed header needs it too.
+    install(DIRECTORY ${ordered_map_SOURCE_DIR}/include/ordered_map DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    set(JSON_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/json)
+    install(EXPORT jsonTargets
+        NAMESPACE json::
+        DESTINATION ${JSON_INSTALL_CMAKEDIR}
+    )
+    configure_package_config_file(
+        ${PROJECT_SOURCE_DIR}/cmake/jsonConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/jsonConfig.cmake
+        INSTALL_DESTINATION ${JSON_INSTALL_CMAKEDIR}
+    )
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/jsonConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/jsonConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/jsonConfigVersion.cmake
+        DESTINATION ${JSON_INSTALL_CMAKEDIR}
+    )
+
+endif(JSON_INSTALL)
 
 # -----------------------------------------------------------------------------
 # BENCHMARKS

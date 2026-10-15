@@ -11,6 +11,9 @@
 
 ### Added
 
+- Install rules and a CMake package: `find_package(json)` and `json::json`.
+  The version is read from `json.hpp`.
+
 - JSON5 numbers: leading `+`, `.5`, `5.`, hexadecimal, `Infinity`, `-Infinity`
   and `NaN`. Numbers are stored in a canonical decimal form.
 - `as_number<T>()` reads `1e3` and `2.0` correctly for integer types. It used
