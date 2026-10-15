@@ -9,6 +9,7 @@ on:
     paths:
     - '**/*.cpp'
     - '**/*.hpp'
+    - '.clang-format'
     - '**/CMakeLists.txt'
     - '.github/clang-tidy-ci.yml'
     - '.github/workflows/analysis.yml'
@@ -21,6 +22,7 @@ on:
     paths:
     - '**/*.cpp'
     - '**/*.hpp'
+    - '.clang-format'
     - '**/CMakeLists.txt'
     - '.github/clang-tidy-ci.yml'
     - '.github/workflows/analysis.yml'
@@ -28,6 +30,23 @@ on:
     - 'tests/package/**'
 
 jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # The .clang-format file needs clang-format 20, the one of the distribution
+    # is older and rejects it.
+    - name: Install clang-format
+      run: pip install clang-format==20.1.8
+
+    - name: Check the Formatting
+      run: |
+        clang-format --dry-run --Werror \
+          include/json/json.hpp src/json.cpp tests/*.cpp examples/*.cpp benchmarks/*.cpp fuzz/*.cpp
+
   clang-tidy:
     name: clang-tidy
     runs-on: ubuntu-latest
