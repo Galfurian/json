@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     // Parse the tokens.
     json::jnode_t root;
-    json::detail::json_parse(tokens, 0UL, k, root);
+    json::detail::json_parse(tokens, 0UL, k, root, 0UL, json::config::max_depth);
     std::cout << "Parsing the tokens took    : " << sw.round() << "\n";
 
     // Write the file.

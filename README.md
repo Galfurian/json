@@ -245,12 +245,25 @@ Global options live in the `json::config` namespace:
 | Option                      | Default | Meaning                                                                              |
 |-----------------------------|---------|--------------------------------------------------------------------------------------|
 | `max_depth`                 | `256`   | Maximum nesting of objects and arrays. Deeper documents raise a `parser_error`.      |
+| `max_input_size`            | `0`     | Maximum size in bytes of a document. `0` means no limit.                             |
 | `strict_type_check`         | `false` | Throw `type_error` instead of returning a default when a value has a different type. Also reports numbers that do not fit the requested C++ type. |
 | `strict_existance_check`    | `false` | Throw instead of returning a null node when a key does not exist.                    |
 | `replace_escape_characters` | `false` | Escape special characters when serializing strings.                                  |
 | `string_delimiter_character`| `'`     | Quote used when serializing strings.                                                 |
 
-These options are global variables: set them once at startup, before using the library from several threads. Parsing and reading a tree that is not modified are otherwise safe to do from different threads on different objects.
+`max_depth` and `max_input_size` can also be passed for a single call, without touching global state:
+
+```c++
+json::parse_options options;
+options.max_depth      = 32;
+options.max_input_size = 1 << 20; // 1 MiB
+json::jnode_t root = json::parser::parse(text, options);
+json::jnode_t file = json::parser::parse_file("data.json", options);
+```
+
+`parse_file` throws `parser_error` if the file cannot be opened.
+
+The other options are global variables: set them once at startup, before using the library from several threads. Parsing and reading a tree that is not modified are otherwise safe to do from different threads on different objects.
 
 When you parse untrusted input, keep `max_depth` low and limit the size of the input you hand to the parser.
 
