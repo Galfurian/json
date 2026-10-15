@@ -225,6 +225,19 @@ This library supports the following types for serialization and deserialization:
 - `std::tuple`, `std::vector`, `std::list`, `std::set`, `std::map`, `std::unordered_map`
 - Custom types (via operator overloads)
 
+## Performance
+
+`benchmarks/bench_parse.cpp` parses and prints a generated 8.7 MB document (50000 records), best of 5 runs, GCC 13 `-O2` (Release):
+
+| Library          | Parse      | Print       |
+|------------------|------------|-------------|
+| this library     | ~24 MB/s   | ~127 MB/s   |
+| nlohmann/json 3.11.3 | ~60 MB/s | ~314 MB/s |
+
+The parser first builds a token list and then the tree, so it needs memory proportional to the number of tokens (about 48 bytes each) on top of the tree. Keep that in mind for documents of hundreds of megabytes, and use `max_input_size`.
+
+Run it with `-DBUILD_BENCHMARKS=ON` (add `-DBENCHMARK_NLOHMANN=ON` for the comparison).
+
 ## Accepted syntax
 
 The parser accepts standard JSON plus these JSON5 conveniences:
