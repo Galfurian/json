@@ -34,6 +34,8 @@ option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 
 option(BUILD_EXAMPLES "Build examples" ${JSON_IS_TOP_LEVEL})
 option(BUILD_TESTS "Build tests" ${JSON_IS_TOP_LEVEL})
+option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
+option(BENCHMARK_NLOHMANN "Also measure nlohmann/json in the benchmarks" OFF)
 option(BUILD_FUZZER "Build the libFuzzer target (needs Clang)" OFF)
 
 # -----------------------------------------------------------------------------
@@ -363,6 +365,30 @@ if(BUILD_FUZZER)
     target_link_libraries(json_fuzz_parser PRIVATE json -fsanitize=fuzzer,address,undefined)
 
 endif(BUILD_FUZZER)
+
+# -----------------------------------------------------------------------------
+# BENCHMARKS
+# -----------------------------------------------------------------------------
+
+if(BUILD_BENCHMARKS)
+
+    add_executable(json_bench_parse ${PROJECT_SOURCE_DIR}/benchmarks/bench_parse.cpp)
+    set_target_properties(json_bench_parse PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    target_link_libraries(json_bench_parse PRIVATE json json_warnings)
+
+    if(BENCHMARK_NLOHMANN)
+        # Only its headers are needed.
+        FetchContent_Declare(nlohmann_json
+            GIT_REPOSITORY "https://github.com/nlohmann/json.git"
+            GIT_TAG v3.11.3
+            SOURCE_SUBDIR header_only
+        )
+        FetchContent_MakeAvailable(nlohmann_json)
+        target_include_directories(json_bench_parse SYSTEM PRIVATE ${nlohmann_json_SOURCE_DIR}/include)
+        target_compile_definitions(json_bench_parse PRIVATE JSON_BENCH_NLOHMANN)
+    endif()
+
+endif(BUILD_BENCHMARKS)
 
 # -----------------------------------------------------------------------------
 # CODE ANALYSIS

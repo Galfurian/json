@@ -581,6 +581,48 @@ static inline auto is_literal_at(const std::string &source, std::size_t index, c
     return (index + length >= source.length()) || !is_identifier_char(source[index + length]);
 }
 
+/// @brief Checks if a number is a plain JSON number, already in canonical form.
+/// @details This is the common case, and it does not allocate.
+/// The grammar is -?(0|[1-9][0-9]*)(.[0-9]+)?(e[+-]?[0-9]+)?
+/// @param number The string to check.
+/// @return true if the string is a canonical number.
+static auto is_canonical_number(const std::string &number) -> bool
+{
+    std::size_t index = 0;
+    std::size_t size  = number.size();
+    auto digits       = [&]() {
+        std::size_t start = index;
+        while ((index < size) && detail::is_digit(number[index])) {
+            ++index;
+        }
+        return index - start;
+    };
+    if ((index < size) && (number[index] == '-')) {
+        ++index;
+    }
+    std::size_t start = index;
+    std::size_t count = digits();
+    if ((count == 0) || ((count > 1) && (number[start] == '0'))) {
+        return false;
+    }
+    if ((index < size) && (number[index] == '.')) {
+        ++index;
+        if (digits() == 0) {
+            return false;
+        }
+    }
+    if ((index < size) && (number[index] == 'e')) {
+        ++index;
+        if ((index < size) && ((number[index] == '+') || (number[index] == '-'))) {
+            ++index;
+        }
+        if (digits() == 0) {
+            return false;
+        }
+    }
+    return index == size;
+}
+
 /// @brief Validates a number and rewrites it in a canonical form.
 /// @details The accepted grammar is the one of JSON5, without the special
 /// values: an optional sign, then either a hexadecimal number, or a decimal
@@ -594,6 +636,10 @@ static inline auto is_literal_at(const std::string &source, std::size_t index, c
 /// @return true if the string is a valid number.
 static auto normalize_number(const std::string &number, std::string &canonical) -> bool
 {
+    if (is_canonical_number(number)) {
+        canonical = number;
+        return true;
+    }
     std::size_t index = 0;
     std::size_t size  = number.size();
     std::string sign;
@@ -718,17 +764,17 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             tokens.emplace_back(",", JTOKEN_COMMA, line_number);
             // Skip the comma.
             ++index;
-        } else if (is_literal_at(source, index, "true")) {
+        } else if ((source[index] == 't') && is_literal_at(source, index, "true")) {
             // Add the boolean to the tokens.
             tokens.emplace_back("true", JTOKEN_BOOLEAN, line_number);
             // Skip the boolean.
             index += 4;
-        } else if (is_literal_at(source, index, "false")) {
+        } else if ((source[index] == 'f') && is_literal_at(source, index, "false")) {
             // Add the boolean to the tokens.
             tokens.emplace_back("false", JTOKEN_BOOLEAN, line_number);
             // Skip the boolean.
             index += 5;
-        } else if (is_literal_at(source, index, "null")) {
+        } else if ((source[index] == 'n') && is_literal_at(source, index, "null")) {
             // Add the null to the tokens.
             tokens.emplace_back("null", JTOKEN_NULL, line_number);
             // Skip the null.
@@ -761,7 +807,9 @@ static void process_token(const std::string &source, std::vector<token_t> &token
         } else if (source[index] == ' ') {
             // Skip the whitespace.
             ++index;
-        } else if (is_literal_at(source, index, "Infinity") || is_literal_at(source, index, "NaN")) {
+        } else if (
+            ((source[index] == 'I') && is_literal_at(source, index, "Infinity")) ||
+            ((source[index] == 'N') && is_literal_at(source, index, "NaN"))) {
             // An unsigned special value.
             bool infinity = is_literal_at(source, index, "Infinity");
             tokens.emplace_back(infinity ? "Infinity" : "NaN", JTOKEN_NUMBER, line_number);
@@ -816,6 +864,8 @@ static void process_token(const std::string &source, std::vector<token_t> &token
 /// @return The reference to the modified token vector.
 auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::vector<token_t> &
 {
+    // Most documents have at least one token every few bytes, avoid reallocating.
+    tokens.reserve(tokens.size() + (source.size() / 8U) + 1U);
     // Keep track of the current line number.
     std::size_t line_number = 0;
     // Skip the whitespaces.
@@ -1021,16 +1071,22 @@ auto json_parse(
         current.set_value(peek(tokens, index, current.get_line_number()).value);
     } else if (peek(tokens, index, current.get_line_number()).type == JTOKEN_STRING) {
         current.set_type(JTYPE_STRING);
-        // Make sure the escape sequences are valid.
-        bool valid_escapes = true;
-        deserialize(peek(tokens, index, current.get_line_number()).value, valid_escapes);
-        if (!valid_escapes) {
-            throw json::parser_error(
-                current.get_line_number(),
-                "Error at line " + std::to_string(current.get_line_number()) + ": Invalid escape sequence.");
+        const std::string &raw = peek(tokens, index, current.get_line_number()).value;
+        // Most strings have no escape sequence, there is nothing to check.
+        if (raw.find('\\') == std::string::npos) {
+            current.set_value(raw);
+        } else {
+            // Make sure the escape sequences are valid.
+            bool valid_escapes = true;
+            deserialize(raw, valid_escapes);
+            if (!valid_escapes) {
+                throw json::parser_error(
+                    current.get_line_number(),
+                    "Error at line " + std::to_string(current.get_line_number()) + ": Invalid escape sequence.");
+            }
+            // Remove the escaped line breaks.
+            current.set_value(replace_line_continuations(raw));
         }
-        // Replace escaped newlines in the string value.
-        current.set_value(replace_line_continuations(peek(tokens, index, current.get_line_number()).value));
     } else if (peek(tokens, index, current.get_line_number()).type == JTOKEN_BOOLEAN) {
         current.set_type(JTYPE_BOOLEAN);
         current.set_value(peek(tokens, index, current.get_line_number()).value);
