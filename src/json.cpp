@@ -21,6 +21,7 @@ bool strict_existance_check     = false;
 bool replace_escape_characters  = false;
 char string_delimiter_character = '\'';
 std::size_t max_depth           = 256;
+std::size_t max_input_size      = 0;
 } // namespace config
 
 /// @brief Transforms the given JSON type to string.
@@ -832,7 +833,8 @@ auto json_parse(
     std::size_t index,
     std::size_t &output_index,
     jnode_t &current,
-    std::size_t depth) -> jnode_t &
+    std::size_t depth,
+    std::size_t max_depth) -> jnode_t &
 {
     // Track the next index for recursive parsing.
     std::size_t next_index = 0;
@@ -843,7 +845,7 @@ auto json_parse(
     // Set the line number for error reporting.
     current.set_line_number(peek(tokens, index, 0).line_number + 1);
     // Refuse to recurse without bounds, we would exhaust the stack.
-    if (depth > config::max_depth) {
+    if (depth > max_depth) {
         throw json::parser_error(
             current.get_line_number(),
             "Error at line " + std::to_string(current.get_line_number()) + ": Maximum nesting depth exceeded.");
@@ -891,7 +893,7 @@ auto json_parse(
             // Add a new property to the current object using the key.
             jnode_t &property = current.add_property(key);
             // Recursively parse the value.
-            json_parse(tokens, index, next_index, property, depth + 1);
+            json_parse(tokens, index, next_index, property, depth + 1, max_depth);
             // Update the index after parsing the value.
             index = next_index;
             // Skip any comments after the value.
@@ -926,7 +928,7 @@ auto json_parse(
             // Add a new element to the current array.
             jnode_t &element = current.add_element();
             // Recursively parse the array element.
-            json_parse(tokens, index, next_index, element, depth + 1);
+            json_parse(tokens, index, next_index, element, depth + 1, max_depth);
             // Update the index after parsing the element.
             index = next_index;
             // Skip any comments after the element.
@@ -982,8 +984,15 @@ auto json_parse(
 namespace parser
 {
 
-auto parse(const std::string &json_string) -> jnode_t
+auto parse(const std::string &json_string) -> jnode_t { return parse(json_string, parse_options()); }
+
+auto parse(const std::string &json_string, const parse_options &options) -> jnode_t
 {
+    if ((options.max_input_size != 0) && (json_string.size() > options.max_input_size)) {
+        throw json::parser_error(
+            0, "Error: The input is " + std::to_string(json_string.size()) + " bytes long, the limit is " +
+                   std::to_string(options.max_input_size) + ".");
+    }
     std::size_t index = 0;
     std::vector<detail::token_t> tokens;
     // Extract the tokens.
@@ -991,7 +1000,7 @@ auto parse(const std::string &json_string) -> jnode_t
     // Prepare the root.
     jnode_t root;
     // Parse the tokens.
-    detail::json_parse(tokens, 0UL, index, root);
+    detail::json_parse(tokens, 0UL, index, root, 0UL, options.max_depth);
     // Only comments are allowed after the root value.
     detail::skip_comments(tokens, index);
     if (index < tokens.size()) {
@@ -1016,14 +1025,28 @@ auto read_file(const std::string &filename, std::string &content) -> bool
     return true;
 }
 
-auto parse_file(const std::string &filename) -> jnode_t
+auto parse_file(const std::string &filename) -> jnode_t { return parse_file(filename, parse_options()); }
+
+auto parse_file(const std::string &filename, const parse_options &options) -> jnode_t
 {
-    std::string content;
-    if (!json::parser::read_file(filename, content)) {
-        jnode_t null_value(JTYPE_NULL);
-        return null_value;
+    std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        throw json::parser_error(0, "Error: Cannot open the file `" + filename + "`.");
     }
-    return parser::parse(content);
+    // Check the size before loading the file in memory.
+    if (options.max_input_size != 0) {
+        file.seekg(0, std::ios::end);
+        std::streamoff size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        if ((size >= 0) && (static_cast<std::size_t>(size) > options.max_input_size)) {
+            throw json::parser_error(
+                0, "Error: The file `" + filename + "` is " + std::to_string(size) + " bytes long, the limit is " +
+                       std::to_string(options.max_input_size) + ".");
+        }
+    }
+    std::stringstream stream;
+    stream << file.rdbuf();
+    return parse(stream.str(), options);
 }
 
 auto write_file(const std::string &filename, const jnode_t &node, bool pretty, unsigned tabsize) -> bool

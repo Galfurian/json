@@ -9,7 +9,17 @@
 - Fix stack overflow on deeply nested input. Nesting is now limited by
   `json::config::max_depth` (default 256).
 
+### Added
+
+- `json::parse_options` and `parse` / `parse_file` overloads that take it, to
+  set `max_depth` and the new `max_input_size` for a single call.
+- `json::config::max_input_size` (default 0, no limit).
+
 ### Changed
+
+- `json::parser::parse_file` throws `json::parser_error` when the file cannot
+  be opened. It used to return a null node.
+- `json::detail::json_parse` takes the maximum depth as an argument.
 
 The parser is stricter. The following inputs used to be accepted, often with
 a wrong result, and now raise `json::parser_error`:

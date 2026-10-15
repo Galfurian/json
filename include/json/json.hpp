@@ -134,7 +134,29 @@ extern char string_delimiter_character;
 /// @brief The maximum nesting depth of objects and arrays accepted by the
 /// parser. Deeper documents are rejected with a parser_error.
 extern std::size_t max_depth;
+/// @brief The maximum size, in bytes, of a document accepted by the parser.
+/// Zero means no limit.
+extern std::size_t max_input_size;
 } // namespace config
+
+/// @brief Options of a single parsing operation.
+/// @details The default values are taken from the global json::config when the
+/// object is constructed, so code that never uses options keeps working.
+/// Passing an explicit object makes the limits independent from global state.
+struct parse_options {
+    /// @brief The maximum nesting depth of objects and arrays.
+    std::size_t max_depth;
+    /// @brief The maximum size, in bytes, of the input. Zero means no limit.
+    std::size_t max_input_size;
+
+    /// @brief Builds the options from the global configuration.
+    parse_options()
+        : max_depth(config::max_depth)
+        , max_input_size(config::max_input_size)
+    {
+        // Nothing to do.
+    }
+};
 
 /// @brief Represent a json node.
 class jnode_t
@@ -465,13 +487,15 @@ auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::v
 /// @param output_index The index to continue parsing from after this function returns.
 /// @param current The current JSON node being built.
 /// @param depth The current nesting depth.
+/// @param max_depth The maximum nesting depth.
 /// @return jnode_t& The constructed JSON node.
 auto json_parse(
     std::vector<token_t> &tokens,
     std::size_t index,
     std::size_t &output_index,
     jnode_t &current,
-    std::size_t depth = 0) -> jnode_t &;
+    std::size_t depth,
+    std::size_t max_depth) -> jnode_t &;
 
 /// @brief Struct for transforming a std::tuple into a json::jnode_t.
 /// @details
@@ -568,7 +592,15 @@ namespace parser
 /// @brief Parse the json formatted string.
 /// @param json_string The json formatted string.
 /// @return the root of the generated json tree.
+/// @throws json::parser_error if the string is not valid.
 auto parse(const std::string &json_string) -> jnode_t;
+
+/// @brief Parse the json formatted string.
+/// @param json_string The json formatted string.
+/// @param options The limits to enforce while parsing.
+/// @return the root of the generated json tree.
+/// @throws json::parser_error if the string is not valid or exceeds the limits.
+auto parse(const std::string &json_string, const parse_options &options) -> jnode_t;
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
@@ -580,6 +612,13 @@ auto read_file(const std::string &filename, std::string &content) -> bool;
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
 auto parse_file(const std::string &filename) -> jnode_t;
+
+/// @brief Parse the json file.
+/// @param filename Path to the json file.
+/// @param options The limits to enforce while parsing.
+/// @return the root of the generated json tree.
+/// @throws json::parser_error if the file cannot be read, is not valid or exceeds the limits.
+auto parse_file(const std::string &filename, const parse_options &options) -> jnode_t;
 
 /// @brief Write the json node on file.
 /// @param filename Path to the json file.

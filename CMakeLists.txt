@@ -303,6 +303,15 @@ if(BUILD_TESTS)
     # Linking for the test.
     target_link_libraries(json_test_fuzz PRIVATE json json_warnings)
 
+
+    # Add the test.
+    add_executable(json_test_options ${PROJECT_SOURCE_DIR}/tests/test_options.cpp)
+    add_test(json_test_options_run json_test_options)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_options PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_options PRIVATE json json_warnings)
+
 endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------
