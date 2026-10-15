@@ -82,6 +82,51 @@ static bool test_depth_limit()
     return expect_error(std::string(200000, '['));
 }
 
+static bool test_invalid_numbers()
+{
+    const char *bad[] = { "-", "1e", "1e+", "1.", "1.2.3", "01", "-01", "--1", "[1.e5]", "[0x10]", "[1,2,3.]" };
+    for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        if (!expect_error(bad[i])) {
+            return false;
+        }
+    }
+    const char *good[] = { "0", "-0", "10", "-1.5", "0.5", "1e5", "1E+5", "1e-5", "-1.5e10", "[1, -2, 3.5]" };
+    for (std::size_t i = 0; i < sizeof(good) / sizeof(good[0]); ++i) {
+        if (!expect_ok(good[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool test_invalid_literals()
+{
+    // Bare words are only valid as object keys.
+    const char *bad[] = { "nul",    "tru",        "fals", "truee", "nulll",
+                          "[nope]", "{a: hello}", "@",    "[#]",   "[1, undefined]" };
+    for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        if (!expect_error(bad[i])) {
+            return false;
+        }
+    }
+    return expect_ok("[true,false,null]") && expect_ok("{true: 1, null: 2, a_b$1: 3}");
+}
+
+static bool test_invalid_structure()
+{
+    const char *bad[] = { "[1 2]",        "[1,,2]",    "[,]",          "{,}",         "{\"a\":1,,}", "{\"a\" 1}",
+                          "{\"a\":1 \"b\":2}", "{1:2}", "{[1]: 2}",    "{\"a\"}",     "{\"a\":}",    "[}",
+                          "{]",           "[1}",       "{\"a\":1]",    "{\"a\":1,\"b\"" };
+    for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        if (!expect_error(bad[i])) {
+            return false;
+        }
+    }
+    // JSON5 conveniences stay supported.
+    return expect_ok("[1, 2, ]") && expect_ok("{a: 1, 'b': 2, \"c\": 3,}") && expect_ok("{} /* c */") &&
+           expect_ok("[1 /* a */, /* b */ 2 // c\n]");
+}
+
 int main(int, char *[])
 {
     if (!test_truncated_input()) {
@@ -94,6 +139,15 @@ int main(int, char *[])
         return 1;
     }
     if (!test_depth_limit()) {
+        return 1;
+    }
+    if (!test_invalid_numbers()) {
+        return 1;
+    }
+    if (!test_invalid_literals()) {
+        return 1;
+    }
+    if (!test_invalid_structure()) {
         return 1;
     }
     return 0;

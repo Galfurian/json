@@ -416,7 +416,8 @@ enum token_type_t : unsigned char {
     JTOKEN_COLON,         ///< We found a colon.
     JTOKEN_BOOLEAN,       ///< We found a boolean.
     JTOKEN_COMMENT,       ///< We found a comment.
-    JTOKEN_NULL           ///< We found a NULL value.
+    JTOKEN_NULL,          ///< We found a NULL value.
+    JTOKEN_IDENTIFIER     ///< We found an unquoted identifier, valid only as an object key.
 };
 
 /// @brief A token use for parsing.
