@@ -131,6 +131,9 @@ extern bool strict_existance_check;
 extern bool replace_escape_characters;
 /// @brief The character used to delimit strings.
 extern char string_delimiter_character;
+/// @brief The maximum nesting depth of objects and arrays accepted by the
+/// parser. Deeper documents are rejected with a parser_error.
+extern std::size_t max_depth;
 } // namespace config
 
 /// @brief Represent a json node.
@@ -453,9 +456,14 @@ auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::v
 /// @param index The current index in the token list.
 /// @param output_index The index to continue parsing from after this function returns.
 /// @param current The current JSON node being built.
+/// @param depth The current nesting depth.
 /// @return jnode_t& The constructed JSON node.
-auto json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
-    -> jnode_t &;
+auto json_parse(
+    std::vector<token_t> &tokens,
+    std::size_t index,
+    std::size_t &output_index,
+    jnode_t &current,
+    std::size_t depth = 0) -> jnode_t &;
 
 /// @brief Struct for transforming a std::tuple into a json::jnode_t.
 /// @details
