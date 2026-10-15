@@ -52,7 +52,7 @@ cmake --install build
 ```
 
 ```cmake
-find_package(json 2 REQUIRED)
+find_package(json 3 REQUIRED)
 target_link_libraries(my_target PRIVATE json::json)
 ```
 
