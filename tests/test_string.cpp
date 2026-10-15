@@ -45,6 +45,14 @@ static bool test_simple_escapes()
            expect_decoded("a\\/b", "a/b") && expect_decoded("\\b\\f\\r", "\b\f\r") && expect_decoded("plain", "plain");
 }
 
+static bool test_line_continuations()
+{
+    return expect_decoded("a\\\nb", "a\nb") && expect_decoded("a\\ \t\nb", "a\nb") &&
+           expect_decoded("a\\\r\nb", "a\nb") &&
+           // An escaped backslash followed by a line break is not a continuation.
+           expect_decoded("a\\\\\nb", "a\\\nb");
+}
+
 static bool test_unicode_escapes()
 {
     // One, two, three and four bytes in UTF-8.
@@ -68,6 +76,9 @@ static bool test_invalid_unicode_escapes()
 int main(int, char *[])
 {
     if (!test_simple_escapes()) {
+        return 1;
+    }
+    if (!test_line_continuations()) {
         return 1;
     }
     if (!test_unicode_escapes()) {
