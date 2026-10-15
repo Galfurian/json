@@ -130,38 +130,6 @@ auto range_error::build_message(std::size_t _index, std::size_t _size) -> std::s
 namespace detail
 {
 
-/// @brief Access map's elements in a linear fashion.
-/// @param map the map we want to access.
-/// @param n the index of the element we want to retrieve.
-/// @return an interator to the element.
-template <class K, class T>
-static inline auto get_iterator_at(const std::map<K, T> &map, std::size_t n) -> typename std::map<K, T>::const_iterator
-{
-    typename std::map<K, T>::const_iterator itr = map.begin();
-    for (std::size_t index = 0; index < n; ++index, ++itr) {
-        if (itr == map.end()) {
-            break;
-        }
-    }
-    return itr;
-}
-
-/// @brief Access map's elements in a linear fashion.
-/// @param map the map we want to access.
-/// @param n the index of the element we want to retrieve.
-/// @return an interator to the element.
-template <class K, class T>
-static inline auto get_iterator_at(std::map<K, T> &map, std::size_t n) -> typename std::map<K, T>::iterator
-{
-    typename std::map<K, T>::iterator itr = map.begin();
-    for (std::size_t index = 0; index < n; ++index, ++itr) {
-        if (itr == map.end()) {
-            break;
-        }
-    }
-    return itr;
-}
-
 /// @brief Replaces all the occurences of WHAT with WITH, in INPUT.
 /// @param input the string we want to manipulate.
 /// @param what the string we want to replace.
