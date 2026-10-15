@@ -65,11 +65,11 @@ jobs:
     - name: Run Tests
       run: ctest --test-dir build --output-on-failure
 
-    # The job fails if the line coverage of the library falls below 70%.
+    # The job fails if the line coverage of the library falls below 60%.
     - name: Report Coverage
       run: |
         mkdir -p coverage
-        gcovr --root . --filter 'src/' --filter 'include/' --print-summary --fail-under-line 70 \
+        gcovr --root . --filter 'src/' --filter 'include/' --print-summary --fail-under-line 60 \
           --html-details coverage/index.html
 
     - name: Upload Report

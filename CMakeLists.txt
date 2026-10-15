@@ -111,7 +111,9 @@ add_library(json::json ALIAS json)
 # Include header directories, and link libraries.
 target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(json PUBLIC ${ordered_map_SOURCE_DIR}/include)
-target_compile_options(json PRIVATE -fPIC)
+if(NOT MSVC)
+    target_compile_options(json PRIVATE -fPIC)
+endif()
 # Set the library to use c++-11
 target_compile_features(json PUBLIC cxx_std_11)
 
@@ -123,7 +125,8 @@ target_compile_features(json PUBLIC cxx_std_11)
 # the examples. They are not propagated to the code that consumes the library.
 add_library(json_warnings INTERFACE)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+# MSVC is also true for clang-cl, which uses the MSVC command line.
+if(MSVC)
     # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
     # which are not portable and may clutter warning logs.
     target_compile_definitions(json PUBLIC _CRT_SECURE_NO_WARNINGS)
