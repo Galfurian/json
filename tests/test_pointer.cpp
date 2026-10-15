@@ -82,14 +82,33 @@ struct Person {
     }
 };
 
+/// @brief Deletes the pointers stored in a vector when it goes out of scope.
+struct PointerOwner {
+    std::vector<Person *> &pointers;
+
+    explicit PointerOwner(std::vector<Person *> &_pointers)
+        : pointers(_pointers)
+    {
+    }
+
+    ~PointerOwner()
+    {
+        for (std::size_t i = 0; i < pointers.size(); ++i) {
+            delete pointers[i];
+        }
+    }
+};
+
 int test_pointer()
 {
     // Define the values.
     std::vector<Person *> out;
+    PointerOwner out_owner(out);
     out.push_back(new Person("Json", 47));
     out.push_back(new Person("Terry", 23));
     // Prepare the recipients.
     std::vector<Person *> in;
+    PointerOwner in_owner(in);
     // Prepare the output json tree.
     json::jnode_t out_root(json::JTYPE_OBJECT);
     // Write the values.
