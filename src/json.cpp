@@ -342,61 +342,137 @@ static inline auto find_next_whitespace(const std::string &source, std::size_t i
     return slength;
 }
 
-/// @brief Converts a hexadecimal Unicode escape sequence to a character.
+/// @brief Parses four hexadecimal digits.
 /// @param source The input string.
-/// @param index The index where the escape sequence starts.
-/// @return The converted character.
-static auto extract_unicode_escape(const std::string &source, std::size_t index) -> char
+/// @param index The index of the first digit.
+/// @param value The parsed value.
+/// @return true if there are four valid hexadecimal digits at INDEX.
+static auto parse_hex4(const std::string &source, std::size_t index, std::uint32_t &value) -> bool
 {
-    int value = 0;
-    for (std::size_t j = 0; j < 4; j++) {
-        value *= 16;
-        if (source[index + j] >= '0' && source[index + j] <= '9') {
-            value += source[index + j] - '0';
-        } else if (source[index + j] >= 'a' && source[index + j] <= 'f') {
-            value += source[index + j] - 'a' + 10;
+    if (index + 4 > source.length()) {
+        return false;
+    }
+    value = 0;
+    for (std::size_t j = 0; j < 4; ++j) {
+        char chr = source[index + j];
+        value *= 16U;
+        if (chr >= '0' && chr <= '9') {
+            value += static_cast<std::uint32_t>(chr - '0');
+        } else if (chr >= 'a' && chr <= 'f') {
+            value += static_cast<std::uint32_t>(chr - 'a' + 10);
+        } else if (chr >= 'A' && chr <= 'F') {
+            value += static_cast<std::uint32_t>(chr - 'A' + 10);
+        } else {
+            return false;
         }
     }
-    return static_cast<char>(value);
+    return true;
+}
+
+/// @brief Appends a Unicode code point to the string, encoded as UTF-8.
+/// @param out The output string.
+/// @param code_point The code point to append.
+static void append_utf8(std::string &out, std::uint32_t code_point)
+{
+    if (code_point < 0x80U) {
+        out.push_back(static_cast<char>(code_point));
+    } else if (code_point < 0x800U) {
+        out.push_back(static_cast<char>(0xC0U | (code_point >> 6U)));
+        out.push_back(static_cast<char>(0x80U | (code_point & 0x3FU)));
+    } else if (code_point < 0x10000U) {
+        out.push_back(static_cast<char>(0xE0U | (code_point >> 12U)));
+        out.push_back(static_cast<char>(0x80U | ((code_point >> 6U) & 0x3FU)));
+        out.push_back(static_cast<char>(0x80U | (code_point & 0x3FU)));
+    } else {
+        out.push_back(static_cast<char>(0xF0U | (code_point >> 18U)));
+        out.push_back(static_cast<char>(0x80U | ((code_point >> 12U) & 0x3FU)));
+        out.push_back(static_cast<char>(0x80U | ((code_point >> 6U) & 0x3FU)));
+        out.push_back(static_cast<char>(0x80U | (code_point & 0x3FU)));
+    }
+}
+
+/// @brief Decodes a Unicode escape sequence, including surrogate pairs.
+/// @param source The input string.
+/// @param index The index of the backslash.
+/// @param out The string the decoded code point is appended to.
+/// @param offset The number of characters consumed from the source.
+/// @return false if the sequence is not valid, in which case nothing is
+/// appended.
+static auto decode_unicode_escape(const std::string &source, std::size_t index, std::string &out, std::size_t &offset)
+    -> bool
+{
+    std::uint32_t code_point = 0;
+    if (!parse_hex4(source, index + 2, code_point)) {
+        return false;
+    }
+    offset = 6;
+    // A high surrogate must be followed by an escaped low surrogate.
+    if (code_point >= 0xD800U && code_point <= 0xDBFFU) {
+        std::uint32_t low = 0;
+        if ((index + 11 < source.length()) && (source[index + 6] == '\\') && (source[index + 7] == 'u') &&
+            parse_hex4(source, index + 8, low) && (low >= 0xDC00U && low <= 0xDFFFU)) {
+            code_point = 0x10000U + ((code_point - 0xD800U) << 10U) + (low - 0xDC00U);
+            offset     = 12;
+        } else {
+            return false;
+        }
+    } else if (code_point >= 0xDC00U && code_point <= 0xDFFFU) {
+        // A lone low surrogate.
+        return false;
+    }
+    append_utf8(out, code_point);
+    return true;
 }
 
 /// @brief Decodes an escape sequence.
 /// @param source The input string.
-/// @param index The current index.
-/// @param offset Reference to an offset variable to update.
-/// @return The decoded character.
-static auto extract_escape_sequence(const std::string &source, std::size_t index, std::size_t &offset) -> char
+/// @param index The index of the backslash.
+/// @param out The string the decoded character is appended to.
+/// @param offset The number of characters consumed from the source.
+/// @return false if the sequence is not valid. In that case the escaped
+/// character is appended as it is.
+static auto decode_escape_sequence(const std::string &source, std::size_t index, std::string &out, std::size_t &offset)
+    -> bool
 {
     offset = 2;
     switch (source[index + 1]) {
     case '\"':
     case '\'':
-        return config::string_delimiter_character;
+        out.push_back(config::string_delimiter_character);
+        return true;
     case '\\':
-        return '\\';
+        out.push_back('\\');
+        return true;
     case '/':
-        return '/';
+        out.push_back('/');
+        return true;
     case 'b':
-        return '\b';
+        out.push_back('\b');
+        return true;
     case 'f':
-        return '\f';
+        out.push_back('\f');
+        return true;
     case 'n':
-        return '\n';
+        out.push_back('\n');
+        return true;
     case 'r':
-        return '\r';
+        out.push_back('\r');
+        return true;
     case 't':
-        return '\t';
+        out.push_back('\t');
+        return true;
     case 'u':
-        if (index + 5 < source.length()) {
-            offset = 6;
-            return extract_unicode_escape(source, index + 2);
+        if (decode_unicode_escape(source, index, out, offset)) {
+            return true;
         }
-        break;
+        offset = 2;
+        out.push_back('u');
+        return false;
     default:
-        break;
+        // Fallback for unexpected escape sequences.
+        out.push_back(source[index + 1]);
+        return true;
     }
-    // Fallback for unexpected escape sequences.
-    return source[index + 1];
 }
 
 /// @brief Extracts a number token.
@@ -429,21 +505,33 @@ static auto extract_number(const std::string &source, std::size_t index) -> std:
 
 /// @brief Deserializes the given string.
 /// @param source The input string.
+/// @param valid Set to false if the string contains an invalid escape sequence.
 /// @return The deserialized input string.
-static inline auto deserialize(const std::string &source) -> std::string
+static inline auto deserialize(const std::string &source, bool &valid) -> std::string
 {
     std::size_t offset = 0;
     std::string out;
-
+    valid = true;
     for (std::size_t index = 0; index < source.length(); ++index) {
         if (source[index] == '\\' && (index + 1) < source.length()) {
-            out.push_back(extract_escape_sequence(source, index, offset));
+            if (!decode_escape_sequence(source, index, out, offset)) {
+                valid = false;
+            }
             index += offset - 1;
         } else {
             out.push_back(source[index]);
         }
     }
     return out;
+}
+
+/// @brief Deserializes the given string.
+/// @param source The input string.
+/// @return The deserialized input string.
+static inline auto deserialize(const std::string &source) -> std::string
+{
+    bool valid = true;
+    return deserialize(source, valid);
 }
 
 /// @brief Checks if the given character can be part of an unquoted identifier.
@@ -845,6 +933,14 @@ auto json_parse(
         current.set_value(peek(tokens, index, current.get_line_number()).value);
     } else if (peek(tokens, index, current.get_line_number()).type == JTOKEN_STRING) {
         current.set_type(JTYPE_STRING);
+        // Make sure the escape sequences are valid.
+        bool valid_escapes = true;
+        deserialize(peek(tokens, index, current.get_line_number()).value, valid_escapes);
+        if (!valid_escapes) {
+            throw json::parser_error(
+                current.get_line_number(),
+                "Error at line " + std::to_string(current.get_line_number()) + ": Invalid escape sequence.");
+        }
         // Replace escaped newlines in the string value.
         current.set_value(std::regex_replace(
             peek(tokens, index, current.get_line_number()).value, std::regex("\\\\[ \t]*\n"), "\n"));
