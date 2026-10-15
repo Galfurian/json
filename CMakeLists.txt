@@ -111,7 +111,9 @@ add_library(json::json ALIAS json)
 # Include header directories, and link libraries.
 target_include_directories(json PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(json PUBLIC ${ordered_map_SOURCE_DIR}/include)
-target_compile_options(json PRIVATE -fPIC)
+if(NOT MSVC)
+    target_compile_options(json PRIVATE -fPIC)
+endif()
 # Set the library to use c++-11
 target_compile_features(json PUBLIC cxx_std_11)
 
@@ -123,7 +125,8 @@ target_compile_features(json PUBLIC cxx_std_11)
 # the examples. They are not propagated to the code that consumes the library.
 add_library(json_warnings INTERFACE)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+# MSVC is also true for clang-cl, which uses the MSVC command line.
+if(MSVC)
     # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
     # which are not portable and may clutter warning logs.
     target_compile_definitions(json PUBLIC _CRT_SECURE_NO_WARNINGS)
@@ -139,10 +142,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(STRICT_WARNINGS)
         # Enable external header management to suppress warnings in system and
         # external headers, making it easier to focus on project-specific issues.
-        target_compile_options(json_warnings INTERFACE /experimental:external)
-        target_compile_options(json_warnings INTERFACE /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json_warnings INTERFACE /external:anglebrackets)
-        target_compile_options(json_warnings INTERFACE /external:W0)
+        # The real cl.exe only, clang-cl does not know these options.
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            target_compile_options(json_warnings INTERFACE /experimental:external)
+            target_compile_options(json_warnings INTERFACE /external:I ${CMAKE_BINARY_DIR})
+            target_compile_options(json_warnings INTERFACE /external:anglebrackets)
+            target_compile_options(json_warnings INTERFACE /external:W0)
+        endif()
 
         # Use a high warning level to catch as many potential issues as possible.
         target_compile_options(json_warnings INTERFACE /W4)

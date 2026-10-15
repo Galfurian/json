@@ -31,8 +31,18 @@ on:
 
 jobs:
   build:
-    name: Build and Test (Windows)
+    name: Build and Test (Windows, ${{ matrix.name }})
     runs-on: windows-latest
+
+    strategy:
+      # Continue running other matrix jobs even if one fails.
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "MSVC Debug", config: Debug, generator: "" }
+          - { name: "MSVC Release", config: Release, generator: "" }
+          - { name: "ClangCL Release", config: Release, generator: "-T ClangCL" }
+          - { name: "MinGW Release", config: Release, generator: '-G "MinGW Makefiles"' }
 
     steps:
     # Step: Clone the project.
@@ -42,14 +52,14 @@ jobs:
     # Step: Configure Project.
     - name: Configure Project
       run: |
-        cmake -B build -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DWARNINGS_AS_ERRORS=ON -DSTRICT_WARNINGS=ON
+        cmake -B build ${{ matrix.generator }} -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DWARNINGS_AS_ERRORS=ON -DSTRICT_WARNINGS=ON
 
     # Step: Build Project.
     - name: Build Project
       run: |
-        cmake --build build --config Debug --parallel 2
+        cmake --build build --config ${{ matrix.config }} --parallel 2
 
     # Step: Run Tests.
     - name: Run Tests
       run: |
-          ctest --test-dir build --build-config Debug --verbose
+        ctest --test-dir build --build-config ${{ matrix.config }} --output-on-failure
