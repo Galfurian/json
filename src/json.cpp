@@ -1101,6 +1101,298 @@ auto json_parse(
     return current;
 }
 
+/// @brief Parses a document in a single pass, without building a list of tokens.
+/// @details It accepts the same language as tokenize followed by json_parse, and
+/// builds the same tree, but it needs memory only for the tree.
+class direct_parser
+{
+public:
+    /// @brief Builds a parser for the given text.
+    /// @param _source The text to parse. It must outlive the parser.
+    /// @param _max_depth The maximum nesting depth of objects and arrays.
+    direct_parser(const std::string &_source, std::size_t _max_depth)
+        : source(_source)
+        , max_depth(_max_depth)
+    {
+        // Nothing to do.
+    }
+
+    /// @brief Parses the whole text.
+    /// @return The root of the tree.
+    auto parse() -> jnode_t
+    {
+        jnode_t root;
+        parse_value(root, 0);
+        skip_blanks();
+        if (position < source.size()) {
+            fail("Unexpected data after the root value.");
+        }
+        return root;
+    }
+
+private:
+    /// The text we are parsing.
+    const std::string &source;
+    /// The maximum nesting depth.
+    std::size_t max_depth;
+    /// The index of the next character.
+    std::size_t position = 0;
+    /// The line of the next character, starting from 1.
+    std::size_t line     = 1;
+
+    /// @brief Throws a parser_error for the current line.
+    /// @param message What went wrong.
+    [[noreturn]]
+    void fail(const std::string &message) const
+    {
+        throw json::parser_error(line, "Error at line " + std::to_string(line) + ": " + message);
+    }
+
+    /// @brief Skips whitespaces and comments, and counts the lines.
+    void skip_blanks()
+    {
+        const std::size_t size = source.size();
+        while (position < size) {
+            const char chr = source[position];
+            if (chr == '\n') {
+                ++line;
+                ++position;
+            } else if (is_space(chr)) {
+                ++position;
+            } else if ((chr == '/') && (position + 1 < size) && (source[position + 1] == '/')) {
+                position += 2;
+                while ((position < size) && !isnewline(source[position])) {
+                    ++position;
+                }
+            } else if ((chr == '/') && (position + 1 < size) && (source[position + 1] == '*')) {
+                position += 2;
+                bool closed = false;
+                while (position < size) {
+                    if ((source[position] == '*') && (position + 1 < size) && (source[position + 1] == '/')) {
+                        position += 2;
+                        closed = true;
+                        break;
+                    }
+                    if (source[position] == '\n') {
+                        ++line;
+                    }
+                    ++position;
+                }
+                if (!closed) {
+                    fail("Unterminated comment.");
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// @brief Skips the blanks and returns the next character.
+    /// @return The next character, it fails if the text is over.
+    auto next_character() -> char
+    {
+        skip_blanks();
+        if (position >= source.size()) {
+            fail("Unexpected end of input.");
+        }
+        return source[position];
+    }
+
+    /// @brief Reads a quoted string, and moves after the closing quote.
+    /// @return The content of the string, as it is written in the text.
+    auto read_quoted() -> std::string
+    {
+        const char quote        = source[position];
+        const std::size_t start = position + 1;
+        for (std::size_t index = start; index < source.size(); ++index) {
+            if (source[index] == '\\') {
+                // The escaped character cannot close the string.
+                ++index;
+            } else if (source[index] == quote) {
+                std::string raw = source.substr(start, index - start);
+                for (std::size_t i = 0; i < raw.size(); ++i) {
+                    if (raw[i] == '\n') {
+                        ++line;
+                    }
+                }
+                position = index + 1;
+                return raw;
+            }
+        }
+        fail("Unterminated string.");
+    }
+
+    /// @brief Reads a word made of identifier characters.
+    /// @return The word, it is empty if there is none.
+    auto read_word() -> std::string
+    {
+        const std::size_t start = position;
+        while ((position < source.size()) && is_identifier_char(source[position])) {
+            ++position;
+        }
+        return source.substr(start, position - start);
+    }
+
+    /// @brief Reads the key of a property.
+    /// @return The key.
+    auto read_key() -> std::string
+    {
+        const char chr = next_character();
+        if ((chr == '"') || (chr == '\'')) {
+            return read_quoted();
+        }
+        // An identifier, but also a keyword: the keys do not start with a digit.
+        if (!detail::is_digit(chr)) {
+            std::string word = read_word();
+            if (!word.empty()) {
+                return word;
+            }
+        }
+        fail("Expected an object key.");
+    }
+
+    /// @brief Parses an object, the current character is the opening brace.
+    /// @param node The node that receives the object.
+    /// @param depth The nesting depth of the node.
+    void parse_object(jnode_t &node, std::size_t depth)
+    {
+        ++position;
+        node.set_type(JTYPE_OBJECT);
+        while (true) {
+            // A closing brace ends the object, also after a trailing comma.
+            if (next_character() == '}') {
+                ++position;
+                return;
+            }
+            std::string key = read_key();
+            if (next_character() != ':') {
+                fail("We did not find a COLON.");
+            }
+            ++position;
+            parse_value(node.add_property(key), depth + 1);
+            // After a value we expect a comma or the end of the object.
+            const char separator = next_character();
+            if (separator == ',') {
+                ++position;
+            } else if (separator != '}') {
+                fail("Expected `,` or `}`.");
+            }
+        }
+    }
+
+    /// @brief Parses an array, the current character is the opening bracket.
+    /// @param node The node that receives the array.
+    /// @param depth The nesting depth of the node.
+    void parse_array(jnode_t &node, std::size_t depth)
+    {
+        ++position;
+        node.set_type(JTYPE_ARRAY);
+        while (true) {
+            // A closing bracket ends the array, also after a trailing comma.
+            if (next_character() == ']') {
+                ++position;
+                return;
+            }
+            parse_value(node.add_element(), depth + 1);
+            // After an element we expect a comma or the end of the array.
+            const char separator = next_character();
+            if (separator == ',') {
+                ++position;
+            } else if (separator != ']') {
+                fail("Expected `,` or `]`.");
+            }
+        }
+    }
+
+    /// @brief Parses a string value, the current character is the quote.
+    /// @param node The node that receives the string.
+    void parse_string(jnode_t &node)
+    {
+        std::string raw = read_quoted();
+        node.set_type(JTYPE_STRING);
+        // Most strings have no escape sequence, there is nothing to check.
+        if (raw.find('\\') == std::string::npos) {
+            node.set_value(raw);
+            return;
+        }
+        // Make sure the escape sequences are valid.
+        bool valid_escapes = true;
+        deserialize(raw, valid_escapes);
+        if (!valid_escapes) {
+            fail("Invalid escape sequence.");
+        }
+        // Remove the escaped line breaks.
+        node.set_value(replace_line_continuations(raw));
+    }
+
+    /// @brief Parses a number, including the special values of JSON5.
+    /// @param node The node that receives the number.
+    void parse_number(jnode_t &node)
+    {
+        node.set_type(JTYPE_NUMBER);
+        // A signed special value.
+        if ((source[position] == '+') || (source[position] == '-')) {
+            const bool negative = source[position] == '-';
+            if (is_literal_at(source, position + 1, "Infinity")) {
+                node.set_value(negative ? "-Infinity" : "Infinity");
+                position += 1 + 8;
+                return;
+            }
+            if (is_literal_at(source, position + 1, "NaN")) {
+                node.set_value("NaN");
+                position += 1 + 3;
+                return;
+            }
+        }
+        const std::size_t end = extract_number(source, position);
+        const std::string number(source, position, end - position);
+        std::string canonical;
+        if (!normalize_number(number, canonical)) {
+            fail("Invalid number `" + number + "`.");
+        }
+        node.set_value(canonical);
+        position = end;
+    }
+
+    /// @brief Parses a value.
+    /// @param node The node that receives the value.
+    /// @param depth The nesting depth of the node.
+    void parse_value(jnode_t &node, std::size_t depth)
+    {
+        const char chr = next_character();
+        node.set_line_number(line);
+        // Refuse to recurse without bounds, we would exhaust the stack.
+        if (depth > max_depth) {
+            fail("Maximum nesting depth exceeded.");
+        }
+        if (chr == '{') {
+            parse_object(node, depth);
+        } else if (chr == '[') {
+            parse_array(node, depth);
+        } else if ((chr == '"') || (chr == '\'')) {
+            parse_string(node);
+        } else if ((chr == '-') || (chr == '+') || (chr == '.') || detail::is_digit(chr)) {
+            parse_number(node);
+        } else if (is_identifier_char(chr)) {
+            const std::string word = read_word();
+            if (word == "true" || word == "false") {
+                node.set_type(JTYPE_BOOLEAN);
+                node.set_value(word);
+            } else if (word == "null") {
+                node.set_type(JTYPE_NULL);
+                node.set_value("null");
+            } else if (word == "Infinity" || word == "NaN") {
+                node.set_type(JTYPE_NUMBER);
+                node.set_value(word);
+            } else {
+                fail("Cannot type the entry `" + word + "`.");
+            }
+        } else {
+            fail("Unexpected character `" + std::string(1, chr) + "`.");
+        }
+    }
+};
+
 } // namespace detail
 
 /// @brief Contains parsing functions.
@@ -1116,22 +1408,7 @@ auto parse(const std::string &json_string, const parse_options &options) -> jnod
             0, "Error: The input is " + std::to_string(json_string.size()) + " bytes long, the limit is " +
                    std::to_string(options.max_input_size) + ".");
     }
-    std::size_t index = 0;
-    std::vector<detail::token_t> tokens;
-    // Extract the tokens.
-    detail::tokenize(json_string, tokens);
-    // Prepare the root.
-    jnode_t root;
-    // Parse the tokens.
-    detail::json_parse(tokens, 0UL, index, root, 0UL, options.max_depth);
-    // Only comments are allowed after the root value.
-    detail::skip_comments(tokens, index);
-    if (index < tokens.size()) {
-        throw json::parser_error(
-            tokens[index].line_number + 1, "Error at line " + std::to_string(tokens[index].line_number + 1) +
-                                               ": Unexpected data after the root value.");
-    }
-    return root;
+    return detail::direct_parser(json_string, options.max_depth).parse();
 }
 
 auto read_file(const std::string &filename, std::string &content) -> bool

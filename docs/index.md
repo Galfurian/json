@@ -241,14 +241,14 @@ This library supports the following types for serialization and deserialization:
 
 ## Performance
 
-`benchmarks/bench_parse.cpp` parses and prints a generated 8.7 MB document (50000 records), best of 5 runs, GCC 13 `-O2` (Release):
+`benchmarks/bench_parse.cpp` parses and prints a generated 8.7 MB document (50000 records), best of 5 runs, GCC 13 `-O2` (Release). The numbers depend on the machine, compare the rows of the same run:
 
-| Library          | Parse      | Print       |
-|------------------|------------|-------------|
-| this library     | ~24 MB/s   | ~127 MB/s   |
-| nlohmann/json 3.11.3 | ~60 MB/s | ~314 MB/s |
+| Library              | Parse    | Print     |
+|----------------------|----------|-----------|
+| this library         | ~28 MB/s | ~78 MB/s  |
+| nlohmann/json 3.11.3 | ~43 MB/s | ~190 MB/s |
 
-The parser first builds a token list and then the tree, so it needs memory proportional to the number of tokens (about 48 bytes each) on top of the tree. Keep that in mind for documents of hundreds of megabytes, and use `max_input_size`.
+The parser reads the text in a single pass and builds the tree directly. Parsing that document takes about 170 MB of memory at the peak, mostly the tree itself (one node is 144 bytes). Use `max_input_size` when you parse untrusted input.
 
 Run it with `-DBUILD_BENCHMARKS=ON` (add `-DBENCHMARK_NLOHMANN=ON` for the comparison).
 

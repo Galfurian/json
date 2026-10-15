@@ -348,6 +348,15 @@ if(BUILD_TESTS)
     # Linking for the test.
     target_link_libraries(json_test_number PRIVATE json json_warnings)
 
+
+    # Add the test.
+    add_executable(json_test_parser_equivalence ${PROJECT_SOURCE_DIR}/tests/test_parser_equivalence.cpp)
+    add_test(json_test_parser_equivalence_run json_test_parser_equivalence)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_parser_equivalence PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_parser_equivalence PRIVATE json json_warnings)
+
 endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------

@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Performance
+
+- `json::parser::parse` reads the text in a single pass and builds the tree
+  directly, without the intermediate list of tokens. Parsing is about 35%
+  faster and the peak memory for an 8 MB document went from 284 MB to 173 MB.
+  The new parser accepts the same documents and builds the same trees as the
+  old one: `tests/test_parser_equivalence.cpp` compares them on 100000 mutated
+  documents (1.8 million in a longer local run).
+
+### Fixed
+
+- The line number in the error messages is correct for CRLF line breaks
+  (they counted twice), and for documents with multi-line strings or comments.
+- `json::detail::tokenize` and `json::detail::json_parse` are no longer used
+  by `parse`. They are kept as they are, and they accepted `{+NaN: 1}` by
+  mistake, the new parser rejects it.
+
 ## 3.0.0 - 2026-10-15
 
 This release changes behavior, see "Changed". `json::detail::json_parse`, which
