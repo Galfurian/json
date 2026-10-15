@@ -83,6 +83,8 @@ static auto token_type_to_string(detail::token_type_t type) -> std::string
         return "COMMENT";
     case detail::JTOKEN_NULL:
         return "NULL";
+    case detail::JTOKEN_IDENTIFIER:
+        return "IDENTIFIER";
     default:
         return "INVALID";
     }
@@ -444,6 +446,72 @@ static inline auto deserialize(const std::string &source) -> std::string
     return out;
 }
 
+/// @brief Checks if the given character can be part of an unquoted identifier.
+/// @param chr the input character.
+/// @return true if the character can be part of an identifier.
+static inline auto is_identifier_char(char chr) -> bool
+{
+    return (std::isalnum(static_cast<unsigned char>(chr)) != 0) || (chr == '_') || (chr == '$') ||
+           (static_cast<unsigned char>(chr) >= 0x80U);
+}
+
+/// @brief Checks if SOURCE contains the keyword LITERAL at INDEX, as a whole
+/// word.
+/// @param source The source string.
+/// @param index The current index.
+/// @param literal The keyword we are looking for.
+/// @return true if the keyword is found and is not part of a longer identifier.
+static inline auto is_literal_at(const std::string &source, std::size_t index, const char *literal) -> bool
+{
+    std::size_t length = std::char_traits<char>::length(literal);
+    if (source.compare(index, length, literal) != 0) {
+        return false;
+    }
+    return (index + length >= source.length()) || !is_identifier_char(source[index + length]);
+}
+
+/// @brief Checks if the given string is a valid JSON number.
+/// @details The grammar is: -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?[0-9]+)?
+/// @param number The string to check.
+/// @return true if the string is a valid number.
+static auto is_valid_number(const std::string &number) -> bool
+{
+    std::size_t index = 0;
+    std::size_t size  = number.size();
+    auto digits       = [&]() {
+        std::size_t start = index;
+        while ((index < size) && (std::isdigit(static_cast<unsigned char>(number[index])) != 0)) {
+            ++index;
+        }
+        return index - start;
+    };
+    if ((index < size) && (number[index] == '-')) {
+        ++index;
+    }
+    // A leading zero cannot be followed by other digits.
+    if ((index < size) && (number[index] == '0')) {
+        ++index;
+    } else if (digits() == 0) {
+        return false;
+    }
+    if ((index < size) && (number[index] == '.')) {
+        ++index;
+        if (digits() == 0) {
+            return false;
+        }
+    }
+    if ((index < size) && ((number[index] == 'e') || (number[index] == 'E'))) {
+        ++index;
+        if ((index < size) && ((number[index] == '+') || (number[index] == '-'))) {
+            ++index;
+        }
+        if (digits() == 0) {
+            return false;
+        }
+    }
+    return index == size;
+}
+
 /// @brief Processes a single substring.
 /// @param source The substring.
 /// @param tokens The token vector.
@@ -492,17 +560,17 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             tokens.emplace_back(",", JTOKEN_COMMA, line_number);
             // Skip the comma.
             ++index;
-        } else if (source[index] == 't' && index + 3 < slength && source.substr(index, 4) == "true") {
+        } else if (is_literal_at(source, index, "true")) {
             // Add the boolean to the tokens.
             tokens.emplace_back("true", JTOKEN_BOOLEAN, line_number);
             // Skip the boolean.
             index += 4;
-        } else if (source[index] == 'f' && index + 4 < slength && source.substr(index, 5) == "false") {
+        } else if (is_literal_at(source, index, "false")) {
             // Add the boolean to the tokens.
             tokens.emplace_back("false", JTOKEN_BOOLEAN, line_number);
             // Skip the boolean.
             index += 5;
-        } else if (source[index] == 'n' && index + 3 < slength && source.substr(index, 4) == "null") {
+        } else if (is_literal_at(source, index, "null")) {
             // Add the null to the tokens.
             tokens.emplace_back("null", JTOKEN_NULL, line_number);
             // Skip the null.
@@ -537,20 +605,32 @@ static void process_token(const std::string &source, std::vector<token_t> &token
             ++index;
         } else if (source[index] == '-' || (std::isdigit(source[index]) != 0)) {
             // Extract the number.
-            std::size_t end = extract_number(source, index);
+            std::size_t end    = extract_number(source, index);
+            std::string number = source.substr(index, end - index);
+            if (!is_valid_number(number)) {
+                throw json::parser_error(
+                    line_number + 1,
+                    "Error at line " + std::to_string(line_number + 1) + ": Invalid number `" + number + "`.");
+            }
             // Add the number to the tokens.
-            tokens.emplace_back(source.substr(index, end - index), JTOKEN_NUMBER, line_number);
+            tokens.emplace_back(number, JTOKEN_NUMBER, line_number);
             // Update the index.
             index = end;
         } else {
-            // Extract the string until the next colon.
-            std::size_t end = source.find(':', index);
-            // If we did not find a colon, we extract the whole string.
-            if (end == std::string::npos) {
-                end = slength;
+            // Extract the identifier.
+            std::size_t end = index;
+            while ((end < slength) && is_identifier_char(source[end])) {
+                ++end;
             }
-            // Add the string to the tokens.
-            tokens.emplace_back(source.substr(index, end - index), JTOKEN_STRING, line_number);
+            // Anything else is not valid in a JSON document.
+            if (end == index) {
+                throw json::parser_error(
+                    line_number + 1,
+                    "Error at line " + std::to_string(line_number + 1) + ": Unexpected character `" +
+                        std::string(1, source[index]) + "`.");
+            }
+            // Add the identifier to the tokens.
+            tokens.emplace_back(source.substr(index, end - index), JTOKEN_IDENTIFIER, line_number);
             // Update the index.
             index = end;
         }
@@ -672,13 +752,27 @@ auto json_parse(
         // Set the current node type to object.
         current.set_type(JTYPE_OBJECT);
         // Parse key-value pairs until the closing curly brace is found.
-        while (peek(tokens, index, current.get_line_number()).type != JTOKEN_CURLY_CLOSE) {
+        while (true) {
             // Skip comments before the key.
             skip_comments(tokens, index);
+            const token_t &key_token = peek(tokens, index, current.get_line_number());
+            // A closing curly brace ends the object, also after a trailing comma.
+            if (key_token.type == JTOKEN_CURLY_CLOSE) {
+                break;
+            }
+            // Only strings, identifiers and keywords are valid keys.
+            if ((key_token.type != JTOKEN_STRING) && (key_token.type != JTOKEN_IDENTIFIER) &&
+                (key_token.type != JTOKEN_BOOLEAN) && (key_token.type != JTOKEN_NULL)) {
+                throw json::parser_error(
+                    key_token.line_number + 1,
+                    "Error at line " + std::to_string(key_token.line_number + 1) + ": Expected an object key.");
+            }
             // Set the key from the current token value.
-            key = peek(tokens, index, current.get_line_number()).value.c_str();
+            key = key_token.value.c_str();
             // Skip the key token.
             skip_tokens(tokens, index, 1, current);
+            // Skip any comments before the colon.
+            skip_comments(tokens, index);
             // Ensure the next token is a colon separating the key and value.
             if (peek(tokens, index, current.get_line_number()).type != JTOKEN_COLON) {
                 throw json::parser_error(
@@ -699,14 +793,15 @@ auto json_parse(
             index = next_index;
             // Skip any comments after the value.
             skip_comments(tokens, index);
-            // If a comma is found, skip it to parse the next key-value pair.
-            skip_tokens(
-                tokens,
-                index,
-                static_cast<std::size_t>(peek(tokens, index, current.get_line_number()).type == JTOKEN_COMMA),
-                current);
-            // Skip any comments after the comma.
-            skip_comments(tokens, index);
+            // After a value we expect a comma or the end of the object.
+            const token_t &separator = peek(tokens, index, current.get_line_number());
+            if (separator.type == JTOKEN_COMMA) {
+                skip_tokens(tokens, index, 1, current);
+            } else if (separator.type != JTOKEN_CURLY_CLOSE) {
+                throw json::parser_error(
+                    separator.line_number + 1,
+                    "Error at line " + std::to_string(separator.line_number + 1) + ": Expected `,` or `}`.");
+            }
         }
     }
     // Parse JSON array if the token is an opening bracket.
@@ -716,9 +811,13 @@ auto json_parse(
         // Set the current node type to array.
         current.set_type(JTYPE_ARRAY);
         // Parse array elements until the closing bracket is found.
-        while (peek(tokens, index, current.get_line_number()).type != JTOKEN_BRACKET_CLOSE) {
+        while (true) {
             // Skip comments before the element.
             skip_comments(tokens, index);
+            // A closing bracket ends the array, also after a trailing comma.
+            if (peek(tokens, index, current.get_line_number()).type == JTOKEN_BRACKET_CLOSE) {
+                break;
+            }
             // Track the index before parsing the element.
             next_index       = index;
             // Add a new element to the current array.
@@ -727,12 +826,17 @@ auto json_parse(
             json_parse(tokens, index, next_index, element, depth + 1);
             // Update the index after parsing the element.
             index = next_index;
-            // If a comma is found, skip it to parse the next element.
-            skip_tokens(
-                tokens,
-                index,
-                static_cast<std::size_t>(peek(tokens, index, current.get_line_number()).type == JTOKEN_COMMA),
-                current);
+            // Skip any comments after the element.
+            skip_comments(tokens, index);
+            // After an element we expect a comma or the end of the array.
+            const token_t &separator = peek(tokens, index, current.get_line_number());
+            if (separator.type == JTOKEN_COMMA) {
+                skip_tokens(tokens, index, 1, current);
+            } else if (separator.type != JTOKEN_BRACKET_CLOSE) {
+                throw json::parser_error(
+                    separator.line_number + 1,
+                    "Error at line " + std::to_string(separator.line_number + 1) + ": Expected `,` or `]`.");
+            }
         }
     }
     // Parse JSON primitive values (number, string, boolean, null).
@@ -752,7 +856,10 @@ auto json_parse(
         current.set_value("null");
     } else {
         // Throw an error if the token type is unrecognized.
-        throw json::parser_error(current.get_line_number(), "Cannot type the entry.");
+        throw json::parser_error(
+            current.get_line_number(),
+            "Error at line " + std::to_string(current.get_line_number()) + ": Cannot type the entry `" +
+                tokens[index].value + "`.");
     }
     // Move to the next token and update the output index.
     output_index = index + 1;
