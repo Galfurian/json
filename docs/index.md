@@ -233,8 +233,10 @@ The parser accepts standard JSON plus these JSON5 conveniences:
 - single-quoted strings
 - unquoted object keys (identifiers made of letters, digits, `_` and `$`)
 - trailing commas in objects and arrays
+- numbers with a leading `+`, a leading or trailing dot (`.5`, `5.`), in hexadecimal (`0xFF`), and the special values `Infinity`, `-Infinity` and `NaN`
+- line continuations: a backslash before a line break inside a string removes the line break
 
-Everything else that is not valid JSON is rejected with a `parser_error`: invalid numbers (`01`, `1.`, `-`), bare words used as values, missing commas, unterminated strings and comments, invalid escape sequences, and any data after the root value.
+Everything else that is not valid JSON is rejected with a `parser_error`: invalid numbers (`01`, `-`, `1.2.3`, `0x`), bare words used as values, missing commas, unterminated strings and comments, invalid escape sequences, and any data after the root value.
 
 Strings may contain `\uXXXX` escapes, including surrogate pairs. They are decoded to UTF-8.
 

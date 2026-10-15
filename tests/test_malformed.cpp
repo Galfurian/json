@@ -84,13 +84,19 @@ static bool test_depth_limit()
 
 static bool test_invalid_numbers()
 {
-    const char *bad[] = { "-", "1e", "1e+", "1.", "1.2.3", "01", "-01", "--1", "[1.e5]", "[0x10]", "[1,2,3.]" };
+    const char *bad[] = { "-", "+", ".", "1e", "1e+", "1.2.3", "01", "-01", "--1", "+-1", "0x", "0xG", "0x1G",
+                          "0x11111111111111111", "[.e5]", "[1.5.]", "Infinit", "-NaNa", "[- 1]" };
     for (std::size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         if (!expect_error(bad[i])) {
             return false;
         }
     }
-    const char *good[] = { "0", "-0", "10", "-1.5", "0.5", "1e5", "1E+5", "1e-5", "-1.5e10", "[1, -2, 3.5]" };
+    const char *good[] = { "0",      "-0",     "10",       "-1.5",       "0.5",
+                           "1e5",    "1E+5",   "1e-5",     "-1.5e10",    "[1, -2, 3.5]",
+                           // The extra forms of JSON5.
+                           "+1",     ".5",     "-.5",      "5.",         "[1.e5]",
+                           "0x10",   "-0xFF",  "0Xab",     "Infinity",   "-Infinity",
+                           "+NaN",   "NaN",    "[1,2,3.]", "{Infinity: NaN, NaN: -Infinity}" };
     for (std::size_t i = 0; i < sizeof(good) / sizeof(good[0]); ++i) {
         if (!expect_ok(good[i])) {
             return false;
