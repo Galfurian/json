@@ -266,6 +266,15 @@ if(BUILD_TESTS)
     # Linking for the test.
     target_link_libraries(json_test_malformed json)
 
+
+    # Add the test.
+    add_executable(json_test_string ${PROJECT_SOURCE_DIR}/tests/test_string.cpp)
+    add_test(json_test_string_run json_test_string)
+    # Set C++11 standard for this target
+    set_target_properties(json_test_string PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    # Linking for the test.
+    target_link_libraries(json_test_string json)
+
 endif(BUILD_TESTS)
 
 # -----------------------------------------------------------------------------
