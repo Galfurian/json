@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 3.0.0 - 2026-10-15
+
+This release changes behavior, see "Changed". `json::detail::json_parse`, which
+is not part of the public API, takes an extra argument.
 
 ### Security
 
@@ -81,3 +84,10 @@ does not fit `T`, but only if `json::config::strict_type_check` is set.
   test.
 - New CI job running the tests under AddressSanitizer and
   UndefinedBehaviorSanitizer.
+
+### Tooling
+
+- CI: ASan and UBSan, clang-tidy, coverage, clang-format, libFuzzer (and the
+  corpus replayed by the tests), install check, Windows with MSVC, clang-cl
+  and MinGW.
+- `CONTRIBUTING.md`, `SECURITY.md`.

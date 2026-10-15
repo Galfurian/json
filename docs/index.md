@@ -32,8 +32,7 @@ The library needs a C++11 compiler and CMake 3.14 or newer. It is made of one he
 include(FetchContent)
 FetchContent_Declare(json
     GIT_REPOSITORY https://github.com/Galfurian/json.git
-    # Use the first release after v2.5.3, or a commit, to get the behavior described here.
-    GIT_TAG develop
+    GIT_TAG v3.0.0
 )
 FetchContent_MakeAvailable(json)
 
@@ -53,7 +52,7 @@ cmake --install build
 ```
 
 ```cmake
-find_package(json 2 REQUIRED)
+find_package(json 3 REQUIRED)
 target_link_libraries(my_target PRIVATE json::json)
 ```
 
