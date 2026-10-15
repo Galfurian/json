@@ -20,11 +20,20 @@ endif()
 # OPTIONS
 # -----------------------------------------------------------------------------
 
+# Tests, examples and documentation are only built by default when this is the
+# top-level project, not when it is consumed through add_subdirectory or
+# FetchContent.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(JSON_IS_TOP_LEVEL ON)
+else()
+    set(JSON_IS_TOP_LEVEL OFF)
+endif()
+
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 option(WARNINGS_AS_ERRORS "Treat all warnings as errors" OFF)
 
-option(BUILD_EXAMPLES "Build examples" ON)
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_EXAMPLES "Build examples" ${JSON_IS_TOP_LEVEL})
+option(BUILD_TESTS "Build tests" ${JSON_IS_TOP_LEVEL})
 
 # -----------------------------------------------------------------------------
 # ENABLE FETCH CONTENT
@@ -44,27 +53,27 @@ mark_as_advanced(FORCE
 # DEPENDENCY (SYSTEM LIBRARIES)
 # -----------------------------------------------------------------------------
 
-find_package(Doxygen)
+if(JSON_IS_TOP_LEVEL)
+    find_package(Doxygen)
 
-find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+endif()
 
 # -----------------------------------------------------------------------------
 # DIPENDENCIES (REPOSITORIES)
 # -----------------------------------------------------------------------------
 
-# Doxygen Awesome CSS. This must be declared before the dependencies below,
-# because they declare it too and the first declaration wins. Pinned: newer
-# releases require a newer Doxygen than the CI provides.
-FetchContent_Declare(doxygenawesome
-    GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
-    GIT_TAG v2.3.4
-)
+# The dependencies below are only used for their headers. SOURCE_SUBDIR points
+# to a directory without a CMakeLists.txt, so FetchContent downloads the sources
+# but does not add them to the build. This avoids building their tests and
+# inheriting their options and compile flags.
 
 # Retrieve the source.
 FetchContent_Declare(ordered_map
     GIT_REPOSITORY "https://github.com/Galfurian/ordered_map.git"
     # Pinned for reproducible builds.
     GIT_TAG d012533e79bd4eec04eafaafa33674857edde928
+    SOURCE_SUBDIR header_only
 )
 # Retrieve the properties related to the content.
 FetchContent_MakeAvailable(ordered_map)
@@ -74,19 +83,22 @@ mark_as_advanced(FORCE
     FETCHCONTENT_SOURCE_DIR_ORDERED_MAP
 )
 
-# Retrieve the source.
-FetchContent_Declare(timelib
-    GIT_REPOSITORY "https://github.com/Galfurian/timelib.git"
-    # Pinned for reproducible builds.
-    GIT_TAG d25e054c9f8e6f42bb2a18bbc8a77444cc141f8f
-)
-# Retrieve the properties related to the content.
-FetchContent_MakeAvailable(timelib)
-# Hide fetchcontent variables.
-mark_as_advanced(FORCE
-    FETCHCONTENT_UPDATES_DISCONNECTED_TIMELIB
-    FETCHCONTENT_SOURCE_DIR_TIMELIB
-)
+if(BUILD_EXAMPLES)
+    # Retrieve the source.
+    FetchContent_Declare(timelib
+        GIT_REPOSITORY "https://github.com/Galfurian/timelib.git"
+        # Pinned for reproducible builds.
+        GIT_TAG d25e054c9f8e6f42bb2a18bbc8a77444cc141f8f
+        SOURCE_SUBDIR header_only
+    )
+    # Retrieve the properties related to the content.
+    FetchContent_MakeAvailable(timelib)
+    # Hide fetchcontent variables.
+    mark_as_advanced(FORCE
+        FETCHCONTENT_UPDATES_DISCONNECTED_TIMELIB
+        FETCHCONTENT_SOURCE_DIR_TIMELIB
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # LIBRARY
@@ -107,43 +119,47 @@ target_compile_features(json PUBLIC cxx_std_11)
 # COMPILATION FLAGS
 # =====================================
 
+# The warning flags live in a separate target, used by the library, the tests and
+# the examples. They are not propagated to the code that consumes the library.
+add_library(json_warnings INTERFACE)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings for MSVC-specific "safe" functions like strcpy_s, etc.,
     # which are not portable and may clutter warning logs.
     target_compile_definitions(json PUBLIC _CRT_SECURE_NO_WARNINGS)
 
     # Disable warning C4702: unreachable code.
-    add_compile_options(/wd4702)
+    target_compile_options(json_warnings INTERFACE /wd4702)
 
     if(WARNINGS_AS_ERRORS)
         # Treat all warnings as errors to enforce stricter code quality.
-        target_compile_options(json PUBLIC /WX)
+        target_compile_options(json_warnings INTERFACE /WX)
     endif()
 
     if(STRICT_WARNINGS)
         # Enable external header management to suppress warnings in system and
         # external headers, making it easier to focus on project-specific issues.
-        target_compile_options(json PUBLIC /experimental:external)
-        target_compile_options(json PUBLIC /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(json PUBLIC /external:anglebrackets)
-        target_compile_options(json PUBLIC /external:W0)
+        target_compile_options(json_warnings INTERFACE /experimental:external)
+        target_compile_options(json_warnings INTERFACE /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(json_warnings INTERFACE /external:anglebrackets)
+        target_compile_options(json_warnings INTERFACE /external:W0)
 
         # Use a high warning level to catch as many potential issues as possible.
-        target_compile_options(json PUBLIC /W4)
+        target_compile_options(json_warnings INTERFACE /W4)
 
         # Enforce standards-compliant behavior to avoid relying on MSVC-specific extensions.
-        target_compile_options(json PUBLIC /permissive-)
+        target_compile_options(json_warnings INTERFACE /permissive-)
     endif()
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
         # Treat all warnings as errors to enforce stricter code quality.
-        target_compile_options(json PUBLIC -Werror)
+        target_compile_options(json_warnings INTERFACE -Werror)
     endif()
 
     if(STRICT_WARNINGS)
         # Enable a broad set of warnings to catch common and subtle issues:
-        target_compile_options(json PUBLIC
+        target_compile_options(json_warnings INTERFACE
             -Wall                # Enable most general-purpose warnings.
             -Wextra              # Enable extra warnings not included in -Wall.
             -Wconversion         # Warn about implicit type conversions that may lose data.
@@ -159,6 +175,9 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Cl
     endif()
 endif()
 
+# The library itself is built with the same warnings.
+target_link_libraries(json PRIVATE json_warnings)
+
 # -----------------------------------------------------------------------------
 # EXAMPLES
 # -----------------------------------------------------------------------------
@@ -172,7 +191,7 @@ if(BUILD_EXAMPLES)
     # Include header directories.
     target_include_directories(json_example PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
-    target_link_libraries(json_example PUBLIC json timelib)
+    target_link_libraries(json_example PRIVATE json json_warnings)
 
     # Add the example.
     add_executable(json_run_on_file examples/run_on_file.cpp)
@@ -181,7 +200,7 @@ if(BUILD_EXAMPLES)
     # Include header directories.
     target_include_directories(json_run_on_file PUBLIC ${timelib_SOURCE_DIR}/include)
     # Set the linked libraries.
-    target_link_libraries(json_run_on_file PUBLIC json timelib)
+    target_link_libraries(json_run_on_file PRIVATE json json_warnings)
 
 endif(BUILD_EXAMPLES)
 
@@ -200,7 +219,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_data_types PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_data_types json)
+    target_link_libraries(json_test_data_types PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_struct ${PROJECT_SOURCE_DIR}/tests/test_struct.cpp)
@@ -208,7 +227,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_struct PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_struct json)
+    target_link_libraries(json_test_struct PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_container ${PROJECT_SOURCE_DIR}/tests/test_container.cpp)
@@ -216,7 +235,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_container PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_container json)
+    target_link_libraries(json_test_container PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_friend ${PROJECT_SOURCE_DIR}/tests/test_friend.cpp)
@@ -224,7 +243,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_friend PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_friend json)
+    target_link_libraries(json_test_friend PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_order ${PROJECT_SOURCE_DIR}/tests/test_order.cpp)
@@ -232,7 +251,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_order PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_order json)
+    target_link_libraries(json_test_order PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_error ${PROJECT_SOURCE_DIR}/tests/test_error.cpp)
@@ -240,7 +259,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_error PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_error json)
+    target_link_libraries(json_test_error PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_json5 ${PROJECT_SOURCE_DIR}/tests/test_json5.cpp)
@@ -248,7 +267,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_json5 PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_json5 json)
+    target_link_libraries(json_test_json5 PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_pointer ${PROJECT_SOURCE_DIR}/tests/test_pointer.cpp)
@@ -256,7 +275,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_pointer PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_pointer json)
+    target_link_libraries(json_test_pointer PRIVATE json json_warnings)
 
     # Add the test.
     add_executable(json_test_malformed ${PROJECT_SOURCE_DIR}/tests/test_malformed.cpp)
@@ -264,7 +283,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_malformed PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_malformed json)
+    target_link_libraries(json_test_malformed PRIVATE json json_warnings)
 
 
     # Add the test.
@@ -273,7 +292,7 @@ if(BUILD_TESTS)
     # Set C++11 standard for this target
     set_target_properties(json_test_string PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
     # Linking for the test.
-    target_link_libraries(json_test_string json)
+    target_link_libraries(json_test_string PRIVATE json json_warnings)
 
 endif(BUILD_TESTS)
 
@@ -281,7 +300,7 @@ endif(BUILD_TESTS)
 # CODE ANALYSIS
 # -----------------------------------------------------------------------------
 
-if(CLANG_TIDY_EXE)
+if(JSON_IS_TOP_LEVEL AND CLANG_TIDY_EXE)
     file(GLOB_RECURSE ALL_PROJECT_FILES
         "${PROJECT_SOURCE_DIR}/include/**/*.hpp"
         "${PROJECT_SOURCE_DIR}/include/**/*.hh"
@@ -319,9 +338,14 @@ endif()
 # DOCUMENTATION
 # -----------------------------------------------------------------------------
 
-if(DOXYGEN_FOUND)
+if(JSON_IS_TOP_LEVEL AND DOXYGEN_FOUND)
 
-    # FetchContent: Doxygen Awesome CSS (declared above).
+    # FetchContent: Doxygen Awesome CSS.
+    FetchContent_Declare(doxygenawesome
+        GIT_REPOSITORY https://github.com/jothepro/doxygen-awesome-css
+        # Pinned: newer releases require a newer Doxygen than the CI provides.
+        GIT_TAG v2.3.4
+    )
     FetchContent_MakeAvailable(doxygenawesome)
 
     # Hide FetchContent variables to avoid clutter in ccmake.
