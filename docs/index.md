@@ -44,6 +44,21 @@ When the library is consumed this way, its tests, examples and documentation are
 
 `json::json` also brings the include path of `ordered_map`, a header-only dependency fetched at a pinned commit.
 
+### As an installed package
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build build
+cmake --install build
+```
+
+```cmake
+find_package(json 2 REQUIRED)
+target_link_libraries(my_target PRIVATE json::json)
+```
+
+The package also installs the `ordered_map` headers that `json.hpp` includes.
+
 ### Without CMake
 
 Clone the repository, add `include/` and the `include/` directory of [ordered_map](https://github.com/Galfurian/ordered_map) to your include path, and compile `src/json.cpp` together with your sources.

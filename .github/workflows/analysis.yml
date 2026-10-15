@@ -12,6 +12,8 @@ on:
     - '**/CMakeLists.txt'
     - '.github/clang-tidy-ci.yml'
     - '.github/workflows/analysis.yml'
+    - 'cmake/**'
+    - 'tests/package/**'
   pull_request:
     branches:
     - main
@@ -22,6 +24,8 @@ on:
     - '**/CMakeLists.txt'
     - '.github/clang-tidy-ci.yml'
     - '.github/workflows/analysis.yml'
+    - 'cmake/**'
+    - 'tests/package/**'
 
 jobs:
   clang-tidy:
@@ -78,3 +82,23 @@ jobs:
       with:
         name: coverage
         path: coverage
+
+  install:
+    name: Install and find_package
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install the Library
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/prefix -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
+        cmake --build build --parallel 2
+        cmake --install build
+
+    # The consumer only sees the installed files.
+    - name: Build and Run a Consumer
+      run: |
+        cmake -S tests/package -B consumer -DCMAKE_PREFIX_PATH=${{ github.workspace }}/prefix
+        cmake --build consumer
+        ./consumer/app

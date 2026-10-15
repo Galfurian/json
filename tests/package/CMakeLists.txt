@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.14)
+project(consf CXX)
+find_package(json 2 REQUIRED)
+add_executable(app main.cpp)
+target_link_libraries(app PRIVATE json::json)
