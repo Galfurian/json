@@ -47,8 +47,9 @@ static bool test_simple_escapes()
 
 static bool test_line_continuations()
 {
-    return expect_decoded("a\\\nb", "a\nb") && expect_decoded("a\\ \t\nb", "a\nb") &&
-           expect_decoded("a\\\r\nb", "a\nb") &&
+    // A line continuation produces nothing, as in JSON5.
+    return expect_decoded("a\\\nb", "ab") && expect_decoded("a\\ \t\nb", "ab") &&
+           expect_decoded("a\\\r\nb", "ab") &&
            // An escaped backslash followed by a line break is not a continuation.
            expect_decoded("a\\\\\nb", "a\\\nb");
 }

@@ -11,12 +11,21 @@
 
 ### Added
 
+- JSON5 numbers: leading `+`, `.5`, `5.`, hexadecimal, `Infinity`, `-Infinity`
+  and `NaN`. Numbers are stored in a canonical decimal form.
+- `as_number<T>()` reads `1e3` and `2.0` correctly for integer types. It used
+  to read `1` and `2`. Integer types get the closest value, or a
+  `parser_error` in strict mode, when the number has a fractional part or is
+  out of range.
+
 - `json::parse_options` and `parse` / `parse_file` overloads that take it, to
   set `max_depth` and the new `max_input_size` for a single call.
 - `json::config::max_input_size` (default 0, no limit).
 
 ### Changed
 
+- A line continuation inside a string (backslash and line break) removes the
+  line break. It used to be replaced by `\n`.
 - `json::parser::parse_file` throws `json::parser_error` when the file cannot
   be opened. It used to return a null node.
 - `json::detail::json_parse` takes the maximum depth as an argument.
@@ -24,7 +33,7 @@
 The parser is stricter. The following inputs used to be accepted, often with
 a wrong result, and now raise `json::parser_error`:
 
-- invalid numbers: `-`, `1e`, `1.`, `1.2.3`, `01`
+- invalid numbers: `-`, `1e`, `1.2.3`, `01`, `0x`
 - misspelled literals and bare words used as values: `nul`, `{a: hello}`
 - missing separators: `[1 2]`, `{"a":1 "b":2}`
 - non-string object keys: `{1:2}`

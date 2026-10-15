@@ -11,11 +11,13 @@
 #include <algorithm>
 #include <bitset>
 #include <cassert>
+#include <cmath>
 #include <complex>
 #include <cstring>
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
@@ -235,6 +237,24 @@ public:
     {
         T output = 0;
         if (type == JTYPE_NUMBER) {
+            // The special values of JSON5.
+            if (value == "NaN") {
+                return special_number<T>(std::numeric_limits<T>::quiet_NaN(), std::numeric_limits<T>::has_quiet_NaN);
+            }
+            if (value == "Infinity") {
+                return special_number<T>(std::numeric_limits<T>::infinity(), std::numeric_limits<T>::has_infinity);
+            }
+            if (value == "-Infinity") {
+                // Binary minus: the unary one is a warning for unsigned types.
+                return special_number<T>(
+                    static_cast<T>(static_cast<T>(0) - std::numeric_limits<T>::infinity()),
+                    std::numeric_limits<T>::has_infinity);
+            }
+            // Integer types cannot read an exponent or a fraction from a stream,
+            // `1e3` would be read as 1. Read those numbers as long double.
+            if (std::is_integral<T>::value && (value.find_first_of(".eE") != std::string::npos)) {
+                return integral_from_real<T>();
+            }
             std::stringstream stream;
             stream << value;
             stream >> output;
@@ -248,6 +268,57 @@ public:
         return output;
     }
 
+private:
+    /// @brief Reads a number with a fraction or an exponent as an integer type.
+    /// @details A value with a fractional part is truncated, a value out of range
+    /// is clamped. In both cases config::strict_type_check turns it into a
+    /// parser_error.
+    /// @return The extracted value.
+    template <typename T>
+    auto integral_from_real() const -> T
+    {
+        long double real = 0.0L;
+        std::stringstream stream;
+        stream << value;
+        stream >> real;
+        const long double low  = static_cast<long double>(std::numeric_limits<T>::lowest());
+        const long double high = static_cast<long double>(std::numeric_limits<T>::max());
+        const bool exact = !stream.fail() && (real >= low) && (real <= high) && ((real - std::floor(real)) < 1e-18L);
+        if (!exact && json::config::strict_type_check) {
+            throw json::parser_error(
+                line_number, "The number `" + value + "` cannot be represented by the requested type.");
+        }
+        if (stream.fail() || std::isnan(real)) {
+            return 0;
+        }
+        if (real < low) {
+            return std::numeric_limits<T>::lowest();
+        }
+        if (real > high) {
+            return std::numeric_limits<T>::max();
+        }
+        return static_cast<T>(real);
+    }
+
+    /// @brief Returns a special numeric value, if the type can represent it.
+    /// @param result The value to return.
+    /// @param representable If the requested type can represent the value.
+    /// @return the value, or zero for types that cannot represent it, unless
+    /// config::strict_type_check is set: in that case a parser_error is thrown.
+    template <typename T>
+    auto special_number(T result, bool representable) const -> T
+    {
+        if (representable) {
+            return result;
+        }
+        if (json::config::strict_type_check) {
+            throw json::parser_error(
+                line_number, "The value `" + value + "` cannot be represented by the requested type.");
+        }
+        return 0;
+    }
+
+public:
     /// @brief Turns the value to BOOL.
     /// @return The extracted value.
     auto as_bool() const -> bool;

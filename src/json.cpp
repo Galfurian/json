@@ -463,8 +463,16 @@ static auto extract_number(const std::string &source, std::size_t index) -> std:
 {
     std::size_t slength = source.length();
     // Skip the sign.
-    if (source[index] == '-') {
+    if ((source[index] == '-') || (source[index] == '+')) {
         ++index;
+    }
+    // Hexadecimal numbers.
+    if ((index + 1 < slength) && (source[index] == '0') && ((source[index + 1] == 'x') || (source[index + 1] == 'X'))) {
+        index += 2;
+        while ((index < slength) && (std::isxdigit(static_cast<unsigned char>(source[index])) != 0)) {
+            ++index;
+        }
+        return index;
     }
     // Skip the integer part.
     while (index < slength) {
@@ -514,8 +522,8 @@ static inline auto deserialize(const std::string &source) -> std::string
     return deserialize(source, valid);
 }
 
-/// @brief Replaces each escaped line break (a backslash, optional blanks and a
-/// line break) with a single newline.
+/// @brief Removes each escaped line break (a backslash, optional blanks and a
+/// line break), as JSON5 requires.
 /// @param input The raw string value.
 /// @return The string with the line continuations replaced.
 static auto replace_line_continuations(const std::string &input) -> std::string
@@ -536,7 +544,6 @@ static auto replace_line_continuations(const std::string &input) -> std::string
             ++next;
         }
         if ((next < input.size()) && (input[next] == '\n')) {
-            output.push_back('\n');
             index = next;
         } else {
             // Keep the escape sequence untouched, including the escaped character,
@@ -574,46 +581,93 @@ static inline auto is_literal_at(const std::string &source, std::size_t index, c
     return (index + length >= source.length()) || !is_identifier_char(source[index + length]);
 }
 
-/// @brief Checks if the given string is a valid JSON number.
-/// @details The grammar is: -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?[0-9]+)?
+/// @brief Validates a number and rewrites it in a canonical form.
+/// @details The accepted grammar is the one of JSON5, without the special
+/// values: an optional sign, then either a hexadecimal number, or a decimal
+/// number with an integer part, a fraction and an exponent, where the integer
+/// part or the fraction may be missing (`.5`, `5.`) but not both. A leading zero
+/// cannot be followed by other digits. The canonical form has no `+`, no
+/// hexadecimal digits, a leading `0` before a bare fraction, and no dot without
+/// digits after it.
 /// @param number The string to check.
+/// @param canonical The canonical form of the number.
 /// @return true if the string is a valid number.
-static auto is_valid_number(const std::string &number) -> bool
+static auto normalize_number(const std::string &number, std::string &canonical) -> bool
 {
     std::size_t index = 0;
     std::size_t size  = number.size();
-    auto digits       = [&]() {
+    std::string sign;
+    if ((index < size) && ((number[index] == '-') || (number[index] == '+'))) {
+        if (number[index] == '-') {
+            sign = "-";
+        }
+        ++index;
+    }
+    // Hexadecimal numbers are converted to decimal.
+    if ((index + 1 < size) && (number[index] == '0') && ((number[index + 1] == 'x') || (number[index + 1] == 'X'))) {
+        index += 2;
+        // Sixteen digits always fit in 64 bits.
+        if ((index >= size) || (size - index > 16)) {
+            return false;
+        }
+        unsigned long long value = 0;
+        for (; index < size; ++index) {
+            char chr = number[index];
+            value *= 16ULL;
+            if (chr >= '0' && chr <= '9') {
+                value += static_cast<unsigned long long>(chr - '0');
+            } else if (chr >= 'a' && chr <= 'f') {
+                value += static_cast<unsigned long long>(chr - 'a' + 10);
+            } else if (chr >= 'A' && chr <= 'F') {
+                value += static_cast<unsigned long long>(chr - 'A' + 10);
+            } else {
+                return false;
+            }
+        }
+        canonical = sign + std::to_string(value);
+        return true;
+    }
+    auto digits = [&]() {
         std::size_t start = index;
         while ((index < size) && detail::is_digit(number[index])) {
             ++index;
         }
-        return index - start;
+        return number.substr(start, index - start);
     };
-    if ((index < size) && (number[index] == '-')) {
-        ++index;
-    }
-    // A leading zero cannot be followed by other digits.
-    if ((index < size) && (number[index] == '0')) {
-        ++index;
-    } else if (digits() == 0) {
+    // The integer part. A leading zero cannot be followed by other digits.
+    std::string integer = digits();
+    if ((integer.size() > 1) && (integer[0] == '0')) {
         return false;
     }
+    // The fraction.
+    std::string fraction;
     if ((index < size) && (number[index] == '.')) {
         ++index;
-        if (digits() == 0) {
-            return false;
-        }
+        fraction = digits();
     }
+    if (integer.empty() && fraction.empty()) {
+        return false;
+    }
+    // The exponent.
+    std::string exponent;
     if ((index < size) && ((number[index] == 'e') || (number[index] == 'E'))) {
         ++index;
+        exponent = "e";
         if ((index < size) && ((number[index] == '+') || (number[index] == '-'))) {
+            exponent += number[index];
             ++index;
         }
-        if (digits() == 0) {
+        std::string exponent_digits = digits();
+        if (exponent_digits.empty()) {
             return false;
         }
+        exponent += exponent_digits;
     }
-    return index == size;
+    if (index != size) {
+        return false;
+    }
+    canonical = sign + (integer.empty() ? "0" : integer) + (fraction.empty() ? "" : "." + fraction) + exponent;
+    return true;
 }
 
 /// @brief Processes a single substring.
@@ -707,17 +761,32 @@ static void process_token(const std::string &source, std::vector<token_t> &token
         } else if (source[index] == ' ') {
             // Skip the whitespace.
             ++index;
-        } else if (source[index] == '-' || detail::is_digit(source[index])) {
+        } else if (is_literal_at(source, index, "Infinity") || is_literal_at(source, index, "NaN")) {
+            // An unsigned special value.
+            bool infinity = is_literal_at(source, index, "Infinity");
+            tokens.emplace_back(infinity ? "Infinity" : "NaN", JTOKEN_NUMBER, line_number);
+            index += infinity ? 8 : 3;
+        } else if (
+            (source[index] == '+' || source[index] == '-') &&
+            (is_literal_at(source, index + 1, "Infinity") || is_literal_at(source, index + 1, "NaN"))) {
+            // A signed special value.
+            bool infinity   = is_literal_at(source, index + 1, "Infinity");
+            std::string sgn = (source[index] == '-' && infinity) ? "-" : "";
+            tokens.emplace_back(sgn + (infinity ? "Infinity" : "NaN"), JTOKEN_NUMBER, line_number);
+            index += 1 + (infinity ? 8 : 3);
+        } else if (
+            source[index] == '-' || source[index] == '+' || source[index] == '.' || detail::is_digit(source[index])) {
             // Extract the number.
             std::size_t end    = extract_number(source, index);
             std::string number = source.substr(index, end - index);
-            if (!is_valid_number(number)) {
+            std::string canonical;
+            if (!normalize_number(number, canonical)) {
                 throw json::parser_error(
                     line_number + 1,
                     "Error at line " + std::to_string(line_number + 1) + ": Invalid number `" + number + "`.");
             }
             // Add the number to the tokens.
-            tokens.emplace_back(number, JTOKEN_NUMBER, line_number);
+            tokens.emplace_back(canonical, JTOKEN_NUMBER, line_number);
             // Update the index.
             index = end;
         } else {
@@ -866,7 +935,9 @@ auto json_parse(
                 break;
             }
             // Only strings, identifiers and keywords are valid keys.
-            if ((key_token.type != JTOKEN_STRING) && (key_token.type != JTOKEN_IDENTIFIER) &&
+            const bool special_number =
+                (key_token.type == JTOKEN_NUMBER) && ((key_token.value == "Infinity") || (key_token.value == "NaN"));
+            if (!special_number && (key_token.type != JTOKEN_STRING) && (key_token.type != JTOKEN_IDENTIFIER) &&
                 (key_token.type != JTOKEN_BOOLEAN) && (key_token.type != JTOKEN_NULL)) {
                 throw json::parser_error(
                     key_token.line_number + 1,
