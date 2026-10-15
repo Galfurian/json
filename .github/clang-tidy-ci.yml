@@ -1,0 +1,5 @@
+# Checks that gate the CI. They look for bugs, not for style: the broader
+# configuration in the root .clang-tidy is meant for local use.
+Checks: 'clang-diagnostic-*,clang-analyzer-*,bugprone-*,cert-*,performance-*,-bugprone-easily-swappable-parameters,-bugprone-return-const-ref-from-parameter,-cert-err58-cpp'
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'include/json/.*'

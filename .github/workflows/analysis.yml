@@ -1,0 +1,123 @@
+name: Analysis
+
+# Static analysis and code coverage.
+on:
+  push:
+    branches:
+    - main
+    - develop
+    paths:
+    - '**/*.cpp'
+    - '**/*.hpp'
+    - '.clang-format'
+    - '**/CMakeLists.txt'
+    - '.github/clang-tidy-ci.yml'
+    - '.github/workflows/analysis.yml'
+    - 'cmake/**'
+    - 'tests/package/**'
+  pull_request:
+    branches:
+    - main
+    - develop
+    paths:
+    - '**/*.cpp'
+    - '**/*.hpp'
+    - '.clang-format'
+    - '**/CMakeLists.txt'
+    - '.github/clang-tidy-ci.yml'
+    - '.github/workflows/analysis.yml'
+    - 'cmake/**'
+    - 'tests/package/**'
+
+jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # The .clang-format file needs clang-format 20, the one of the distribution
+    # is older and rejects it.
+    - name: Install clang-format
+      run: pip install clang-format==20.1.8
+
+    - name: Check the Formatting
+      run: |
+        clang-format --dry-run --Werror \
+          include/json/json.hpp src/json.cpp tests/*.cpp examples/*.cpp benchmarks/*.cpp fuzz/*.cpp
+
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+
+    - name: Configure Project
+      run: cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=OFF
+
+    # The checks are the ones of .github/clang-tidy-ci.yml. They find bugs and
+    # every finding fails the job.
+    - name: Run clang-tidy
+      run: |
+        clang-tidy --config-file=.github/clang-tidy-ci.yml -p build src/json.cpp
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install gcovr
+      run: pip install gcovr
+
+    - name: Configure Project
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -O0" -DBUILD_TESTS=ON -DBUILD_EXAMPLES=OFF
+
+    - name: Build Project
+      run: cmake --build build --parallel 2
+
+    - name: Run Tests
+      run: ctest --test-dir build --output-on-failure
+
+    # The job fails if the line coverage of the library falls below 60%.
+    - name: Report Coverage
+      run: |
+        mkdir -p coverage
+        gcovr --root . --filter 'src/' --filter 'include/' --print-summary --fail-under-line 60 \
+          --html-details coverage/index.html
+
+    - name: Upload Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
+
+  install:
+    name: Install and find_package
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install the Library
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/prefix -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
+        cmake --build build --parallel 2
+        cmake --install build
+
+    # The consumer only sees the installed files.
+    - name: Build and Run a Consumer
+      run: |
+        cmake -S tests/package -B consumer -DCMAKE_PREFIX_PATH=${{ github.workspace }}/prefix
+        cmake --build consumer
+        ./consumer/app

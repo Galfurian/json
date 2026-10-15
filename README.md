@@ -3,6 +3,7 @@
 [![Ubuntu](https://github.com/Galfurian/json/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/ubuntu.yml)
 [![Windows](https://github.com/Galfurian/json/actions/workflows/windows.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/windows.yml)
 [![MacOS](https://github.com/Galfurian/json/actions/workflows/macos.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/macos.yml)
+[![Sanitizers](https://github.com/Galfurian/json/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/sanitizers.yml)
 [![Documentation](https://github.com/Galfurian/json/actions/workflows/documentation.yml/badge.svg)](https://github.com/Galfurian/json/actions/workflows/documentation.yml)
 
 ## Overview
@@ -18,18 +19,54 @@ The library supports parsing and serializing JSON objects, arrays, strings, numb
 - Serialize C++ types back into JSON format.
 - Supports custom types via operator overloads for `<<` and `>>`.
 - Handles both arrays and objects, and supports serialization of complex types such as `std::tuple`, `std::vector`, and `std::map`.
-- Supports `//` and `/* ... */` comments in JSON.
+- Accepts a JSON5-style superset of JSON, see the "Accepted syntax" section below.
 - Error handling with detailed exception types such as `parser_error`, `type_error`, and `range_error`.
 
 ## Installation
 
-Clone the repository and include the necessary header files in your C++ project.
+The library needs a C++11 compiler and CMake 3.14 or newer. It is made of one header and one source file, so it must be compiled and linked, it is not header-only.
+
+### With CMake (recommended)
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/Galfurian/json.git
+    GIT_TAG v3.0.0
+)
+FetchContent_MakeAvailable(json)
+
+target_link_libraries(my_target PRIVATE json::json)
+```
+
+When the library is consumed this way, its tests, examples and documentation are not built, and its warning flags are not applied to your code.
+
+`json::json` also brings the include path of `ordered_map`, a header-only dependency fetched at a pinned commit.
+
+### As an installed package
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build build
+cmake --install build
+```
+
+```cmake
+find_package(json 3 REQUIRED)
+target_link_libraries(my_target PRIVATE json::json)
+```
+
+The package also installs the `ordered_map` headers that `json.hpp` includes.
+
+### Without CMake
+
+Clone the repository, add `include/` and the `include/` directory of [ordered_map](https://github.com/Galfurian/ordered_map) to your include path, and compile `src/json.cpp` together with your sources.
 
 ```bash
 git clone https://github.com/Galfurian/json.git
 ```
 
-You can then include the `json.hpp` header in your C++ project:
+Then include the header:
 
 ```c++
 #include <json/json.hpp>
@@ -202,13 +239,72 @@ This library supports the following types for serialization and deserialization:
 - `std::tuple`, `std::vector`, `std::list`, `std::set`, `std::map`, `std::unordered_map`
 - Custom types (via operator overloads)
 
+## Performance
+
+`benchmarks/bench_parse.cpp` parses and prints a generated 8.7 MB document (50000 records), best of 5 runs, GCC 13 `-O2` (Release):
+
+| Library          | Parse      | Print       |
+|------------------|------------|-------------|
+| this library     | ~24 MB/s   | ~127 MB/s   |
+| nlohmann/json 3.11.3 | ~60 MB/s | ~314 MB/s |
+
+The parser first builds a token list and then the tree, so it needs memory proportional to the number of tokens (about 48 bytes each) on top of the tree. Keep that in mind for documents of hundreds of megabytes, and use `max_input_size`.
+
+Run it with `-DBUILD_BENCHMARKS=ON` (add `-DBENCHMARK_NLOHMANN=ON` for the comparison).
+
+## Accepted syntax
+
+The parser accepts standard JSON plus these JSON5 conveniences:
+
+- `//` and `/* ... */` comments
+- single-quoted strings
+- unquoted object keys (identifiers made of letters, digits, `_` and `$`)
+- trailing commas in objects and arrays
+- numbers with a leading `+`, a leading or trailing dot (`.5`, `5.`), in hexadecimal (`0xFF`), and the special values `Infinity`, `-Infinity` and `NaN`
+- line continuations: a backslash before a line break inside a string removes the line break
+
+Everything else that is not valid JSON is rejected with a `parser_error`: invalid numbers (`01`, `-`, `1.2.3`, `0x`), bare words used as values, missing commas, unterminated strings and comments, invalid escape sequences, and any data after the root value.
+
+Strings may contain `\uXXXX` escapes, including surrogate pairs. They are decoded to UTF-8.
+
+## Limits and configuration
+
+Global options live in the `json::config` namespace:
+
+| Option                      | Default | Meaning                                                                              |
+|-----------------------------|---------|--------------------------------------------------------------------------------------|
+| `max_depth`                 | `256`   | Maximum nesting of objects and arrays. Deeper documents raise a `parser_error`.      |
+| `max_input_size`            | `0`     | Maximum size in bytes of a document. `0` means no limit.                             |
+| `strict_type_check`         | `false` | Throw `type_error` instead of returning a default when a value has a different type. Also reports numbers that do not fit the requested C++ type. |
+| `strict_existance_check`    | `false` | Throw instead of returning a null node when a key does not exist.                    |
+| `replace_escape_characters` | `false` | Escape special characters when serializing strings.                                  |
+| `string_delimiter_character`| `'`     | Quote used when serializing strings.                                                 |
+
+`max_depth` and `max_input_size` can also be passed for a single call, without touching global state:
+
+```c++
+json::parse_options options;
+options.max_depth      = 32;
+options.max_input_size = 1 << 20; // 1 MiB
+json::jnode_t root = json::parser::parse(text, options);
+json::jnode_t file = json::parser::parse_file("data.json", options);
+```
+
+`parse_file` throws `parser_error` if the file cannot be opened.
+
+The other options are global variables: set them once at startup, before using the library from several threads. Parsing and reading a tree that is not modified are otherwise safe to do from different threads on different objects.
+
+When you parse untrusted input, keep `max_depth` low and limit the size of the input you hand to the parser.
+
 ## Error Handling
 
 The library uses exceptions to handle errors:
 
-- `parser_error`: General parsing error.
-- `type_error`: Type mismatch error.
-- `range_error`: Accessing an out-of-bound element.
+- `parser_error`: General parsing error. It carries the `line` where the problem was found.
+- `type_error`: Type mismatch error, derived from `parser_error`.
+- `range_error`: Accessing an out-of-bound element, derived from `parser_error`.
+
+On malformed input the parser either returns a tree or throws `parser_error`. This is checked by the test suite, which includes a seeded mutation fuzz test, and by a CI job that runs all the tests under AddressSanitizer and UndefinedBehaviorSanitizer.
 
 ## License
 

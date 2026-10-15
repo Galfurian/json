@@ -11,11 +11,13 @@
 #include <algorithm>
 #include <bitset>
 #include <cassert>
+#include <cmath>
 #include <complex>
 #include <cstring>
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
@@ -33,9 +35,9 @@
 #include "ordered_map/ordered_map.hpp"
 
 enum : unsigned char {
-    JSON_MAJOR_VERSION = 2, ///< Major version of the library.
-    JSON_MINOR_VERSION = 5, ///< Minor version of the library.
-    JSON_MICRO_VERSION = 3  ///< Micro version of the library.
+    JSON_MAJOR_VERSION = 3, ///< Major version of the library.
+    JSON_MINOR_VERSION = 0, ///< Minor version of the library.
+    JSON_MICRO_VERSION = 0  ///< Micro version of the library.
 };
 
 /// @brief This namespace contains the main json_t class and stream functions.
@@ -131,7 +133,32 @@ extern bool strict_existance_check;
 extern bool replace_escape_characters;
 /// @brief The character used to delimit strings.
 extern char string_delimiter_character;
+/// @brief The maximum nesting depth of objects and arrays accepted by the
+/// parser. Deeper documents are rejected with a parser_error.
+extern std::size_t max_depth;
+/// @brief The maximum size, in bytes, of a document accepted by the parser.
+/// Zero means no limit.
+extern std::size_t max_input_size;
 } // namespace config
+
+/// @brief Options of a single parsing operation.
+/// @details The default values are taken from the global json::config when the
+/// object is constructed, so code that never uses options keeps working.
+/// Passing an explicit object makes the limits independent from global state.
+struct parse_options {
+    /// @brief The maximum nesting depth of objects and arrays.
+    std::size_t max_depth;
+    /// @brief The maximum size, in bytes, of the input. Zero means no limit.
+    std::size_t max_input_size;
+
+    /// @brief Builds the options from the global configuration.
+    parse_options()
+        : max_depth(config::max_depth)
+        , max_input_size(config::max_input_size)
+    {
+        // Nothing to do.
+    }
+};
 
 /// @brief Represent a json node.
 class jnode_t
@@ -200,22 +227,98 @@ public:
     /// @return true if the object has the property, false otherwise.
     auto has_property(const std::string &key) const -> bool;
 
-    /// @brief Turns the value to INT.
+    /// @brief Turns the value to a number of type T.
+    /// @details If the value cannot be represented by T, the result is the
+    /// closest value T can hold, unless config::strict_type_check is set: in
+    /// that case a parser_error is thrown.
     /// @return The extracted value
     template <typename T>
     auto as_number() const -> T
     {
         T output = 0;
         if (type == JTYPE_NUMBER) {
+            // The special values of JSON5.
+            if (value == "NaN") {
+                return special_number<T>(std::numeric_limits<T>::quiet_NaN(), std::numeric_limits<T>::has_quiet_NaN);
+            }
+            if (value == "Infinity") {
+                return special_number<T>(std::numeric_limits<T>::infinity(), std::numeric_limits<T>::has_infinity);
+            }
+            if (value == "-Infinity") {
+                // Binary minus: the unary one is a warning for unsigned types.
+                return special_number<T>(
+                    static_cast<T>(static_cast<T>(0) - std::numeric_limits<T>::infinity()),
+                    std::numeric_limits<T>::has_infinity);
+            }
+            // Integer types cannot read an exponent or a fraction from a stream,
+            // `1e3` would be read as 1. Read those numbers as long double.
+            if (std::is_integral<T>::value && (value.find_first_of(".eE") != std::string::npos)) {
+                return integral_from_real<T>();
+            }
             std::stringstream stream;
             stream << value;
             stream >> output;
+            if (stream.fail() && json::config::strict_type_check) {
+                throw json::parser_error(
+                    line_number, "The number `" + value + "` cannot be represented by the requested type.");
+            }
         } else if (json::config::strict_type_check) {
             throw json::type_error(line_number, JTYPE_NUMBER, type);
         }
         return output;
     }
 
+private:
+    /// @brief Reads a number with a fraction or an exponent as an integer type.
+    /// @details A value with a fractional part is truncated, a value out of range
+    /// is clamped. In both cases config::strict_type_check turns it into a
+    /// parser_error.
+    /// @return The extracted value.
+    template <typename T>
+    auto integral_from_real() const -> T
+    {
+        long double real = 0.0L;
+        std::stringstream stream;
+        stream << value;
+        stream >> real;
+        const long double low  = static_cast<long double>(std::numeric_limits<T>::lowest());
+        const long double high = static_cast<long double>(std::numeric_limits<T>::max());
+        const bool exact = !stream.fail() && (real >= low) && (real <= high) && ((real - std::floor(real)) < 1e-18L);
+        if (!exact && json::config::strict_type_check) {
+            throw json::parser_error(
+                line_number, "The number `" + value + "` cannot be represented by the requested type.");
+        }
+        if (stream.fail() || std::isnan(real)) {
+            return 0;
+        }
+        if (real < low) {
+            return std::numeric_limits<T>::lowest();
+        }
+        if (real > high) {
+            return std::numeric_limits<T>::max();
+        }
+        return static_cast<T>(real);
+    }
+
+    /// @brief Returns a special numeric value, if the type can represent it.
+    /// @param result The value to return.
+    /// @param representable If the requested type can represent the value.
+    /// @return the value, or zero for types that cannot represent it, unless
+    /// config::strict_type_check is set: in that case a parser_error is thrown.
+    template <typename T>
+    auto special_number(T result, bool representable) const -> T
+    {
+        if (representable) {
+            return result;
+        }
+        if (json::config::strict_type_check) {
+            throw json::parser_error(
+                line_number, "The value `" + value + "` cannot be represented by the requested type.");
+        }
+        return 0;
+    }
+
+public:
     /// @brief Turns the value to BOOL.
     /// @return The extracted value.
     auto as_bool() const -> bool;
@@ -413,7 +516,8 @@ enum token_type_t : unsigned char {
     JTOKEN_COLON,         ///< We found a colon.
     JTOKEN_BOOLEAN,       ///< We found a boolean.
     JTOKEN_COMMENT,       ///< We found a comment.
-    JTOKEN_NULL           ///< We found a NULL value.
+    JTOKEN_NULL,          ///< We found a NULL value.
+    JTOKEN_IDENTIFIER     ///< We found an unquoted identifier, valid only as an object key.
 };
 
 /// @brief A token use for parsing.
@@ -453,9 +557,16 @@ auto tokenize(const std::string &source, std::vector<token_t> &tokens) -> std::v
 /// @param index The current index in the token list.
 /// @param output_index The index to continue parsing from after this function returns.
 /// @param current The current JSON node being built.
+/// @param depth The current nesting depth.
+/// @param max_depth The maximum nesting depth.
 /// @return jnode_t& The constructed JSON node.
-auto json_parse(std::vector<token_t> &tokens, std::size_t index, std::size_t &output_index, jnode_t &current)
-    -> jnode_t &;
+auto json_parse(
+    std::vector<token_t> &tokens,
+    std::size_t index,
+    std::size_t &output_index,
+    jnode_t &current,
+    std::size_t depth,
+    std::size_t max_depth) -> jnode_t &;
 
 /// @brief Struct for transforming a std::tuple into a json::jnode_t.
 /// @details
@@ -552,7 +663,15 @@ namespace parser
 /// @brief Parse the json formatted string.
 /// @param json_string The json formatted string.
 /// @return the root of the generated json tree.
+/// @throws json::parser_error if the string is not valid.
 auto parse(const std::string &json_string) -> jnode_t;
+
+/// @brief Parse the json formatted string.
+/// @param json_string The json formatted string.
+/// @param options The limits to enforce while parsing.
+/// @return the root of the generated json tree.
+/// @throws json::parser_error if the string is not valid or exceeds the limits.
+auto parse(const std::string &json_string, const parse_options &options) -> jnode_t;
 
 /// @brief Parse the json file.
 /// @param filename Path to the json file.
@@ -564,6 +683,13 @@ auto read_file(const std::string &filename, std::string &content) -> bool;
 /// @param filename Path to the json file.
 /// @return the root of the generated json tree.
 auto parse_file(const std::string &filename) -> jnode_t;
+
+/// @brief Parse the json file.
+/// @param filename Path to the json file.
+/// @param options The limits to enforce while parsing.
+/// @return the root of the generated json tree.
+/// @throws json::parser_error if the file cannot be read, is not valid or exceeds the limits.
+auto parse_file(const std::string &filename, const parse_options &options) -> jnode_t;
 
 /// @brief Write the json node on file.
 /// @param filename Path to the json file.
