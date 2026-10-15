@@ -19,7 +19,7 @@ The library supports parsing and serializing JSON objects, arrays, strings, numb
 - Serialize C++ types back into JSON format.
 - Supports custom types via operator overloads for `<<` and `>>`.
 - Handles both arrays and objects, and supports serialization of complex types such as `std::tuple`, `std::vector`, and `std::map`.
-- Accepts a JSON5-style superset of JSON, see [Accepted syntax](#accepted-syntax).
+- Accepts a JSON5-style superset of JSON, see the "Accepted syntax" section below.
 - Error handling with detailed exception types such as `parser_error`, `type_error`, and `range_error`.
 
 ## Installation
