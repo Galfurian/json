@@ -150,11 +150,15 @@ struct parse_options {
     std::size_t max_depth;
     /// @brief The maximum size, in bytes, of the input. Zero means no limit.
     std::size_t max_input_size;
+    /// @brief If true, parse_file returns a null node when the file cannot be
+    /// opened, instead of throwing. Invalid content still throws.
+    bool missing_file_as_null;
 
     /// @brief Builds the options from the global configuration.
     parse_options()
         : max_depth(config::max_depth)
         , max_input_size(config::max_input_size)
+        , missing_file_as_null(false)
     {
         // Nothing to do.
     }
@@ -688,7 +692,7 @@ auto parse_file(const std::string &filename) -> jnode_t;
 /// @param filename Path to the json file.
 /// @param options The limits to enforce while parsing.
 /// @return the root of the generated json tree.
-/// @throws json::parser_error if the file cannot be read, is not valid or exceeds the limits.
+/// @throws json::parser_error if the file cannot be read (unless options.missing_file_as_null is set), is not valid or exceeds the limits.
 auto parse_file(const std::string &filename, const parse_options &options) -> jnode_t;
 
 /// @brief Write the json node on file.

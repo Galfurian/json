@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- `json::parse_options::missing_file_as_null` (default `false`): with it,
+  `parse_file` returns a null node when the file cannot be opened, as the
+  versions before 3.0 did. It is set per call, there is no global switch.
+  Invalid content still throws.
+
 ### Performance
 
 - `json::parser::parse` reads the text in a single pass and builds the tree

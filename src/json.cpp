@@ -1430,6 +1430,9 @@ auto parse_file(const std::string &filename, const parse_options &options) -> jn
 {
     std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
     if (!file.is_open()) {
+        if (options.missing_file_as_null) {
+            return jnode_t(JTYPE_NULL);
+        }
         throw json::parser_error(0, "Error: Cannot open the file `" + filename + "`.");
     }
     // Check the size before loading the file in memory.

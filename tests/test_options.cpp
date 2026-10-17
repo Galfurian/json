@@ -69,6 +69,17 @@ static bool test_parse_file()
     std::remove(filename.c_str());
     // A missing file is an error, not a null node.
     ok = ok && throws_parser_error([&]() { json::parser::parse_file(filename); });
+    // Unless the caller asks for the old behavior.
+    json::parse_options lenient;
+    lenient.missing_file_as_null = true;
+    ok                           = ok && json::parser::parse_file(filename, lenient).is_null();
+    // The option does not hide invalid content.
+    {
+        std::ofstream out(filename.c_str());
+        out << "{ a: ";
+    }
+    ok = ok && throws_parser_error([&]() { json::parser::parse_file(filename, lenient); });
+    std::remove(filename.c_str());
     return ok;
 }
 

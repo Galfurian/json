@@ -290,7 +290,13 @@ json::jnode_t root = json::parser::parse(text, options);
 json::jnode_t file = json::parser::parse_file("data.json", options);
 ```
 
-`parse_file` throws `parser_error` if the file cannot be opened.
+`parse_file` throws `parser_error` if the file cannot be opened. Code that relied on the null node of the versions before 3.0 can set `missing_file_as_null` in the options of that call: a missing file then gives a null node, while an invalid file still throws.
+
+```c++
+json::parse_options options;
+options.missing_file_as_null = true;
+json::jnode_t root = json::parser::parse_file("maybe.json", options);
+```
 
 The other options are global variables: set them once at startup, before using the library from several threads. Parsing and reading a tree that is not modified are otherwise safe to do from different threads on different objects.
 
